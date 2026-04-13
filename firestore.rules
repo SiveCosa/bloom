@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Institution doc + ALL nested subcollections (campuses, interests, etc.)
+    match /institutions/{institutionId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /institutions/{institutionId}/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Users: Users can only read and write their own profile during setup
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.keys().hasAll(['email', 'username', 'institution']);
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

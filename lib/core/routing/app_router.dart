@@ -1,0 +1,228 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Shell and Auth Providers
+import '../../domain/auth/auth_providers.dart';
+// import '../../ui/main_shell/shell_screen.dart'; // Uncomment when ShellScreen is ready
+
+// Import Login UI screens
+import '../../ui/auth/login/email_screen.dart' as login;
+import '../../ui/auth/login/otp_screen.dart' as login_otp;
+import '../../ui/auth/login/confirm_screen.dart' as login_confirm;
+
+// Import Sign-Up UI screens
+import '../../ui/auth/signup/email_screen.dart' as signup;
+import '../../ui/auth/signup/otp_screen.dart' as signup_otp;
+import '../../ui/auth/signup/details_screen.dart';
+import '../../ui/auth/signup/campus_screen.dart';
+import '../../ui/auth/signup/avatar_screen.dart';
+import '../../ui/auth/signup/interests_screen.dart';
+import '../../ui/auth/signup/permissions_screen.dart';
+import '../../ui/main_shell/home_screen.dart';
+import '../../ui/main_shell/profile_screen.dart';
+import '../../ui/main_shell/shell_screen.dart';
+// import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
+
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+  const PlaceholderScreen({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(child: Text('$title Screen')),
+    );
+  }
+}
+
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Re-evaluates [GoRouter.redirect] when auth changes **without** disposing
+/// [GoRouter]. Watching [authStateChangesProvider] on the router provider
+/// recreates [GoRouter] and resets to [initialLocation], which sent sign-up
+/// users to `/` right after OTP verification.
+class _AuthRouterRefresh extends ChangeNotifier {
+  _AuthRouterRefresh(FirebaseAuth auth) {
+    _sub = auth.authStateChanges().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<User?> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
+
+/// Path only, no query; trailing slash removed for stable whitelist matching.
+String _normalizedAuthPath(GoRouterState state) {
+  var path = state.uri.path;
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.substring(0, path.length - 1);
+  }
+  return path;
+}
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final auth = ref.read(firebaseAuthProvider);
+  final refresh = _AuthRouterRefresh(auth);
+
+  final router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    initialLocation: '/',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final isAuth = auth.currentUser != null;
+      final path = _normalizedAuthPath(state);
+      final isAuthRoute = path.startsWith('/auth');
+
+      // 1. If NOT logged in, and trying to access the main app, kick to login
+      if (!isAuth && !isAuthRoute) {
+        return '/auth/login';
+      }
+
+      // 2. If LOGGED IN, and trying to access auth screens
+      if (isAuth && isAuthRoute) {
+        // Whitelist paths an authenticated user may use while finishing login/sign-up.
+        const allowedAuthRoutes = <String>{
+          '/auth/signup/otp',
+          '/auth/login/otp',
+          '/auth/signup/details',
+          '/auth/signup/campus',
+          '/auth/signup/avatar',
+          '/auth/signup/interests',
+          '/auth/signup/permissions',
+          '/auth/signup/loading',
+          '/auth/login/confirm',
+        };
+
+        if (allowedAuthRoutes.contains(path)) {
+          return null;
+        }
+
+        return '/';
+      }
+
+      return null;
+    },
+    routes: [
+      // ==========================
+      // AUTH FLOWS
+      // ==========================
+      GoRoute(
+        path: '/auth/login',
+        builder: (context, state) => const login.EmailScreen(),
+        routes: [
+          GoRoute(
+            path: 'otp',
+            builder: (context, state) => const login_otp.OtpScreen(),
+          ),
+          GoRoute(
+            path: 'confirm',
+            builder: (context, state) => const login_confirm.ConfirmScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/auth/signup',
+        builder: (context, state) => const signup.EmailScreen(),
+        routes: [
+          GoRoute(
+            path: 'otp',
+            builder: (context, state) => const signup_otp.OtpScreen(),
+          ),
+          GoRoute(
+            path: 'details',
+            builder: (context, state) => const DetailsScreen(),
+          ),
+          GoRoute(
+            path: 'campus',
+            builder: (context, state) => const CampusScreen(),
+          ),
+          GoRoute(
+            path: 'avatar',
+            builder: (context, state) => const AvatarScreen(),
+          ),
+          GoRoute(
+            path: 'interests',
+            builder: (context, state) => const InterestsScreen(),
+          ),
+          GoRoute(
+            path: 'permissions',
+            builder: (context, state) => const PermissionsScreen(),
+          ),
+          // GoRoute(
+          //   path: 'loading',
+          //   builder: (context, state) => const LoadingScreen(),
+          // ),
+        ],
+      ),
+
+      // ==========================
+      // MAIN APP SHELL
+      // ==========================
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return ShellScreen(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/discover',
+                builder: (context, state) =>
+                    const PlaceholderScreen(title: 'Discover'),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/create',
+                builder: (context, state) =>
+                    const PlaceholderScreen(title: 'Create'),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/calendar',
+                builder: (context, state) =>
+                    const PlaceholderScreen(title: 'Calendar'),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+
+  ref.onDispose(() {
+    router.dispose();
+    refresh.dispose();
+  });
+  return router;
+});
