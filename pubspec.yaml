@@ -17,6 +17,7 @@ dependencies:
     sdk: flutter
   flutter_image_compress: ^2.4.0
   flutter_riverpod: ^3.3.1
+  flutter_svg: ^2.2.4
   go_router: ^17.2.0
   image_cropper: ^12.2.0
   image_picker: ^1.2.1
@@ -31,6 +32,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/icons/
+    - assets/icons/nav/
 
 flutter_launcher_icons:
   android: "launcher_icon"

@@ -22,23 +22,10 @@ import '../../ui/auth/signup/campus_screen.dart';
 import '../../ui/auth/signup/avatar_screen.dart';
 import '../../ui/auth/signup/interests_screen.dart';
 import '../../ui/auth/signup/permissions_screen.dart';
-import '../../ui/main_shell/home_screen.dart';
-import '../../ui/main_shell/profile_screen.dart';
-import '../../ui/main_shell/shell_screen.dart';
+import '../../ui/main_shell/main_shell.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('$title Screen')),
-    );
-  }
-}
+// No longer using PlaceholderScreen
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -167,55 +154,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ==========================
       // MAIN APP SHELL
       // ==========================
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return ShellScreen(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (context, state) => const HomeScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/discover',
-                builder: (context, state) =>
-                    const PlaceholderScreen(title: 'Discover'),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/create',
-                builder: (context, state) =>
-                    const PlaceholderScreen(title: 'Create'),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/calendar',
-                builder: (context, state) =>
-                    const PlaceholderScreen(title: 'Calendar'),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/profile',
-                builder: (context, state) => const ProfileScreen(),
-              ),
-            ],
-          ),
-        ],
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const MainShell(),
       ),
     ],
   );

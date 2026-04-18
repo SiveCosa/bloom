@@ -188,7 +188,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                                 padding: EdgeInsets.zero,
                                                 shrinkWrap: true,
                                                 itemCount: options.length,
-                                                separatorBuilder: (_, __) =>
+                                                separatorBuilder: (_, _) =>
                                                     Divider(
                                                       color: Colors.white
                                                           .withOpacity(0.05),
