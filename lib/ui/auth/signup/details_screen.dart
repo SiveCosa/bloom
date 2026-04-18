@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui' as ui;
@@ -13,10 +16,21 @@ class DetailsScreen extends ConsumerStatefulWidget {
   ConsumerState<DetailsScreen> createState() => _DetailsScreenState();
 }
 
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toLowerCase());
+  }
+}
+
 class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   static const double _kRadius = 100;
   static const double _kFieldFontSize = 14;
-  static final Color _kBorderColor = Colors.white.withValues(alpha: 0.25);
+  static const double _kStandardHeight = 48.0;
+
+  static final Color _kBorderColor = Colors.white.withOpacity(0.50);
+
   static const TextStyle _kFieldTextStyle = TextStyle(
     fontSize: _kFieldFontSize,
     color: Colors.white,
@@ -24,16 +38,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
   final _usernameController = TextEditingController();
   final _nameController = TextEditingController();
-
-  static const List<String> _years = [
-    '2005',
-    '2004',
-    '2003',
-    '2002',
-    '2001',
-    '2000',
-    '1999',
-  ];
 
   static const List<String> _months = [
     'Jan',
@@ -51,11 +55,14 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   ];
 
   late final List<String> _days;
+  late final List<String> _years;
 
   String _birthdayYear = 'YYYY';
   String _birthdayMonth = 'MMM';
   String _birthdayDay = 'DD';
   String? _genderValue;
+  bool _isSubmitting = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -64,6 +71,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       31,
       (index) => (index + 1).toString().padLeft(2, '0'),
     );
+
+    final currentYear = DateTime.now().year;
+    final maxBirthYear = currentYear - 13;
+    _years = List.generate(100, (index) => (maxBirthYear - index).toString());
   }
 
   @override
@@ -88,10 +99,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         fontSize: _kFieldFontSize,
       ),
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
-      isDense: true,
-      // Perfectly balances the text box with 10dp top/bottom padding
-      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+      fillColor: Colors.white.withOpacity(0.05),
+      // isDense false + vertical 0 + tight container height = true centering
+      isDense: false,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_kRadius),
         borderSide: BorderSide(color: _kBorderColor, width: 1.5),
@@ -107,20 +118,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
     );
   }
 
-  String? _yearValue() {
-    if (_birthdayYear == 'YYYY') return null;
-    return _years.contains(_birthdayYear) ? _birthdayYear : null;
-  }
-
-  String? _monthValue() {
-    if (_birthdayMonth == 'MMM') return null;
-    return _months.contains(_birthdayMonth) ? _birthdayMonth : null;
-  }
-
-  String? _dayValue() {
-    if (_birthdayDay == 'DD') return null;
-    return _days.contains(_birthdayDay) ? _birthdayDay : null;
-  }
+  String? _yearValue() => _birthdayYear == 'YYYY' ? null : _birthdayYear;
+  String? _monthValue() => _birthdayMonth == 'MMM' ? null : _birthdayMonth;
+  String? _dayValue() => _birthdayDay == 'DD' ? null : _birthdayDay;
 
   Widget _buildDateDropdown({
     required String placeholder,
@@ -130,10 +130,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   }) {
     return Expanded(
       child: Container(
-        // Dynamic height based on padding instead of fixed height
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        height: _kStandardHeight, // MATCHES TEXT FIELD HEIGHT
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(_kRadius),
           border: Border.all(color: _kBorderColor, width: 1.5),
         ),
@@ -150,7 +150,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
               ),
             ),
             value: value,
-            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
+            icon: const Icon(
+              Icons.keyboard_arrow_down,
+              color: Colors.white54,
+              size: 20,
+            ),
             dropdownColor: const Color(0xFF1A1D24),
             style: _kFieldTextStyle,
             items: items
@@ -171,35 +175,24 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
     final selected = _genderValue == value;
     return Expanded(
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _genderValue = selected ? null : value;
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Radio<String>(
-                value: value,
-                groupValue: _genderValue,
-                onChanged: (v) => setState(() => _genderValue = v),
-                fillColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return activeColor;
-                  }
-                  return Colors.white54;
-                }),
+        onTap: () => setState(() => _genderValue = selected ? null : value),
+        child: Row(
+          children: [
+            Radio<String>(
+              value: value,
+              groupValue: _genderValue,
+              toggleable: true,
+              onChanged: (v) => setState(() => _genderValue = v),
+              activeColor: activeColor,
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? activeColor : Colors.white70,
+                fontSize: 14,
               ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? activeColor : Colors.white70,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -211,15 +204,31 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const AuthAppBar(leftAction: AuthAppBarAction.cancel),
+      appBar: AuthAppBar(
+        leftAction: AuthAppBarAction.cancel,
+        onCancel: () async {
+          setState(() => _isSubmitting = true);
+          try {
+            await FirebaseAuth.instance.currentUser?.delete();
+          } catch (_) {
+            await FirebaseAuth.instance.signOut();
+          }
+          if (context.mounted) {
+             ref.invalidate(authControllerProvider);
+             ref.read(signUpFormProvider.notifier).clearForm();
+             context.go('/auth/signup');
+          }
+        },
+      ),
       body: Stack(
         children: [
+          // Dynamic Blur Background
           Align(
             alignment: Alignment.topCenter,
             child: ImageFiltered(
               imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
               child: Container(
-                height: 100,
+                height: 120,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -231,48 +240,34 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 20),
                           Center(
                             child: Image.asset(
                               'assets/bloom_logo.png',
-                              width: 65,
-                              height: 65,
+                              width: 60,
+                              height: 60,
                             ),
                           ),
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 30),
                           const Text(
                             'Who are you?',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 26,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 8),
                           RichText(
                             text: TextSpan(
                               text: 'Enter your account details,\n',
@@ -291,92 +286,126 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 40),
+
+                          // Username Field
                           const Text(
                             'Username',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _usernameController,
-                            onChanged: (_) => setState(() {}),
-                            style: _kFieldTextStyle,
-                            textAlignVertical: TextAlignVertical.center,
-                            decoration: _fieldDecoration('Username'),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: _kStandardHeight,
+                            child: TextField(
+                              controller: _usernameController,
+                              style: _kFieldTextStyle,
+                              maxLength: 30,
+                              inputFormatters: [
+                                LowerCaseTextFormatter(),
+                                FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9._]')),
+                              ],
+                              textAlignVertical: TextAlignVertical.center,
+                              decoration: _fieldDecoration('Username').copyWith(counterText: ''),
+                              onChanged: (_) {
+                                if (_errorMessage != null) setState(() => _errorMessage = null);
+                              },
+                            ),
                           ),
-                          const SizedBox(height: 24),
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0, left: 16.0),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red, fontSize: 12),
+                              ),
+                            ),
+                          const SizedBox(height: 16),
+
+                          // Name Field
                           const Text(
                             'Name:',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _nameController,
-                            onChanged: (_) => setState(() {}),
-                            style: _kFieldTextStyle,
-                            textAlignVertical: TextAlignVertical.center,
-                            decoration: _fieldDecoration('Your name'),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: _kStandardHeight,
+                            child: TextField(
+                              controller: _nameController,
+                              style: _kFieldTextStyle,
+                              textAlignVertical: TextAlignVertical.center,
+                              decoration: _fieldDecoration('Your name'),
+                              onChanged: (_) => setState(() {}),
+                            ),
                           ),
-                          const SizedBox(height: 24),
+
+                          const SizedBox(height: 16),
+
+                          // Birthday Section
                           const Text(
                             'Birthday',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
                               _buildDateDropdown(
-                                placeholder: 'YYYY',
-                                items: _years,
-                                value: _yearValue(),
-                                onChanged: (v) => setState(() {
-                                  _birthdayYear = v ?? 'YYYY';
-                                }),
+                                placeholder: 'DD',
+                                items: _days,
+                                value: _dayValue(),
+                                onChanged: (v) =>
+                                    setState(() => _birthdayDay = v ?? 'DD'),
                               ),
                               const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text('/'),
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  '/',
+                                  style: TextStyle(color: Colors.white38),
+                                ),
                               ),
                               _buildDateDropdown(
                                 placeholder: 'MMM',
                                 items: _months,
                                 value: _monthValue(),
-                                onChanged: (v) => setState(() {
-                                  _birthdayMonth = v ?? 'MMM';
-                                }),
+                                onChanged: (v) =>
+                                    setState(() => _birthdayMonth = v ?? 'MMM'),
                               ),
                               const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text('/'),
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(
+                                  '/',
+                                  style: TextStyle(color: Colors.white38),
+                                ),
                               ),
                               _buildDateDropdown(
-                                placeholder: 'DD',
-                                items: _days,
-                                value: _dayValue(),
-                                onChanged: (v) => setState(() {
-                                  _birthdayDay = v ?? 'DD';
-                                }),
+                                placeholder: 'YYYY',
+                                items: _years,
+                                value: _yearValue(),
+                                onChanged: (v) =>
+                                    setState(() => _birthdayYear = v ?? 'YYYY'),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+
+                          const SizedBox(height: 16),
+
+                          // Gender Section
                           const Text(
                             'Gender (Optional)',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
                               _genderRadioTile(
@@ -384,7 +413,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                 value: 'Male',
                                 activeColor: Colors.blue,
                               ),
-                              const SizedBox(width: 16),
                               _genderRadioTile(
                                 label: 'Female',
                                 value: 'Female',
@@ -392,57 +420,99 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           const Text(
                             'If your gender is not provided you will be unable to access gender specific events unless invited.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white54,
+                              color: Colors.white38,
+                              height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 30),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isFormValid
-                          ? () {
-                              ref
-                                  .read(signUpFormProvider.notifier)
-                                  .updateDetails(
-                                    username: _usernameController.text,
-                                    name: _nameController.text,
-                                    birthday:
-                                        '$_birthdayYear / $_birthdayMonth / $_birthdayDay',
-                                    gender:
-                                        _genderValue != null &&
-                                            _genderValue!.isNotEmpty
-                                        ? _genderValue!
-                                        : 'prefer not to say',
-                                  );
-                              context.go('/auth/signup/campus');
-                            }
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFF0086D8,
-                        ), // Restored the primary blue
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.white24,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            20,
-                          ), // 20dp border radius for a rounded rectangle
+
+                  // Primary Action Button
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 52, // Slightly larger for the main action
+                      child: ElevatedButton(
+                        onPressed: _isFormValid && !_isSubmitting
+                            ? () async {
+                                setState(() {
+                                  _isSubmitting = true;
+                                  _errorMessage = null;
+                                });
+                                try {
+                                  await ref
+                                      .read(authControllerProvider.notifier)
+                                      .validateUsername(_usernameController.text);
+                                      
+                                  if (!context.mounted) return;
+                                  ref
+                                      .read(signUpFormProvider.notifier)
+                                      .updateDetails(
+                                        username: _usernameController.text,
+                                        name: _nameController.text,
+                                        birthday:
+                                            '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
+                                        gender:
+                                            _genderValue ?? 'Prefer not to say',
+                                      );
+                                  setState(() => _isSubmitting = false);
+                                  context.go('/auth/signup/campus');
+                                } on FirebaseFunctionsException catch (e) {
+                                  if (!context.mounted) return;
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    if (e.code == 'already-exists') {
+                                      _errorMessage = "This username is already taken";
+                                    } else {
+                                      _errorMessage = e.message ?? "Error validating username.";
+                                    }
+                                  });
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    _errorMessage = e.toString();
+                                  });
+                                }
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0086D8),
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.white10,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
                         ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
-                      child: const Text('Continue'),
                     ),
                   ),
-                  const SizedBox(height: 10),
                 ],
               ),
             ),

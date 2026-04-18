@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,20 +12,20 @@ Future<String?> pickAndCropSquareAvatar(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
+      maxWidth: 1080,
+      maxHeight: 1080,
+      imageQuality: 100,
     );
     if (picked == null) return null;
 
     final cropper = ImageCropper();
     final cropped = await cropper.cropImage(
       sourcePath: picked.path,
-      maxWidth: 512,
-      maxHeight: 512,
+      maxWidth: 1080,
+      maxHeight: 1080,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
       compressFormat: ImageCompressFormat.jpg,
-      compressQuality: 80,
+      compressQuality: 100,
       uiSettings: [
         AndroidUiSettings(
           toolbarTitle: 'Crop photo',
@@ -49,7 +50,19 @@ Future<String?> pickAndCropSquareAvatar(ImageSource source) async {
       ],
     );
     if (cropped == null) return null;
-    return cropped.path;
+
+    final webpPath = '${cropped.path}.webp';
+    final compressedImage = await FlutterImageCompress.compressAndGetFile(
+      cropped.path,
+      webpPath,
+      format: CompressFormat.webp,
+      quality: 80,
+      minHeight: 1080,
+      minWidth: 1080,
+    );
+
+    if (compressedImage == null) return null;
+    return compressedImage.path;
   } catch (e, st) {
     debugPrint('pickAndCropSquareAvatar failed: $e\n$st');
     return null;

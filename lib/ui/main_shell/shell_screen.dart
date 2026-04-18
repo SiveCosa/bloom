@@ -1,14 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../domain/auth/auth_providers.dart';
 
 /// Hosts the main app tabs. Bottom navigation: Home, Discover, Create, Calendar, Profile.
-class ShellScreen extends StatelessWidget {
+class ShellScreen extends ConsumerWidget {
   const ShellScreen({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(currentUserProfileProvider, (previous, next) async {
+      if (next is AsyncData && next.value == null) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            await user.delete();
+          } catch (_) {}
+          await FirebaseAuth.instance.signOut();
+          ref.invalidate(authControllerProvider);
+        }
+      }
+    });
+
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: Theme(

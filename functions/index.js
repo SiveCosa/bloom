@@ -149,3 +149,61 @@ exports.verifyOtp = onCall(
     };
   }
 );
+
+// 3. Validate Student Email
+exports.validateStudentEmail = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    const email = request.data.email;
+    if (!email) {
+      throw new HttpsError("invalid-argument", "Email is required.");
+    }
+
+    const normalized = email.trim().toLowerCase();
+
+    // Check Domain
+    const domainAllowed = await emailDomainAllowed(normalized);
+    if (!domainAllowed) {
+      throw new HttpsError("permission-denied", "Please use your Student Email");
+    }
+
+    // Check User Existence
+    let userExists = false;
+    try {
+      await admin.auth().getUserByEmail(normalized);
+      userExists = true;
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        userExists = false;
+      } else {
+        throw new HttpsError("internal", "Error checking user status.");
+      }
+    }
+
+    if (userExists) {
+      throw new HttpsError("already-exists", "This email is already in use.");
+    }
+    return { success: true };
+  }
+);
+
+// 4. Validate Username
+exports.validateUsername = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    const username = request.data.username;
+    if (!username || typeof username !== "string") {
+      throw new HttpsError("invalid-argument", "Username is required.");
+    }
+
+    const normalized = username.trim().toLowerCase();
+
+    const snap = await db.collection("users").where("username", "==", normalized).limit(1).get();
+    
+    if (!snap.empty) {
+      throw new HttpsError("already-exists", "This username is already taken.");
+    }
+
+    return { success: true };
+  }
+);

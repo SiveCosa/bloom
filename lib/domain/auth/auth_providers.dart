@@ -289,6 +289,36 @@ class AuthController extends AsyncNotifier<void> {
   @override
   FutureOr<void> build() {}
 
+  Future<void> validateStudentEmail(String email) async {
+    state = const AsyncLoading();
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final callable = functions.httpsCallable('validateStudentEmail');
+      await callable.call(<String, dynamic>{
+        'email': email.trim(),
+      });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> validateUsername(String username) async {
+    state = const AsyncLoading();
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final callable = functions.httpsCallable('validateUsername');
+      await callable.call(<String, dynamic>{
+        'username': username.trim(),
+      });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
   /// [flow] is sent as `authFlow` to the `requestOtp` callable (pre-flight lives there).
   Future<void> requestOtp(String email, AuthOtpFlow flow) async {
     state = const AsyncLoading();

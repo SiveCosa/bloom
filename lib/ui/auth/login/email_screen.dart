@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -11,6 +12,14 @@ class EmailScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<EmailScreen> createState() => _EmailScreenState();
+}
+
+class LowerCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return newValue.copyWith(text: newValue.text.toLowerCase());
+  }
 }
 
 class _EmailScreenState extends ConsumerState<EmailScreen> {
@@ -130,37 +139,42 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                   ),
                   const SizedBox(height: 25),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'student email',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(100),
-                        borderSide: BorderSide(
-                          color: Colors.white.withOpacity(0.10),
-                          width: 1.5,
+                  SizedBox(
+                    height: 48,
+                    child: TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      inputFormatters: [LowerCaseTextFormatter()],
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        hintText: 'student email',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: BorderSide(
+                            color: Colors.white.withOpacity(0.50),
+                            width: 1.5,
+                          ),
                         ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(100),
-                        borderSide: BorderSide(
-                          color: Colors.white.withOpacity(0.25),
-                          width: 1.5,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: BorderSide(
+                            color: Colors.white.withOpacity(0.50),
+                            width: 1.5,
+                          ),
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(100),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFC151FD),
-                          width: 1.5,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(100),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFC151FD),
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   if (_errorMessage != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+                      padding: const EdgeInsets.only(top: 3.0, left: 16.0),
                       child: Text(
                         _errorMessage!,
                         style: const TextStyle(color: Colors.red, fontSize: 12),
@@ -203,26 +217,25 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                   const Spacer(),
                   SizedBox(
                     width: double.infinity,
+                    height: 48,
                     child: ElevatedButton(
-                      onPressed: !isLoading &&
-                              domainsAsync.hasValue &&
-                              _isValidEmail
-                          ? () async {
+                      onPressed: isLoading
+                          ? null
+                          : () async {
                               final email = _emailController.text.trim();
                               if (email.isEmpty) {
                                 setState(() {
-                                  _errorMessage =
-                                      "Your Student email is required.";
+                                  _errorMessage = "Please fill field with your student email";
                                 });
                                 return;
                               }
+                              if (!domainsAsync.hasValue) {
+                                return;
+                              }
                               final domains = domainsAsync.requireValue;
-                              if (!isEmailAllowedForInstitution(
-                                email,
-                                domains,
-                              )) {
+                              if (!isEmailAllowedForInstitution(email, domains)) {
                                 setState(() {
-                                  _errorMessage = "Enter your student email.";
+                                  _errorMessage = "Please use your Student Email";
                                 });
                                 return;
                               }
@@ -245,30 +258,30 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                                 if (!context.mounted) return;
                                 setState(() {
                                   _isSubmitting = false;
-                                  if (e.code == 'failed-precondition' &&
+                                  if (e.code == 'not-found' || e.code == 'user-not-found') {
+                                    _errorMessage = "Email does not exist";
+                                  } else if (e.code == 'failed-precondition' &&
                                       e.message != null &&
                                       e.message!.isNotEmpty) {
                                     _errorMessage = e.message;
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.message ?? e.toString(),
-                                        ),
-                                      ),
-                                    );
+                                    _errorMessage = e.message ?? e.toString();
                                   }
                                 });
                               } catch (e) {
                                 if (context.mounted) {
-                                  setState(() => _isSubmitting = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.toString())),
-                                  );
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    _errorMessage = e.toString();
+                                  });
                                 }
                               }
-                            }
-                          : null,
+                            },
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
                       child: isLoading
                           ? const SizedBox(
                               width: 20,

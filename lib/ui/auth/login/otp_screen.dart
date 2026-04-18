@@ -19,6 +19,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     (_) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -32,6 +33,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   void _onChanged(String value, int index) {
+    if (_errorMessage != null) _errorMessage = null;
     if (value.isNotEmpty && index < 5) {
       _focusNodes[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
@@ -124,47 +126,75 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ),
                   const SizedBox(height: 32),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (index) {
-                      return SizedBox(
-                        width: 48,
-                        height: 55,
-                        child: TextField(
-                          controller: _controllers[index],
-                          focusNode: _focusNodes[index],
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          maxLength: 1,
-                          onChanged: (val) => _onChanged(val, index),
-                          decoration: InputDecoration(
-                            counterText: "",
-                            contentPadding: EdgeInsets.zero,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.25),
-                                width: 1.5,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (int i = 0; i < 6; i++) ...[
+                        SizedBox(
+                          width: 42,
+                          height: 55,
+                          child: TextField(
+                            controller: _controllers[i],
+                            focusNode: _focusNodes[i],
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            maxLength: 1,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            onChanged: (val) => _onChanged(val, i),
+                            decoration: InputDecoration(
+                              counterText: "",
+                              contentPadding: EdgeInsets.zero,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.25),
+                                  width: 1.5,
+                                ),
                               ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.white.withOpacity(0.25),
-                                width: 1.5,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.white.withOpacity(0.25),
+                                  width: 1.5,
+                                ),
                               ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFC151FD),
-                                width: 1.5,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFC151FD),
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      );
-                    }),
+                        if (i == 2)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              '-',
+                              style: TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (i != 2 && i != 5)
+                          const SizedBox(width: 8),
+                      ]
+                    ],
                   ),
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Center(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.red, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   Center(
                     child: TextButton(
@@ -177,15 +207,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                             }
                           : null,
                       style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.coreGradientColors[3],
-                        disabledForegroundColor: AppTheme.coreGradientColors[3]
+                        foregroundColor: const Color(0xFFFF007F),
+                        disabledForegroundColor: const Color(0xFFFF007F)
                             .withOpacity(0.5),
                       ),
                       child: Text(
-                        '${timerState.formattedTime} Re-send code',
-                        style: const TextStyle(
+                        timerState.canResend ? 'Re-send code' : '${timerState.formattedTime} Re-send code',
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
+                          color: timerState.canResend ? const Color(0xFFFF007F) : const Color(0xFFFF007F).withOpacity(0.5),
                         ),
                       ),
                     ),
@@ -193,6 +224,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   const Spacer(),
                   SizedBox(
                     width: double.infinity,
+                    height: 48,
                     child: ElevatedButton(
                       onPressed: (_isOtpFilled && !isLoading)
                           ? () async {
@@ -209,13 +241,18 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.toString())),
-                                  );
+                                  setState(() {
+                                    _errorMessage = "Incorrect OTP. Please check your email and try again";
+                                  });
                                 }
                               }
                             }
                           : null,
+                      style: ElevatedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
                       child: isLoading
                           ? const SizedBox(
                               width: 20,
