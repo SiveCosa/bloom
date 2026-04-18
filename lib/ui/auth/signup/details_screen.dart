@@ -29,7 +29,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   static const double _kFieldFontSize = 14;
   static const double _kStandardHeight = 48.0;
 
-  static final Color _kBorderColor = Colors.white.withOpacity(0.50);
+  static final Color _kBorderColor = Colors.white.withValues(alpha: 0.50);
 
   static const TextStyle _kFieldTextStyle = TextStyle(
     fontSize: _kFieldFontSize,
@@ -99,7 +99,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         fontSize: _kFieldFontSize,
       ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.white.withValues(alpha: 0.05),
       // isDense false + vertical 0 + tight container height = true centering
       isDense: false,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -133,7 +133,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         height: _kStandardHeight, // MATCHES TEXT FIELD HEIGHT
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(_kRadius),
           border: Border.all(color: _kBorderColor, width: 1.5),
         ),
@@ -180,8 +180,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
           children: [
             Radio<String>(
               value: value,
+              // ignore: deprecated_member_use
               groupValue: _genderValue,
               toggleable: true,
+              // ignore: deprecated_member_use
               onChanged: (v) => setState(() => _genderValue = v),
               activeColor: activeColor,
             ),

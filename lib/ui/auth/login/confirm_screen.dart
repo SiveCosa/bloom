@@ -130,7 +130,7 @@ class ConfirmScreen extends ConsumerWidget {
                           children: [
                             CircleAvatar(
                               radius: 80,
-                              backgroundColor: Colors.grey.withOpacity(0.2),
+                              backgroundColor: Colors.grey.withValues(alpha: 0.2),
                               backgroundImage:
                                   profileUrl != null && profileUrl.isNotEmpty
                                   ? NetworkImage(profileUrl)

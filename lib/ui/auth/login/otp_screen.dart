@@ -146,14 +146,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: Colors.white.withOpacity(0.25),
+                                  color: Colors.white.withValues(alpha: 0.25),
                                   width: 1.5,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: Colors.white.withOpacity(0.25),
+                                  color: Colors.white.withValues(alpha: 0.25),
                                   width: 1.5,
                                 ),
                               ),
@@ -209,14 +209,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFFFF007F),
                         disabledForegroundColor: const Color(0xFFFF007F)
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                       ),
                       child: Text(
                         timerState.canResend ? 'Re-send code' : '${timerState.formattedTime} Re-send code',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: timerState.canResend ? const Color(0xFFFF007F) : const Color(0xFFFF007F).withOpacity(0.5),
+                          color: timerState.canResend ? const Color(0xFFFF007F) : const Color(0xFFFF007F).withValues(alpha: 0.5),
                         ),
                       ),
                     ),

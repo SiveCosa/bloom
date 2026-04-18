@@ -17,7 +17,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
   static const double _kRadius = 100;
   static const double _kStandardHeight = 48.0;
 
-  static final Color _kBorderColor = Colors.white.withOpacity(0.50);
+  static final Color _kBorderColor = Colors.white.withValues(alpha: 0.50);
 
   bool _hasError = false;
   String _selectedCampus = '';
@@ -178,7 +178,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: Colors.black
-                                                        .withOpacity(0.5),
+                                                        .withValues(alpha: 0.5),
                                                     blurRadius: 15,
                                                     offset: const Offset(0, 8),
                                                   ),
@@ -191,7 +191,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                                 separatorBuilder: (_, _) =>
                                                     Divider(
                                                       color: Colors.white
-                                                          .withOpacity(0.05),
+                                                          .withValues(alpha: 0.05),
                                                       height: 1,
                                                     ),
                                                 itemBuilder: (context, index) {
@@ -249,7 +249,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                               fontSize: 14,
                                             ),
                                             filled: true,
-                                            fillColor: Colors.white.withOpacity(
+                                            fillColor: Colors.white.withValues(alpha: 
                                               0.05,
                                             ),
                                             isDense: true,

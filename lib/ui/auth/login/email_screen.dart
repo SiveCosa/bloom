@@ -24,7 +24,7 @@ class LowerCaseTextFormatter extends TextInputFormatter {
 
 class _EmailScreenState extends ConsumerState<EmailScreen> {
   final _emailController = TextEditingController();
-  bool _isValidEmail = false;
+
   String? _errorMessage;
   bool _isSubmitting = false;
 
@@ -41,21 +41,21 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   }
 
   void _validateEmail() {
-    final email = _emailController.text;
+    
     final domainsAsync = ref.read(allowedEmailDomainsProvider);
     domainsAsync.when(
       data: (domains) {
         setState(() {
-          _isValidEmail = isEmailAllowedForInstitution(email, domains);
+
           _errorMessage = null;
         });
       },
       loading: () => setState(() {
-        _isValidEmail = false;
+
         _errorMessage = null;
       }),
       error: (err, st) => setState(() {
-        _isValidEmail = false;
+
         _errorMessage = null;
       }),
     );
@@ -151,14 +151,14 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
                           borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.50),
+                            color: Colors.white.withValues(alpha: 0.50),
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
                           borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.50),
+                            color: Colors.white.withValues(alpha: 0.50),
                             width: 1.5,
                           ),
                         ),
