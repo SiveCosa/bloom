@@ -144,7 +144,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             maxLength: 1,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                             onChanged: (val) => _onChanged(val, i),
                             decoration: InputDecoration(
                               counterText: "",
@@ -184,9 +187,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               ),
                             ),
                           ),
-                        if (i != 2 && i != 5)
-                          const SizedBox(width: 8),
-                      ]
+                        if (i != 2 && i != 5) const SizedBox(width: 8),
+                      ],
                     ],
                   ),
                   if (_errorMessage != null)
@@ -195,7 +197,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       child: Center(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(color: Colors.red, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -213,15 +218,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           : null,
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFFFF007F),
-                        disabledForegroundColor: const Color(0xFFFF007F)
-                            .withValues(alpha: 0.5),
+                        disabledForegroundColor: const Color(
+                          0xFFFF007F,
+                        ).withValues(alpha: 0.5),
                       ),
                       child: Text(
-                        timerState.canResend ? 'Re-send code' : '${timerState.formattedTime} Re-send code',
+                        timerState.canResend
+                            ? 'Re-send code'
+                            : '${timerState.formattedTime} Re-send code',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: timerState.canResend ? const Color(0xFFFF007F) : const Color(0xFFFF007F).withValues(alpha: 0.5),
+                          color: timerState.canResend
+                              ? const Color(0xFFFF007F)
+                              : const Color(0xFFFF007F).withValues(alpha: 0.5),
                         ),
                       ),
                     ),
@@ -243,19 +253,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               } catch (e) {
                                 if (context.mounted) {
                                   setState(() {
-                                    _errorMessage = "Incorrect OTP. Please check your email and try again";
+                                    _errorMessage =
+                                        "Incorrect OTP. Please check your email and try again";
                                   });
                                 }
                               }
                             }
                           : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0086D8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
+
                       child: isLoading
                           ? const SizedBox(
                               width: 20,

@@ -23,6 +23,12 @@ import '../../ui/auth/signup/avatar_screen.dart';
 import '../../ui/auth/signup/interests_screen.dart';
 import '../../ui/auth/signup/permissions_screen.dart';
 import '../../ui/main_shell/main_shell.dart';
+import '../../ui/profile/sub_screens/friends_made_screen.dart';
+import '../../ui/profile/sub_screens/events_hosted_screen.dart';
+import '../../ui/profile/sub_screens/events_joined_screen.dart';
+import '../../ui/profile/sub_screens/interested_events_screen.dart';
+import '../../ui/profile/sub_screens/edit_profile_screen.dart';
+import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -154,9 +160,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ==========================
       // MAIN APP SHELL
       // ==========================
+      GoRoute(path: '/', builder: (context, state) => const MainShell()),
       GoRoute(
-        path: '/',
-        builder: (context, state) => const MainShell(),
+        path: '/profile/friends',
+        builder: (context, state) => const FriendsMadeScreen(),
+      ),
+      GoRoute(
+        path: '/profile/hosted',
+        builder: (context, state) => const EventsHostedScreen(),
+      ),
+      GoRoute(
+        path: '/profile/joined',
+        builder: (context, state) => const EventsJoinedScreen(),
+      ),
+      GoRoute(
+        path: '/profile/interested',
+        builder: (context, state) => const InterestedEventsScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/preferences',
+        builder: (context, state) => const PreferencesEditorScreen(),
       ),
     ],
   );

@@ -17,7 +17,9 @@ class EmailScreen extends ConsumerStatefulWidget {
 class LowerCaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     return newValue.copyWith(text: newValue.text.toLowerCase());
   }
 }
@@ -41,21 +43,17 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
   }
 
   void _validateEmail() {
-    
     final domainsAsync = ref.read(allowedEmailDomainsProvider);
     domainsAsync.when(
       data: (domains) {
         setState(() {
-
           _errorMessage = null;
         });
       },
       loading: () => setState(() {
-
         _errorMessage = null;
       }),
       error: (err, st) => setState(() {
-
         _errorMessage = null;
       }),
     );
@@ -145,7 +143,10 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                       keyboardType: TextInputType.emailAddress,
                       inputFormatters: [LowerCaseTextFormatter()],
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 0,
+                        ),
                         hintText: 'student email',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(100),
@@ -224,7 +225,8 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                               final email = _emailController.text.trim();
                               if (email.isEmpty) {
                                 setState(() {
-                                  _errorMessage = "Please fill field with your student email";
+                                  _errorMessage =
+                                      "Please fill field with your student email";
                                 });
                                 return;
                               }
@@ -232,9 +234,13 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                                 return;
                               }
                               final domains = domainsAsync.requireValue;
-                              if (!isEmailAllowedForInstitution(email, domains)) {
+                              if (!isEmailAllowedForInstitution(
+                                email,
+                                domains,
+                              )) {
                                 setState(() {
-                                  _errorMessage = "Please use your Student Email";
+                                  _errorMessage =
+                                      "Please use your Student Email";
                                 });
                                 return;
                               }
@@ -261,10 +267,13 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                                 if (!context.mounted) return;
                                 setState(() {
                                   _isSubmitting = false;
-                                  if (e.code == 'already-exists' || e.code == 'email-already-in-use') {
-                                    _errorMessage = "This email is already in use.";
+                                  if (e.code == 'already-exists' ||
+                                      e.code == 'email-already-in-use') {
+                                    _errorMessage =
+                                        "This email is already in use.";
                                   } else if (e.code == 'permission-denied') {
-                                    _errorMessage = "Please use your Student Email";
+                                    _errorMessage =
+                                        "Please use your Student Email";
                                   } else if (e.code == 'failed-precondition' &&
                                       e.message != null &&
                                       e.message!.isNotEmpty) {
@@ -282,13 +291,7 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                                 }
                               }
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0086D8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
+
                       child: isLoading
                           ? const SizedBox(
                               width: 20,

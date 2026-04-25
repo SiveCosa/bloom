@@ -191,7 +191,9 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                                 separatorBuilder: (_, _) =>
                                                     Divider(
                                                       color: Colors.white
-                                                          .withValues(alpha: 0.05),
+                                                          .withValues(
+                                                            alpha: 0.05,
+                                                          ),
                                                       height: 1,
                                                     ),
                                                 itemBuilder: (context, index) {
@@ -249,8 +251,8 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                               fontSize: 14,
                                             ),
                                             filled: true,
-                                            fillColor: Colors.white.withValues(alpha: 
-                                              0.05,
+                                            fillColor: Colors.white.withValues(
+                                              alpha: 0.05,
                                             ),
                                             isDense: true,
                                             errorText: _hasError
@@ -318,15 +320,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                 context.go('/auth/signup/avatar');
                               }
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0086D8),
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: Colors.white10,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
+
                             child: const Text(
                               'Continue',
                               style: TextStyle(

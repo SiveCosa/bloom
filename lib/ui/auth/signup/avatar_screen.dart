@@ -21,8 +21,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
   String? _localImagePath;
   bool _busy = false;
 
-  bool get _hasAvatar =>
-      _localImagePath != null && _localImagePath!.isNotEmpty;
+  bool get _hasAvatar => _localImagePath != null && _localImagePath!.isNotEmpty;
 
   Future<void> _runPickerFlow(ImageSource source) async {
     setState(() => _busy = true);
@@ -39,10 +38,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
   }
 
   Future<void> _onAvatarTap() async {
-    await showAvatarSourceSheet(
-      context,
-      onChosen: _runPickerFlow,
-    );
+    await showAvatarSourceSheet(context, onChosen: _runPickerFlow);
   }
 
   @override
@@ -123,8 +119,9 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 80,
-                                backgroundColor:
-                                    Colors.white.withValues(alpha: 0.15),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.15,
+                                ),
                                 backgroundImage: _hasAvatar
                                     ? FileImage(File(_localImagePath!))
                                     : null,
@@ -167,17 +164,13 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (!_hasAvatar) {
-                          ref.read(signUpFormProvider.notifier).updateAvatar('');
+                          ref
+                              .read(signUpFormProvider.notifier)
+                              .updateAvatar('');
                         }
                         context.go('/auth/signup/interests');
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0086D8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                      ),
+
                       child: const Text('Continue'),
                     ),
                   ),

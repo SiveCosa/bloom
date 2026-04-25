@@ -294,9 +294,7 @@ class AuthController extends AsyncNotifier<void> {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
       final callable = functions.httpsCallable('validateStudentEmail');
-      await callable.call(<String, dynamic>{
-        'email': email.trim(),
-      });
+      await callable.call(<String, dynamic>{'email': email.trim()});
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -309,9 +307,7 @@ class AuthController extends AsyncNotifier<void> {
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
       final callable = functions.httpsCallable('validateUsername');
-      await callable.call(<String, dynamic>{
-        'username': username.trim(),
-      });
+      await callable.call(<String, dynamic>{'username': username.trim()});
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -371,14 +367,12 @@ class AuthController extends AsyncNotifier<void> {
         throw Exception('User must be authenticated to create a profile.');
       }
 
-      // --- 1. STANDARDIZE GENDER ---
-      String standardizedGender = 'unspecified';
+      // --- 1. SET GENDER ---
+      String standardizedGender = 'prefer not to say';
       final rawGender = formData.gender.trim().toLowerCase();
-      if (rawGender.contains('prefer not')) {
-        standardizedGender = 'unspecified';
-      } else if (rawGender.contains('female')) {
+      if (rawGender == 'female') {
         standardizedGender = 'female';
-      } else if (rawGender.contains('male')) {
+      } else if (rawGender == 'male') {
         standardizedGender = 'male';
       }
 
@@ -439,12 +433,12 @@ class AuthController extends AsyncNotifier<void> {
                 .ref()
                 .child('users')
                 .child(currentUser.uid)
-                .child('profile_pic.jpg');
+                .child('profile_pic.webp');
 
             // Execute the upload
             await storageRef.putFile(
               file,
-              SettableMetadata(contentType: 'image/jpeg'),
+              SettableMetadata(contentType: 'image/webp'),
             );
 
             // Retrieve the permanent web URL for Firestore
@@ -472,6 +466,49 @@ class AuthController extends AsyncNotifier<void> {
         'is_verified': true,
         'created_at': FieldValue.serverTimestamp(),
       });
+
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<String?> _uploadProfileImage(String uid, File file) async {
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('users')
+        .child(uid)
+        .child('profile_pic.webp');
+
+    await storageRef.putFile(file, SettableMetadata(contentType: 'image/webp'));
+
+    return await storageRef.getDownloadURL();
+  }
+
+  Future<void> updateUserProfile(
+    Map<String, dynamic> updates, {
+    File? imageFile,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser == null) {
+        throw Exception('User must be authenticated to update profile.');
+      }
+
+      final data = {...updates, 'updated_at': FieldValue.serverTimestamp()};
+
+      if (imageFile != null) {
+        final imageUrl = await _uploadProfileImage(currentUser.uid, imageFile);
+        if (imageUrl != null) {
+          data['profile_image_url'] = imageUrl;
+        }
+      }
+
+      await firestore.collection('users').doc(currentUser.uid).update(data);
 
       state = const AsyncData(null);
     } catch (e, st) {

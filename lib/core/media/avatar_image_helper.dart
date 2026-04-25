@@ -24,7 +24,7 @@ Future<String?> pickAndCropSquareAvatar(ImageSource source) async {
       maxWidth: 1080,
       maxHeight: 1080,
       aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      compressFormat: ImageCompressFormat.jpg,
+      compressFormat: ImageCompressFormat.png,
       compressQuality: 100,
       uiSettings: [
         AndroidUiSettings(
@@ -84,16 +84,28 @@ Future<void> showAvatarSourceSheet(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined, color: Colors.white70),
-            title: const Text('Choose from gallery', style: TextStyle(color: Colors.white)),
+            leading: const Icon(
+              Icons.photo_library_outlined,
+              color: Colors.white70,
+            ),
+            title: const Text(
+              'Choose from gallery',
+              style: TextStyle(color: Colors.white),
+            ),
             onTap: () {
               Navigator.pop(ctx);
               onChosen(ImageSource.gallery);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.camera_alt_outlined, color: Colors.white70),
-            title: const Text('Take a photo', style: TextStyle(color: Colors.white)),
+            leading: const Icon(
+              Icons.camera_alt_outlined,
+              color: Colors.white70,
+            ),
+            title: const Text(
+              'Take a photo',
+              style: TextStyle(color: Colors.white),
+            ),
             onTap: () {
               Navigator.pop(ctx);
               onChosen(ImageSource.camera);

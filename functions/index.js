@@ -1,3 +1,4 @@
+const { auth } = require("firebase-functions/v1");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
@@ -28,7 +29,7 @@ async function emailDomainAllowed(email, institutionId = DEFAULT_INSTITUTION_ID)
 
 // 1. Request OTP Function (Locked to JHB)
 exports.requestOtp = onCall(
-  { region: "africa-south1" }, 
+  { region: "africa-south1" },
   async (request) => {
     const email = request.data.email;
     const authFlow = request.data.authFlow;
@@ -83,7 +84,7 @@ exports.requestOtp = onCall(
 
 // 2. Verify OTP Function (Locked to JHB)
 exports.verifyOtp = onCall(
-  { region: "africa-south1" }, 
+  { region: "africa-south1" },
   async (request) => {
     const email = request.data.email;
     const otp = request.data.otp;
@@ -199,7 +200,7 @@ exports.validateUsername = onCall(
     const normalized = username.trim().toLowerCase();
 
     const snap = await db.collection("users").where("username", "==", normalized).limit(1).get();
-    
+
     if (!snap.empty) {
       throw new HttpsError("already-exists", "This username is already taken.");
     }
@@ -207,3 +208,40 @@ exports.validateUsername = onCall(
     return { success: true };
   }
 );
+
+// 5. Initialize User Profile (Auth Trigger)
+exports.initializeUserProfile = auth.user().onCreate(async (user) => {
+  if (!user) return;
+
+  const uid = user.uid;
+  const email = user.email || "";
+
+  const userRef = db.collection("users").doc(uid);
+  const snap = await userRef.get();
+
+  // Only initialize if the document doesn't already exist
+  if (!snap.exists) {
+    await userRef.set({
+      uid: uid,
+      email: email.toLowerCase(),
+      avatar_url: "",
+      username: "",
+      name: "",
+      bio: "",
+      social_links: {
+        instagram: "",
+        x: "",
+        snapchat: "",
+      },
+      counts: {
+        friends: 0,
+        hosted: 0,
+        joined: 0,
+      },
+      interests: [],
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    console.log(`Initialized profile for user: ${uid}`);
+  }
+});

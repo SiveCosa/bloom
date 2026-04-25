@@ -158,13 +158,7 @@ class PermissionsScreen extends ConsumerWidget {
                                 }
                               }
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0086D8),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
+
                       child: isLoading
                           ? const SizedBox(
                               width: 20,

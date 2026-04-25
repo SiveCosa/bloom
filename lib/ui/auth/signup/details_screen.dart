@@ -19,7 +19,9 @@ class DetailsScreen extends ConsumerStatefulWidget {
 class LowerCaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     return newValue.copyWith(text: newValue.text.toLowerCase());
   }
 }
@@ -216,9 +218,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
             await FirebaseAuth.instance.signOut();
           }
           if (context.mounted) {
-             ref.invalidate(authControllerProvider);
-             ref.read(signUpFormProvider.notifier).clearForm();
-             context.go('/auth/signup');
+            ref.invalidate(authControllerProvider);
+            ref.read(signUpFormProvider.notifier).clearForm();
+            context.go('/auth/signup');
           }
         },
       ),
@@ -307,21 +309,32 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                               maxLength: 30,
                               inputFormatters: [
                                 LowerCaseTextFormatter(),
-                                FilteringTextInputFormatter.allow(RegExp(r'[a-z0-9._]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-z0-9._]'),
+                                ),
                               ],
                               textAlignVertical: TextAlignVertical.center,
-                              decoration: _fieldDecoration('Username').copyWith(counterText: ''),
+                              decoration: _fieldDecoration(
+                                'Username',
+                              ).copyWith(counterText: ''),
                               onChanged: (_) {
-                                if (_errorMessage != null) setState(() => _errorMessage = null);
+                                if (_errorMessage != null)
+                                  setState(() => _errorMessage = null);
                               },
                             ),
                           ),
                           if (_errorMessage != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 4.0, left: 16.0),
+                              padding: const EdgeInsets.only(
+                                top: 4.0,
+                                left: 16.0,
+                              ),
                               child: Text(
                                 _errorMessage!,
-                                style: const TextStyle(color: Colors.red, fontSize: 12),
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           const SizedBox(height: 16),
@@ -453,8 +466,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                 try {
                                   await ref
                                       .read(authControllerProvider.notifier)
-                                      .validateUsername(_usernameController.text);
-                                      
+                                      .validateUsername(
+                                        _usernameController.text,
+                                      );
+
                                   if (!context.mounted) return;
                                   ref
                                       .read(signUpFormProvider.notifier)
@@ -473,9 +488,12 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                   setState(() {
                                     _isSubmitting = false;
                                     if (e.code == 'already-exists') {
-                                      _errorMessage = "This username is already taken";
+                                      _errorMessage =
+                                          "This username is already taken";
                                     } else {
-                                      _errorMessage = e.message ?? "Error validating username.";
+                                      _errorMessage =
+                                          e.message ??
+                                          "Error validating username.";
                                     }
                                   });
                                 } catch (e) {
@@ -487,15 +505,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                 }
                               }
                             : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0086D8),
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.white10,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
+
                         child: _isSubmitting
                             ? const SizedBox(
                                 width: 20,

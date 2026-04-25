@@ -89,10 +89,8 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                   final filtered = query.isEmpty
                       ? interests
                       : interests
-                          .where(
-                            (i) => i.toLowerCase().contains(query),
-                          )
-                          .toList();
+                            .where((i) => i.toLowerCase().contains(query))
+                            .toList();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,34 +135,39 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                     color: Colors.white54,
                                   ),
                                   hintText: 'Search an interest',
-                                  hintStyle:
-                                      const TextStyle(color: Colors.white54),
+                                  hintStyle: const TextStyle(
+                                    color: Colors.white54,
+                                  ),
                                   filled: true,
-                                  fillColor:
-                                      Colors.white.withValues(alpha: 0.05),
+                                  fillColor: Colors.white.withValues(
+                                    alpha: 0.05,
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     vertical: 0,
                                     horizontal: 20,
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(_kRadius),
+                                    borderRadius: BorderRadius.circular(
+                                      _kRadius,
+                                    ),
                                     borderSide: BorderSide(
                                       color: _kBorderColor,
                                       width: 1.5,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(_kRadius),
+                                    borderRadius: BorderRadius.circular(
+                                      _kRadius,
+                                    ),
                                     borderSide: BorderSide(
                                       color: _kBorderColor,
                                       width: 1.5,
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(_kRadius),
+                                    borderRadius: BorderRadius.circular(
+                                      _kRadius,
+                                    ),
                                     borderSide: const BorderSide(
                                       color: Color(0xFFC151FD),
                                       width: 1.5,
@@ -177,15 +180,17 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                 spacing: 8.0,
                                 runSpacing: 12.0,
                                 children: filtered.map((interest) {
-                                  final isActive =
-                                      formState.interests.contains(interest);
+                                  final isActive = formState.interests.contains(
+                                    interest,
+                                  );
                                   return GestureDetector(
                                     onTap: () => ref
                                         .read(signUpFormProvider.notifier)
                                         .toggleInterest(interest),
                                     child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 200),
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 8,
                                         horizontal: 12,
@@ -198,8 +203,9 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                             : Colors.white.withValues(
                                                 alpha: 0.05,
                                               ),
-                                        borderRadius:
-                                            BorderRadius.circular(_kRadius),
+                                        borderRadius: BorderRadius.circular(
+                                          _kRadius,
+                                        ),
                                         border: Border.all(
                                           color: isActive
                                               ? Colors.white54
@@ -243,13 +249,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                         child: ElevatedButton(
                           onPressed: () =>
                               context.go('/auth/signup/permissions'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0086D8),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(_kRadius),
-                            ),
-                          ),
+
                           child: const Text('Continue'),
                         ),
                       ),
