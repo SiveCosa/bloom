@@ -454,7 +454,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           border: Border.all(color: Colors.white24, width: 1),
         ),
         child: Center(
@@ -510,7 +510,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             label,
             style: TextStyle(
               // Stat Label
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w400,
             ),
@@ -573,7 +573,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Text(
             handle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ), // Social handle text
@@ -599,11 +599,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             end: Alignment.bottomRight,
             colors: [
               //Leave as gradient please incase I change my mind and want to add a gradient later
-              Colors.white.withOpacity(0.05),
-              Colors.white.withOpacity(0.05),
+              Colors.white.withValues(alpha: 0.05),
+              Colors.white.withValues(alpha: 0.05),
             ],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         ),
         child: Text(
           label,
@@ -685,7 +685,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               int mid = (start + end) ~/ 2;
               final tp = TextPainter(
                 text: TextSpan(
-                  text: bio.substring(0, mid) + ' ...more',
+                  text: '${bio.substring(0, mid)} ...more',
                   style: style,
                 ),
                 maxLines: 3,

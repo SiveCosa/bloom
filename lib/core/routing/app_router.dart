@@ -27,8 +27,10 @@ import '../../ui/profile/sub_screens/friends_made_screen.dart';
 import '../../ui/profile/sub_screens/events_hosted_screen.dart';
 import '../../ui/profile/sub_screens/events_joined_screen.dart';
 import '../../ui/profile/sub_screens/interested_events_screen.dart';
-import '../../ui/profile/sub_screens/edit_profile_screen.dart';
 import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
+import '../../ui/profile/sub_screens/edit_profile_screen.dart';
+import '../../ui/create_event/create_event_screen.dart';
+import '../../ui/create_event/event_preview_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -184,6 +186,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/preferences',
         builder: (context, state) => const PreferencesEditorScreen(),
+      ),
+      GoRoute(
+        path: '/create-event',
+        builder: (context, state) => const CreateEventScreen(),
+      ),
+      GoRoute(
+        path: '/create-event/preview',
+        builder: (context, state) => const EventPreviewScreen(),
       ),
     ],
   );

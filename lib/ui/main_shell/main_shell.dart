@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +10,6 @@ import '../../domain/navigation/navigation_providers.dart';
 
 import '../home/home_screen.dart';
 import '../discover/discover_screen.dart';
-import '../create_event/create_event_screen.dart';
 import '../calendar/calendar_screen.dart';
 import '../profile/profile_screen.dart';
 
@@ -24,7 +24,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   final List<Widget> _screens = const [
     HomeScreen(),
     DiscoverScreen(),
-    CreateEventScreen(),
+    // CreateEventScreen() is pushed as a full route to hide bottom nav
     CalendarScreen(),
     ProfileScreen(),
   ];
@@ -108,7 +108,9 @@ class _MainShellState extends ConsumerState<MainShell> {
     required String lineIcon,
     required String fillIcon,
   }) {
-    final isActive = currentIndex == index;
+    // Map index to original screens list if we removed one
+    final actualIndex = index > 2 ? index - 1 : index;
+    final isActive = currentIndex == actualIndex;
     final iconPath = isActive ? fillIcon : lineIcon;
 
     // Calendar size adjustment
@@ -139,7 +141,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Expanded(
       child: InkWell(
-        onTap: () => ref.read(mainShellIndexProvider.notifier).setIndex(index),
+        onTap: () => ref.read(mainShellIndexProvider.notifier).setIndex(actualIndex),
         child: SizedBox(
           height: double.infinity,
           child: Center(
@@ -151,11 +153,10 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildCreateItem(int currentIndex) {
-    final isActive = currentIndex == 2;
-    // Glassmorphic circular button with plus icon
+    // This button now pushes a full-screen route to hide the bottom nav
     return Expanded(
       child: InkWell(
-        onTap: () => ref.read(mainShellIndexProvider.notifier).setIndex(2),
+        onTap: () => context.push('/create-event'),
         child: SizedBox(
           height: double.infinity,
           child: Center(
@@ -166,8 +167,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                   'assets/icons/nav/create_fill.svg',
                   width: 40,
                   height: 40,
-                  colorFilter: ColorFilter.mode(
-                    Colors.white.withValues(alpha: isActive ? 1.0 : 1.0),
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -180,13 +181,13 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   Widget _buildProfileItem(int currentIndex) {
-    final isActive = currentIndex == 4;
+    final isActive = currentIndex == 3; // Shifted index
     final userAsync = ref.watch(currentUserProfileProvider);
     final profileUrl = userAsync.value?['profile_image_url'] as String?;
 
     return Expanded(
       child: InkWell(
-        onTap: () => ref.read(mainShellIndexProvider.notifier).setIndex(4),
+        onTap: () => ref.read(mainShellIndexProvider.notifier).setIndex(3),
         child: SizedBox(
           height: double.infinity,
           child: Center(

@@ -177,6 +177,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       if (existingGender != 'male' && existingGender != 'female') {
         if (_selectedGender == 'male' || _selectedGender == 'female') {
+          if (!mounted) return;
           final confirm = await showDialog<bool>(
             context: context,
             builder: (ctx) => AlertDialog(
@@ -291,10 +292,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 controller: _usernameController,
                                 hint: 'Enter your username',
                                 validator: (val) {
-                                  if (val == null || val.trim().isEmpty)
+                                  if (val == null || val.trim().isEmpty) {
                                     return 'Username cannot be empty';
-                                  if (val.contains(' '))
+                                  }
+                                  if (val.contains(' ')) {
                                     return 'Username cannot contain spaces';
+                                  }
                                   return null;
                                 },
                               ),

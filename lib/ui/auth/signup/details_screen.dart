@@ -318,8 +318,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                 'Username',
                               ).copyWith(counterText: ''),
                               onChanged: (_) {
-                                if (_errorMessage != null)
+                                if (_errorMessage != null) {
                                   setState(() => _errorMessage = null);
+                                }
                               },
                             ),
                           ),
