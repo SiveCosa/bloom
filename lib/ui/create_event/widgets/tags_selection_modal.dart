@@ -89,6 +89,7 @@ class _TagsSelectionModalState extends ConsumerState<TagsSelectionModal> {
           const Divider(color: Colors.white12, height: 32),
           Expanded(
             child: ListView.builder(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: filteredTags.length,
               itemBuilder: (context, index) {

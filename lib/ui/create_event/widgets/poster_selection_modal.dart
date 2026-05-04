@@ -36,29 +36,69 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
   Future<void> _pickAndCompressImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    
-    if (pickedFile != null) {
-      final filePath = pickedFile.path;
-      final targetPath = '${filePath}_compressed.webp';
-      
-      final compressedFile = await FlutterImageCompress.compressAndGetFile(
-        filePath,
-        targetPath,
-        quality: 80,
-        format: CompressFormat.webp,
-      );
 
-      if (compressedFile != null) {
-        // In a real app, upload to Firebase Storage and get URL
-        // For now, we'll just use the local path as a mock URL or just select it
-        final imageUrl = 'https://picsum.photos/seed/uploaded/400/400'; // Mocked
-        _selectPoster(imageUrl);
+    if (pickedFile != null) {
+      final notifier = ref.read(createEventProvider.notifier);
+      
+      try {
+        if (mounted) Navigator.pop(context);
+        notifier.setGeneratingPoster(true);
+
+        final bytes = await pickedFile.readAsBytes();
+
+        // Aggressive performance compression to WebP (80% quality)
+        final compressedBytes = await FlutterImageCompress.compressWithList(
+          bytes,
+          quality: 80,
+          format: CompressFormat.webp,
+        );
+
+        // Flawless background update via palette_generator
+        final imageProvider = MemoryImage(compressedBytes);
+        final paletteGenerator = await PaletteGenerator.fromImageProvider(
+          imageProvider,
+        );
+
+        final colors = <Color>[];
+        if (paletteGenerator.vibrantColor != null) {
+          colors.add(paletteGenerator.vibrantColor!.color);
+        }
+        if (paletteGenerator.lightVibrantColor != null) {
+          colors.add(paletteGenerator.lightVibrantColor!.color);
+        }
+        if (paletteGenerator.darkVibrantColor != null) {
+          colors.add(paletteGenerator.darkVibrantColor!.color);
+        }
+        if (paletteGenerator.mutedColor != null) {
+          colors.add(paletteGenerator.mutedColor!.color);
+        }
+        if (paletteGenerator.dominantColor != null) {
+          colors.add(paletteGenerator.dominantColor!.color);
+        }
+
+        // Fill to 5 colors if necessary
+        if (colors.length < 5) {
+          for (var swatch in paletteGenerator.paletteColors) {
+            if (!colors.contains(swatch.color)) {
+              colors.add(swatch.color);
+              if (colors.length >= 5) break;
+            }
+          }
+        }
+
+        notifier.updateCustomPoster(compressedBytes, colors);
+      } finally {
+        notifier.setGeneratingPoster(false);
       }
     }
   }
 
   Future<void> _selectPoster(String url) async {
+    final notifier = ref.read(createEventProvider.notifier);
+    if (mounted) Navigator.pop(context);
+    
     try {
+      notifier.setGeneratingPoster(true);
       final imageProvider = NetworkImage(url);
       final paletteGenerator = await PaletteGenerator.fromImageProvider(
         imageProvider,
@@ -81,12 +121,12 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
         }
       }
       
-      ref.read(createEventProvider.notifier).updatePosterWithColors(url, colors);
+      notifier.updatePosterWithColors(url, colors);
     } catch (e) {
       // Fallback to default colors if extraction fails
-      ref.read(createEventProvider.notifier).updatePosterWithColors(url, CreateEventState.defaultAuroraColors);
+      notifier.updatePosterWithColors(url, CreateEventState.defaultAuroraColors);
     } finally {
-      if (mounted) Navigator.pop(context);
+      notifier.setGeneratingPoster(false);
     }
   }
 

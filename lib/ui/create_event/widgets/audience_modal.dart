@@ -40,6 +40,7 @@ class AudienceModal extends ConsumerWidget {
           const SizedBox(height: 24),
           Expanded(
             child: ListView(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
                 _buildOptionSection(

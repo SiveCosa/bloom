@@ -45,12 +45,39 @@ class PosterModule extends ConsumerWidget {
                     )
                   : null,
             ),
-            child: Stack(
-              children: [
-                if (posterUrl == null)
-                  const Center(
-                    child: Icon(Icons.image, color: Colors.white24, size: 48),
-                  ),
+            child: GestureDetector(
+              onTap: (posterUrl == null && state.customPosterBytes == null)
+                  ? onEditPoster
+                  : null,
+              child: Stack(
+                children: [
+                  if (state.customPosterBytes != null)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.memory(
+                          state.customPosterBytes!,
+                          fit: BoxFit.cover,
+                          cacheWidth: 800,
+                        ),
+                      ),
+                    ),
+                  if (posterUrl == null && state.customPosterBytes == null && !state.isGeneratingPoster)
+                    const Center(
+                      child: Icon(Icons.image, color: Colors.white24, size: 48),
+                    ),
+                  if (state.isGeneratingPoster)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                    ),
                 // Aspect Ratio Toggle (Bottom Right)
                 Positioned(
                   bottom: 8,
@@ -76,44 +103,45 @@ class PosterModule extends ConsumerWidget {
                     ),
                   ),
                 ),
-                // Edit Poster (Bottom Left)
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  child: GestureDetector(
-                    onTap: onEditPoster,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black45,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Edit poster',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                if (!state.isGeneratingPoster)
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: GestureDetector(
+                      onTap: onEditPoster,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Edit poster',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
         ),
       ),
     ),
-  ],
+  ),
+],
 );
 }
 }

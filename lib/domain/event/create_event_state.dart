@@ -1,9 +1,11 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class CreateEventState {
   final String title;
   final String? posterUrl;
+  final Uint8List? customPosterBytes;
   final double posterAspectRatio; // 1.0 (Square) or 0.75 (Portrait 3:4)
   static const List<Color> defaultAuroraColors = [
     Color(0xFFFFB965),
@@ -17,9 +19,9 @@ class CreateEventState {
   List<Color> get auroraColors =>
       (_auroraColors == null || _auroraColors.isEmpty)
           ? defaultAuroraColors
-          : _auroraColors;
+          : _auroraColors!;
   
-  final DateTime startDate;
+  final DateTime? startDate;
   final bool startTimeTbd;
   final DateTime? endDate;
   final bool endTimeTbd;
@@ -36,13 +38,15 @@ class CreateEventState {
   final bool requireApproval;
   final bool allowMaybe;
   final DateTime? rsvpDeadline;
+  final bool isGeneratingPoster;
 
   CreateEventState({
     this.title = '',
     this.posterUrl,
+    this.customPosterBytes,
     this.posterAspectRatio = 1.0,
     List<Color>? auroraColors,
-    required this.startDate,
+    this.startDate,
     this.startTimeTbd = true,
     this.endDate,
     this.endTimeTbd = true,
@@ -56,59 +60,63 @@ class CreateEventState {
     this.requireApproval = false,
     this.allowMaybe = true,
     this.rsvpDeadline,
+    this.isGeneratingPoster = false,
   })  : _auroraColors = auroraColors,
         _tags = tags;
 
   CreateEventState copyWith({
     String? title,
-    String? posterUrl,
+    Object? posterUrl = _undefined,
+    Object? customPosterBytes = _undefined,
     double? posterAspectRatio,
-    List<Color>? auroraColors,
-    DateTime? startDate,
+    Object? auroraColors = _undefined,
+    Object? startDate = _undefined,
     bool? startTimeTbd,
-    DateTime? endDate,
+    Object? endDate = _undefined,
     bool? endTimeTbd,
     bool? isLocationSet,
-    String? location,
+    Object? location = _undefined,
     String? description,
-    List<String>? tags,
+    Object? tags = _undefined,
     String? visibility,
-    int? availableSpots,
+    Object? availableSpots = _undefined,
     bool? allowPlusOnes,
     bool? requireApproval,
     bool? allowMaybe,
-    DateTime? rsvpDeadline,
+    Object? rsvpDeadline = _undefined,
+    bool? isGeneratingPoster,
   }) {
     return CreateEventState(
       title: title ?? this.title,
-      posterUrl: posterUrl ?? this.posterUrl,
+      posterUrl: posterUrl == _undefined ? this.posterUrl : (posterUrl as String?),
+      customPosterBytes: customPosterBytes == _undefined ? this.customPosterBytes : (customPosterBytes as Uint8List?),
       posterAspectRatio: posterAspectRatio ?? this.posterAspectRatio,
-      auroraColors: auroraColors ?? this.auroraColors,
-      startDate: startDate ?? this.startDate,
+      auroraColors: auroraColors == _undefined ? this._auroraColors : (auroraColors as List<Color>?),
+      startDate: startDate == _undefined ? this.startDate : (startDate as DateTime?),
       startTimeTbd: startTimeTbd ?? this.startTimeTbd,
-      endDate: endDate ?? this.endDate,
+      endDate: endDate == _undefined ? this.endDate : (endDate as DateTime?),
       endTimeTbd: endTimeTbd ?? this.endTimeTbd,
       isLocationSet: isLocationSet ?? this.isLocationSet,
-      location: location ?? this.location,
+      location: location == _undefined ? this.location : (location as String?),
       description: description ?? this.description,
-      tags: tags ?? this.tags,
+      tags: tags == _undefined ? this._tags : (tags as List<String>?),
       visibility: visibility ?? this.visibility,
-      availableSpots: availableSpots ?? this.availableSpots,
+      availableSpots: availableSpots == _undefined ? this.availableSpots : (availableSpots as int?),
       allowPlusOnes: allowPlusOnes ?? this.allowPlusOnes,
       requireApproval: requireApproval ?? this.requireApproval,
       allowMaybe: allowMaybe ?? this.allowMaybe,
-      rsvpDeadline: rsvpDeadline ?? this.rsvpDeadline,
+      rsvpDeadline: rsvpDeadline == _undefined ? this.rsvpDeadline : (rsvpDeadline as DateTime?),
+      isGeneratingPoster: isGeneratingPoster ?? this.isGeneratingPoster,
     );
   }
 }
 
+const _undefined = Object();
+
 class CreateEventNotifier extends Notifier<CreateEventState> {
   @override
   CreateEventState build() {
-    final now = DateTime.now();
-    return CreateEventState(
-      startDate: DateTime(now.year, now.month, now.day, 0, 0),
-    );
+    return CreateEventState();
   }
 
   void reset() {
@@ -134,6 +142,23 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
     state = state.copyWith(
       posterUrl: url, 
+      customPosterBytes: null, // Clear custom bytes if choosing a premade poster
+      auroraColors: boostedColors.take(5).toList(),
+    );
+  }
+
+  void updateCustomPoster(Uint8List bytes, List<Color> colors) {
+    final boostedColors = colors.map((c) => _boostColor(c)).toList();
+    
+    int defaultIndex = 0;
+    while (boostedColors.length < 5) {
+      boostedColors.add(CreateEventState.defaultAuroraColors[defaultIndex % 5]);
+      defaultIndex++;
+    }
+
+    state = state.copyWith(
+      posterUrl: null, // Clear URL if using custom bytes
+      customPosterBytes: bytes,
       auroraColors: boostedColors.take(5).toList(),
     );
   }
@@ -174,9 +199,8 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   }
 
   void clearDates() {
-    final now = DateTime.now();
     state = state.copyWith(
-      startDate: DateTime(now.year, now.month, now.day, 0, 0),
+      startDate: null,
       startTimeTbd: true,
       endDate: null,
       endTimeTbd: true,
@@ -204,6 +228,10 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       location: loc,
       isLocationSet: loc != null && loc.isNotEmpty,
     );
+  }
+
+  void setGeneratingPoster(bool generating) {
+    state = state.copyWith(isGeneratingPoster: generating);
   }
 }
 

@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:palette_generator/palette_generator.dart';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/auth/auth_providers.dart';
 import 'widgets/event_title_input.dart';
@@ -11,6 +14,7 @@ import 'widgets/poster_selection_modal.dart';
 import 'widgets/date_time_modal.dart';
 import 'widgets/event_section_card.dart';
 import 'widgets/bloom_toggle.dart';
+import 'widgets/event_description_input.dart';
 
 class CreateEventScreen extends ConsumerWidget {
   const CreateEventScreen({super.key});
@@ -23,6 +27,59 @@ class CreateEventScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (context) => const PosterSelectionModal(),
     );
+  }
+
+  Future<void> _pickAndCompressPoster(WidgetRef ref) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+
+      // Aggressive performance compression to WebP (80% quality)
+      final compressedBytes = await FlutterImageCompress.compressWithList(
+        bytes,
+        quality: 80,
+        format: CompressFormat.webp,
+      );
+
+      // Flawless background update via palette_generator
+      final imageProvider = MemoryImage(compressedBytes);
+      final paletteGenerator = await PaletteGenerator.fromImageProvider(
+        imageProvider,
+      );
+
+      final colors = <Color>[];
+      if (paletteGenerator.vibrantColor != null) {
+        colors.add(paletteGenerator.vibrantColor!.color);
+      }
+      if (paletteGenerator.lightVibrantColor != null) {
+        colors.add(paletteGenerator.lightVibrantColor!.color);
+      }
+      if (paletteGenerator.darkVibrantColor != null) {
+        colors.add(paletteGenerator.darkVibrantColor!.color);
+      }
+      if (paletteGenerator.mutedColor != null) {
+        colors.add(paletteGenerator.mutedColor!.color);
+      }
+      if (paletteGenerator.dominantColor != null) {
+        colors.add(paletteGenerator.dominantColor!.color);
+      }
+
+      // Fill to 5 colors if necessary using existing palette colors
+      if (colors.length < 5) {
+        for (var swatch in paletteGenerator.paletteColors) {
+          if (!colors.contains(swatch.color)) {
+            colors.add(swatch.color);
+            if (colors.length >= 5) break;
+          }
+        }
+      }
+
+      ref
+          .read(createEventProvider.notifier)
+          .updateCustomPoster(compressedBytes, colors);
+    }
   }
 
   void _showDateTimeSelection(BuildContext context) {
@@ -109,110 +166,9 @@ class CreateEventScreen extends ConsumerWidget {
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Stack(
             children: [
-              // Vibrant Aurora Background (Refined for premium contrast)              // The Full Background Stack
-              Positioned.fill(
-                child: Stack(
-                  children: [
-                    // Base + Blurred Blobs (Cached via RepaintBoundary for extreme performance)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: Stack(
-                          children: [
-                            // Layer 1: Solid Base (Darkened for contrast)
-                            Container(
-                              color: const Color(0xFF0B0E12),
-                            ),
-                            // Layer 2: Top Left Blob
-                            Positioned(
-                              top: -200,
-                              left: -200,
-                              child: Container(
-                                width: 1000,
-                                height: 1000,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      state.auroraColors[0].withValues(alpha: 0.6),
-                                      state.auroraColors[0].withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Layer 3: Top Right Blob
-                            Positioned(
-                              top: -200,
-                              right: -200,
-                              child: Container(
-                                width: 1000,
-                                height: 1000,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      state.auroraColors[1].withValues(alpha: 0.6),
-                                      state.auroraColors[1].withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Layer 4: Bottom Left Blob
-                            Positioned(
-                              bottom: -200,
-                              left: -200,
-                              child: Container(
-                                width: 1000,
-                                height: 1000,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      state.auroraColors[2].withValues(alpha: 0.6),
-                                      state.auroraColors[2].withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Layer 5: Bottom Right Blob
-                            Positioned(
-                              bottom: -200,
-                              right: -200,
-                              child: Container(
-                                width: 1000,
-                                height: 1000,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: RadialGradient(
-                                    colors: [
-                                      state.auroraColors[3].withValues(alpha: 0.6),
-                                      state.auroraColors[3].withValues(alpha: 0.0),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // The Premium Blur Filter
-                            Positioned.fill(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 110.0, sigmaY: 110.0),
-                                child: Container(color: Colors.transparent),
-                              ),
-                            ),
-                            // Midnight Tint ("Sunglasses" for the bright mesh)
-                            Positioned.fill(
-                              child: Container(
-                                color: Colors.black.withValues(alpha: 0.15),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // The Full Background Stack
+              const Positioned.fill(
+                child: _AuroraBackground(),
               ),
 
               SafeArea(
@@ -596,55 +552,11 @@ class CreateEventScreen extends ConsumerWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                TextFormField(
+                                EventDescriptionInput(
                                   initialValue: state.description,
                                   onChanged: (val) => ref
                                       .read(createEventProvider.notifier)
                                       .updateDescription(val),
-                                  minLines: 4,
-                                  maxLines: 5,
-                                  maxLength: 2000,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Add event description...',
-                                    hintStyle: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.60,
-                                      ),
-                                      fontSize: 14,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withValues(alpha: 0.1),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      borderSide: BorderSide(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                      ),
-                                    ),
-                                    contentPadding: const EdgeInsets.all(16),
-                                    counterText: '',
-                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Align(
@@ -922,6 +834,119 @@ class CreateEventScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AuroraBackground extends ConsumerWidget {
+  const _AuroraBackground();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auroraColors =
+        ref.watch(createEventProvider.select((state) => state.auroraColors));
+
+    return Stack(
+      children: [
+        // Base + Blurred Blobs (Cached via RepaintBoundary for extreme performance)
+        Positioned.fill(
+          child: RepaintBoundary(
+            child: Stack(
+              children: [
+                // Layer 1: Solid Base (Darkened for contrast)
+                Container(
+                  color: const Color(0xFF0B0E12),
+                ),
+                // Layer 2: Top Left Blob
+                Positioned(
+                  top: -200,
+                  left: -200,
+                  child: Container(
+                    width: 1000,
+                    height: 1000,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          auroraColors[0].withValues(alpha: 0.6),
+                          auroraColors[0].withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Layer 3: Top Right Blob
+                Positioned(
+                  top: -200,
+                  right: -200,
+                  child: Container(
+                    width: 1000,
+                    height: 1000,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          auroraColors[1].withValues(alpha: 0.6),
+                          auroraColors[1].withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Layer 4: Bottom Left Blob
+                Positioned(
+                  bottom: -200,
+                  left: -200,
+                  child: Container(
+                    width: 1000,
+                    height: 1000,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          auroraColors[2].withValues(alpha: 0.6),
+                          auroraColors[2].withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Layer 5: Bottom Right Blob
+                Positioned(
+                  bottom: -200,
+                  right: -200,
+                  child: Container(
+                    width: 1000,
+                    height: 1000,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          auroraColors[3].withValues(alpha: 0.6),
+                          auroraColors[3].withValues(alpha: 0.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // The Premium Blur Filter
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 60.0, sigmaY: 60.0),
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+                // Midnight Tint ("Sunglasses" for the bright mesh)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

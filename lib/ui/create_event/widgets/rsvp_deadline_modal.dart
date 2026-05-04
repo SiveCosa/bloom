@@ -43,11 +43,20 @@ class RSVPDeadlineModal extends ConsumerWidget {
               style: const TextStyle(color: Colors.white70),
             ),
             onTap: () async {
+              final lastDate = state.startDate ?? DateTime.now().add(const Duration(days: 365));
+              final initialDate = state.rsvpDeadline ?? 
+                  (state.startDate != null 
+                    ? state.startDate!.subtract(const Duration(days: 1)) 
+                    : DateTime.now());
+              
+              // Ensure initialDate is not after lastDate
+              final safeInitialDate = initialDate.isAfter(lastDate) ? lastDate : initialDate;
+
               final date = await showDatePicker(
                 context: context,
-                initialDate: state.rsvpDeadline ?? state.startDate.subtract(const Duration(days: 1)),
-                firstDate: DateTime.now(),
-                lastDate: state.startDate,
+                initialDate: safeInitialDate,
+                firstDate: DateTime.now().subtract(const Duration(days: 365)), // Allow past for safety if needed, but usually now()
+                lastDate: lastDate,
               );
               if (date != null) notifier.updateRSVPDeadline(date);
             },

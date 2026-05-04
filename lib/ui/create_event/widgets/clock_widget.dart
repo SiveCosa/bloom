@@ -85,7 +85,16 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Clock Arm with Animation
+                // Layer 1: Base Text (Always Visible White Numbers)
+                CustomPaint(
+                  painter: ClockNumbersPainter(
+                    color: Colors.white,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  size: const Size(240, 240),
+                ),
+
+                // Layer 2 & 3: Selector and Clipped Black Text
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0.0, end: widget.isTbd ? 0.0 : 1.0),
                   duration: const Duration(milliseconds: 300),
@@ -98,60 +107,59 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOutCubic,
                       builder: (context, angle, child) {
-                        return CustomPaint(
-                          painter: ClockArmPainter(angle - pi/2, 100.0 * factor),
-                          size: const Size(240, 240),
+                        final selectorAngle = angle - pi / 2;
+                        final selectorRadius = 100.0 * factor;
+
+                        return Stack(
+                          children: [
+                            // Layer 2: The Selector (White Arm and Circle)
+                            CustomPaint(
+                              painter: ClockSelectorPainter(
+                                angle: selectorAngle,
+                                radius: selectorRadius,
+                              ),
+                              size: const Size(240, 240),
+                            ),
+                            // Layer 3: The Black Text Mask (Clipped)
+                            ClipPath(
+                              clipper: SelectorClipper(
+                                angle: selectorAngle,
+                                radius: selectorRadius,
+                              ),
+                              child: CustomPaint(
+                                painter: ClockNumbersPainter(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  selectedHour: widget.selectedHour,
+                                ),
+                                size: const Size(240, 240),
+                              ),
+                            ),
+                          ],
                         );
                       },
                     );
                   },
                 ),
 
-                // Clock Numbers (Rendered LAST for Z-index visibility)
-                ...List.generate(12, (index) {
-                  final hour = index + 1;
-                  final angle = (hour * 30 - 90) * (pi / 180);
-                  const radius = 100.0;
-                  final x = radius * cos(angle);
-                  final y = radius * sin(angle);
-                  
-                  final isSelected = widget.selectedHour == hour && !widget.isTbd;
-
-                  return Transform.translate(
-                    offset: Offset(x, y),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$hour',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-
-                // Center TBD Button / Anchor
+                // Center Anchor / TBD Button
                 TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0.0, end: widget.isTbd ? 1.0 : 0.0),
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOutCubic,
                   builder: (context, tbdFactor, child) {
-                    final size = 8.0 + (32.0 * tbdFactor); // From 8 to 40
+                    // When not TBD (tbdFactor -> 0), size is 8. When TBD, size is 40.
+                    final size = 8.0 + (32.0 * tbdFactor);
                     return Container(
                       width: size,
                       height: size,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFF499E),
+                        color: Colors.white,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
                       child: tbdFactor > 0.8 
-                        ? const Text('TBD', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))
+                        ? const Text('TBD', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold))
                         : null,
                     );
                   },
@@ -165,38 +173,103 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
   }
 }
 
-class ClockArmPainter extends CustomPainter {
-  final double angle;
-  final double radius;
+class ClockNumbersPainter extends CustomPainter {
+  final Color color;
+  final FontWeight fontWeight;
+  final int? selectedHour;
 
-  ClockArmPainter(this.angle, this.radius);
+  ClockNumbersPainter({
+    required this.color,
+    required this.fontWeight,
+    this.selectedHour,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (radius < 2) return;
-    
+    final center = size.center(Offset.zero);
+
+    for (int i = 0; i < 12; i++) {
+      final hour = i + 1;
+      final numberAngle = (hour * 30 - 90) * (pi / 180);
+      const numberRadius = 100.0;
+      final x = center.dx + numberRadius * cos(numberAngle);
+      final y = center.dy + numberRadius * sin(numberAngle);
+
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: '$hour',
+          style: TextStyle(
+            color: color,
+            fontSize: 16,
+            fontWeight: selectedHour == hour ? FontWeight.bold : fontWeight,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+
+      textPainter.paint(
+        canvas,
+        Offset(x - textPainter.width / 2, y - textPainter.height / 2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ClockNumbersPainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.fontWeight != fontWeight ||
+      oldDelegate.selectedHour != selectedHour;
+}
+
+class ClockSelectorPainter extends CustomPainter {
+  final double angle;
+  final double radius;
+
+  ClockSelectorPainter({required this.angle, required this.radius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final endPoint = Offset(
       center.dx + radius * cos(angle),
       center.dy + radius * sin(angle),
     );
 
-    final linePaint = Paint()
-      ..color = const Color(0xFFFF499E)
+    final whitePaint = Paint()
+      ..color = Colors.white
       ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round;
-
-    // Draw the arm line
-    canvas.drawLine(center, endPoint, linePaint);
-
-    // Draw the pink circle at the end
-    final circlePaint = Paint()
-      ..color = const Color(0xFFFF499E)
+      ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.fill;
-    
-    canvas.drawCircle(endPoint, 16, circlePaint);
+
+    if (radius > 2) {
+      canvas.drawLine(center, endPoint, whitePaint);
+      canvas.drawCircle(endPoint, 16, whitePaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant ClockSelectorPainter oldDelegate) =>
+      oldDelegate.angle != angle || oldDelegate.radius != radius;
+}
+
+class SelectorClipper extends CustomClipper<Path> {
+  final double angle;
+  final double radius;
+
+  SelectorClipper({required this.angle, required this.radius});
+
+  @override
+  Path getClip(Size size) {
+    final center = size.center(Offset.zero);
+    final endPoint = Offset(
+      center.dx + radius * cos(angle),
+      center.dy + radius * sin(angle),
+    );
+    return Path()..addOval(Rect.fromCircle(center: endPoint, radius: 16));
+  }
+
+  @override
+  bool shouldReclip(SelectorClipper oldClipper) =>
+      oldClipper.angle != angle || oldClipper.radius != radius;
 }

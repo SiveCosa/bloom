@@ -24,6 +24,9 @@ class _EventTitleInputState extends State<EventTitleInput> {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
     _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        widget.onChanged(_controller.text);
+      }
       setState(() {});
     });
   }
@@ -46,7 +49,7 @@ class _EventTitleInputState extends State<EventTitleInput> {
           child: TextFormField(
             controller: _controller,
             focusNode: _focusNode,
-            onChanged: widget.onChanged,
+            onChanged: null, // Global state updated on unfocus
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             textAlign: TextAlign.center,

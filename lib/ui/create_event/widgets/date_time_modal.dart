@@ -29,7 +29,8 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
   void initState() {
     super.initState();
     final state = ref.read(createEventProvider);
-    _startDate = state.startDate;
+    final now = DateTime.now();
+    _startDate = state.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
     _startTimeTbd = state.startTimeTbd;
     _endDate = state.endDate;
     _endTimeTbd = state.endTimeTbd;
@@ -56,15 +57,8 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
   }
 
   void _onClearAll() {
-    setState(() {
-      final now = DateTime.now();
-      _startDate = DateTime(now.year, now.month, now.day, 0, 0);
-      _startTimeTbd = true;
-      _endDate = null;
-      _endTimeTbd = true;
-      _isSelectingStart = true;
-      _updateClockFromState();
-    });
+    ref.read(createEventProvider.notifier).clearDates();
+    Navigator.pop(context);
   }
 
   void _updateTime() {
@@ -465,6 +459,8 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                           ),
                         ),
 
+                        _buildAmPmToggle(),
+
                         CustomAnimatedClockWidget(
                           selectedHour: _selectedHour,
                           isTbd: _isSelectingStart
@@ -487,21 +483,6 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                             });
                           },
                         ),
-
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildAmPmButton('AM', _isAm),
-                              _buildAmPmButton('PM', !_isAm),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -510,6 +491,77 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAmPmToggle() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isAm = !_isAm;
+          _updateTime();
+        });
+      },
+      child: Container(
+        height: 30,
+        width: 120,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Stack(
+          children: [
+            // Sliding Pill
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              alignment: _isAm ? Alignment.centerLeft : Alignment.centerRight,
+              child: Container(
+                width: 60,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+            // AM Text
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: 60,
+                child: Center(
+                  child: Text(
+                    'AM',
+                    style: TextStyle(
+                      color: _isAm ? Colors.black : Colors.white.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // PM Text
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 60,
+                child: Center(
+                  child: Text(
+                    'PM',
+                    style: TextStyle(
+                      color: !_isAm ? Colors.black : Colors.white.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -605,30 +657,5 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
     );
   }
 
-  Widget _buildAmPmButton(String label, bool isActive) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isAm = label == 'AM';
-          _updateTime();
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFFFF499E) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.38),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
+
 }

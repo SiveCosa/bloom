@@ -72,6 +72,7 @@ class _LocationSearchModalState extends ConsumerState<LocationSearchModal> {
           const SizedBox(height: 20),
           Expanded(
             child: ListView.builder(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: filtered.length,
               itemBuilder: (context, index) {
