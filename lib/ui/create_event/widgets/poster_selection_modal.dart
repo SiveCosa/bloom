@@ -58,28 +58,36 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
   }
 
   Future<void> _selectPoster(String url) async {
-    final imageProvider = NetworkImage(url);
-    final paletteGenerator = await PaletteGenerator.fromImageProvider(imageProvider);
-    
-    final colors = <Color>[];
-    if (paletteGenerator.vibrantColor != null) colors.add(paletteGenerator.vibrantColor!.color);
-    if (paletteGenerator.lightVibrantColor != null) colors.add(paletteGenerator.lightVibrantColor!.color);
-    if (paletteGenerator.darkVibrantColor != null) colors.add(paletteGenerator.darkVibrantColor!.color);
-    if (paletteGenerator.mutedColor != null) colors.add(paletteGenerator.mutedColor!.color);
-    if (paletteGenerator.dominantColor != null) colors.add(paletteGenerator.dominantColor!.color);
-    
-    // Fill to 5 colors if necessary
-    if (colors.length < 5) {
-      for (var swatch in paletteGenerator.paletteColors) {
-        if (!colors.contains(swatch.color)) {
-          colors.add(swatch.color);
-          if (colors.length >= 5) break;
+    try {
+      final imageProvider = NetworkImage(url);
+      final paletteGenerator = await PaletteGenerator.fromImageProvider(
+        imageProvider,
+      ).timeout(const Duration(seconds: 5));
+      
+      final colors = <Color>[];
+      if (paletteGenerator.vibrantColor != null) colors.add(paletteGenerator.vibrantColor!.color);
+      if (paletteGenerator.lightVibrantColor != null) colors.add(paletteGenerator.lightVibrantColor!.color);
+      if (paletteGenerator.darkVibrantColor != null) colors.add(paletteGenerator.darkVibrantColor!.color);
+      if (paletteGenerator.mutedColor != null) colors.add(paletteGenerator.mutedColor!.color);
+      if (paletteGenerator.dominantColor != null) colors.add(paletteGenerator.dominantColor!.color);
+      
+      // Fill to 5 colors if necessary
+      if (colors.length < 5) {
+        for (var swatch in paletteGenerator.paletteColors) {
+          if (!colors.contains(swatch.color)) {
+            colors.add(swatch.color);
+            if (colors.length >= 5) break;
+          }
         }
       }
+      
+      ref.read(createEventProvider.notifier).updatePosterWithColors(url, colors);
+    } catch (e) {
+      // Fallback to default colors if extraction fails
+      ref.read(createEventProvider.notifier).updatePosterWithColors(url, CreateEventState.defaultAuroraColors);
+    } finally {
+      if (mounted) Navigator.pop(context);
     }
-    
-    ref.read(createEventProvider.notifier).updatePosterWithColors(url, colors);
-    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -129,6 +137,7 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
           SizedBox(
             height: 40,
             child: ListView.separated(
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               itemCount: _filters.length,
@@ -214,6 +223,7 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
 
   Widget _buildPosterGrid(double aspectRatio) {
     return GridView.builder(
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.all(12),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,

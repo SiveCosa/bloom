@@ -9,12 +9,15 @@ class CreateEventState {
     Color(0xFFFFB965),
     Color(0xFFF04A9F),
     Color(0xFFC151FD),
-    Color(0xFF4A80F0),
+    Color(0xFFAD83FE),
     Color(0xFF261D82),
   ];
 
   final List<Color>? _auroraColors;
-  List<Color> get auroraColors => _auroraColors ?? defaultAuroraColors;
+  List<Color> get auroraColors =>
+      (_auroraColors == null || _auroraColors.isEmpty)
+          ? defaultAuroraColors
+          : _auroraColors;
   
   final DateTime startDate;
   final bool startTimeTbd;
@@ -122,9 +125,11 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     // Artificial boosting for aurora effect
     final boostedColors = colors.map((c) => _boostColor(c)).toList();
     
-    // Ensure we have 5 colors for the aurora blobs
+    // If the image extracts fewer than 5 colors, pad the rest using the premium default palette
+    int defaultIndex = 0;
     while (boostedColors.length < 5) {
-      boostedColors.add(boostedColors.isNotEmpty ? boostedColors.last : const Color(0xFF261D82));
+      boostedColors.add(CreateEventState.defaultAuroraColors[defaultIndex % 5]);
+      defaultIndex++;
     }
 
     state = state.copyWith(
@@ -135,10 +140,10 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
   Color _boostColor(Color color) {
     final hsl = HSLColor.fromColor(color);
-    // Enforce minimum saturation (0.6) and lightness (0.5) for vibrancy
+    // Enforce minimum saturation (0.6) and lightness (0.4) for vibrancy
     return hsl
         .withSaturation((hsl.saturation).clamp(0.6, 1.0))
-        .withLightness((hsl.lightness).clamp(0.5, 0.8))
+        .withLightness((hsl.lightness).clamp(0.4, 0.8))
         .toColor();
   }
 

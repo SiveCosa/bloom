@@ -31,6 +31,15 @@ class MyApp extends ConsumerWidget {
       themeMode: ThemeMode.dark, // Default to dark mode as per spec highlights
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(
+            overscroll: false,
+            physics: const ClampingScrollPhysics(),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }

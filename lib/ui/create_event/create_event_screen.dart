@@ -44,13 +44,17 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Color(0xFF121212),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        ),
+      builder: (context) => ClipRRect(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
         child: Column(
           children: [
             const SizedBox(height: 12),
@@ -82,8 +86,10 @@ class CreateEventScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -103,121 +109,105 @@ class CreateEventScreen extends ConsumerWidget {
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Stack(
             children: [
-              // Vibrant Aurora Background (Refined for premium contrast)
+              // Vibrant Aurora Background (Refined for premium contrast)              // The Full Background Stack
               Positioned.fill(
                 child: Stack(
                   children: [
-                    // 1. Top Left - Color 1
-                    Positioned(
-                      top: -100,
-                      left: -50,
-                      child: Container(
-                        width: 500,
-                        height: 500,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              state.auroraColors[0].withValues(alpha: 0.7),
-                              state.auroraColors[0].withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 2. Top Right - Color 2
-                    Positioned(
-                      top: -50,
-                      right: -50,
-                      child: Container(
-                        width: 450,
-                        height: 450,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              state.auroraColors[1].withValues(alpha: 0.65),
-                              state.auroraColors[1].withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 3. Center Left - Color 3
-                    Positioned(
-                      top: 250,
-                      left: -100,
-                      child: Container(
-                        width: 550,
-                        height: 550,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              state.auroraColors[2].withValues(alpha: 0.6),
-                              state.auroraColors[2].withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 4. Center Right - Color 4
-                    Positioned(
-                      top: 400,
-                      right: -100,
-                      child: Container(
-                        width: 600,
-                        height: 600,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              state.auroraColors[3].withValues(alpha: 0.6),
-                              state.auroraColors[3].withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // 5. Bottom Left - Color 5
-                    Positioned(
-                      bottom: -100,
-                      left: -100,
-                      child: Container(
-                        width: 600,
-                        height: 600,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(
-                            colors: [
-                              state.auroraColors[4].withValues(alpha: 0.7),
-                              state.auroraColors[4].withValues(alpha: 0.0),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Base + Blurred Blobs (Cached via RepaintBoundary for extreme performance)
                     Positioned.fill(
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 85.0, sigmaY: 85.0),
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
-                    // Vignette Guard Layer
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              const Color(0xFF0B0E12).withValues(alpha: 0.6),
-                              const Color(0xFF0B0E12).withValues(alpha: 0.0),
-                              const Color(0xFF0B0E12).withValues(alpha: 0.0),
-                              const Color(0xFF0B0E12).withValues(alpha: 0.6),
-                            ],
-                            stops: const [0.0, 0.2, 0.8, 1.0],
-                          ),
+                      child: RepaintBoundary(
+                        child: Stack(
+                          children: [
+                            // Layer 1: Solid Base (Darkened for contrast)
+                            Container(
+                              color: const Color(0xFF0B0E12),
+                            ),
+                            // Layer 2: Top Left Blob
+                            Positioned(
+                              top: -200,
+                              left: -200,
+                              child: Container(
+                                width: 1000,
+                                height: 1000,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      state.auroraColors[0].withValues(alpha: 0.6),
+                                      state.auroraColors[0].withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Layer 3: Top Right Blob
+                            Positioned(
+                              top: -200,
+                              right: -200,
+                              child: Container(
+                                width: 1000,
+                                height: 1000,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      state.auroraColors[1].withValues(alpha: 0.6),
+                                      state.auroraColors[1].withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Layer 4: Bottom Left Blob
+                            Positioned(
+                              bottom: -200,
+                              left: -200,
+                              child: Container(
+                                width: 1000,
+                                height: 1000,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      state.auroraColors[2].withValues(alpha: 0.6),
+                                      state.auroraColors[2].withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Layer 5: Bottom Right Blob
+                            Positioned(
+                              bottom: -200,
+                              right: -200,
+                              child: Container(
+                                width: 1000,
+                                height: 1000,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      state.auroraColors[3].withValues(alpha: 0.6),
+                                      state.auroraColors[3].withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // The Premium Blur Filter
+                            Positioned.fill(
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 110.0, sigmaY: 110.0),
+                                child: Container(color: Colors.transparent),
+                              ),
+                            ),
+                            // Midnight Tint ("Sunglasses" for the bright mesh)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black.withValues(alpha: 0.15),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -314,6 +304,7 @@ class CreateEventScreen extends ConsumerWidget {
 
                     Expanded(
                       child: ListView(
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         children: [
                           const SizedBox(height: 10),
@@ -353,10 +344,10 @@ class CreateEventScreen extends ConsumerWidget {
                                 vertical: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.07),
+                                  color: Colors.white.withValues(alpha: 0.1),
                                 ),
                               ),
                               child: Row(
@@ -372,7 +363,7 @@ class CreateEventScreen extends ConsumerWidget {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const Spacer(),
@@ -467,6 +458,7 @@ class CreateEventScreen extends ConsumerWidget {
                                         width: 50,
                                         height: 50,
                                         decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.15),
                                           border: Border.all(
                                             color: Colors.white.withValues(
                                               alpha: 0.1,
@@ -567,15 +559,13 @@ class CreateEventScreen extends ConsumerWidget {
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(
-                                            0xFF0B0E12,
-                                          ).withValues(alpha: 0.15),
+                                          color: Colors.white.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
                                           border: Border.all(
                                             color: Colors.white.withValues(
-                                              alpha: 0.07,
+                                              alpha: 0.1,
                                             ),
                                           ),
                                         ),
@@ -627,14 +617,12 @@ class CreateEventScreen extends ConsumerWidget {
                                       fontSize: 14,
                                     ),
                                     filled: true,
-                                    fillColor: const Color(
-                                      0xFF0B0E12,
-                                    ).withValues(alpha: 0.15),
+                                    fillColor: Colors.white.withValues(alpha: 0.1),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
                                         color: Colors.white.withValues(
-                                          alpha: 0.07,
+                                          alpha: 0.1,
                                         ),
                                       ),
                                     ),
@@ -642,7 +630,7 @@ class CreateEventScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
                                         color: Colors.white.withValues(
-                                          alpha: 0.07,
+                                          alpha: 0.1,
                                         ),
                                       ),
                                     ),
@@ -650,7 +638,7 @@ class CreateEventScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide(
                                         color: Colors.white.withValues(
-                                          alpha: 0.07,
+                                          alpha: 0.1,
                                         ),
                                       ),
                                     ),
@@ -799,52 +787,58 @@ class CreateEventScreen extends ConsumerWidget {
     required String trailing,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B0E12).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-              ],
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.70),
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.70),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    trailing,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.60),
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    color: Colors.white.withValues(alpha: 0.4),
+                    size: 18,
+                  ),
+                ],
               ),
-              const Spacer(),
-              Text(
-                trailing,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.60),
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.4),
-                size: 18,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -858,15 +852,22 @@ class CreateEventScreen extends ConsumerWidget {
   ) {
     return InkWell(
       onTap: () => _showSkeletonModal(context, modalTitle),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ),
         ),
       ),
     );
@@ -893,27 +894,33 @@ class CreateEventScreen extends ConsumerWidget {
     bool value,
     ValueChanged<bool> onChanged,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B0E12).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.70),
-              fontSize: 14,
-              fontWeight: FontWeight.normal,
-            ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
-          BloomToggle(value: value, onChanged: onChanged),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.70),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              BloomToggle(value: value, onChanged: onChanged),
+            ],
+          ),
+        ),
       ),
     );
   }

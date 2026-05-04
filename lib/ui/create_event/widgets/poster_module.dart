@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/create_event_state.dart';
@@ -24,15 +25,19 @@ class PosterModule extends ConsumerWidget {
     return Column(
       children: [
         Center(
-          child: AnimatedContainer(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOutCubic,
             width: targetWidth,
             height: targetHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withValues(alpha: 0.05),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              color: Colors.white.withValues(alpha: 0.1),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               image: posterUrl != null
                   ? DecorationImage(
                       image: NetworkImage(posterUrl),
@@ -106,7 +111,9 @@ class PosterModule extends ConsumerWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ),
+  ],
+);
+}
 }

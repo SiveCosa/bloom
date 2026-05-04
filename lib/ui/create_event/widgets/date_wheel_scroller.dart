@@ -72,7 +72,7 @@ class _CustomDateWheelScrollerState extends State<CustomDateWheelScroller> {
               diameterRatio: 10.0,
               offAxisFraction: 0.0,
               physics: const FixedExtentScrollPhysics(
-                parent: BouncingScrollPhysics(),
+                parent: ClampingScrollPhysics(),
               ),
               onSelectedItemChanged: (index) {
                 setState(() => _selectedIndex = index);
