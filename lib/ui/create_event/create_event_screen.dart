@@ -2,9 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:palette_generator/palette_generator.dart';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/auth/auth_providers.dart';
 import 'widgets/event_title_input.dart';
@@ -15,6 +12,11 @@ import 'widgets/date_time_modal.dart';
 import 'widgets/event_section_card.dart';
 import 'widgets/bloom_toggle.dart';
 import 'widgets/event_description_input.dart';
+import 'widgets/visibility_selection_modal.dart';
+import 'widgets/audience_modal.dart';
+import 'widgets/plus_ones_selection_modal.dart';
+import 'widgets/tag_selection_modal.dart';
+import '../../domain/event/event_visibility.dart';
 
 class CreateEventScreen extends ConsumerWidget {
   const CreateEventScreen({super.key});
@@ -29,57 +31,15 @@ class CreateEventScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickAndCompressPoster(WidgetRef ref) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-
-      // Aggressive performance compression to WebP (80% quality)
-      final compressedBytes = await FlutterImageCompress.compressWithList(
-        bytes,
-        quality: 80,
-        format: CompressFormat.webp,
-      );
-
-      // Flawless background update via palette_generator
-      final imageProvider = MemoryImage(compressedBytes);
-      final paletteGenerator = await PaletteGenerator.fromImageProvider(
-        imageProvider,
-      );
-
-      final colors = <Color>[];
-      if (paletteGenerator.vibrantColor != null) {
-        colors.add(paletteGenerator.vibrantColor!.color);
-      }
-      if (paletteGenerator.lightVibrantColor != null) {
-        colors.add(paletteGenerator.lightVibrantColor!.color);
-      }
-      if (paletteGenerator.darkVibrantColor != null) {
-        colors.add(paletteGenerator.darkVibrantColor!.color);
-      }
-      if (paletteGenerator.mutedColor != null) {
-        colors.add(paletteGenerator.mutedColor!.color);
-      }
-      if (paletteGenerator.dominantColor != null) {
-        colors.add(paletteGenerator.dominantColor!.color);
-      }
-
-      // Fill to 5 colors if necessary using existing palette colors
-      if (colors.length < 5) {
-        for (var swatch in paletteGenerator.paletteColors) {
-          if (!colors.contains(swatch.color)) {
-            colors.add(swatch.color);
-            if (colors.length >= 5) break;
-          }
-        }
-      }
-
-      ref
-          .read(createEventProvider.notifier)
-          .updateCustomPoster(compressedBytes, colors);
-    }
+  void _showVisibilitySelection(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const VisibilitySelectionModal(),
+    );
   }
 
   void _showDateTimeSelection(BuildContext context) {
@@ -101,52 +61,30 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => ClipRRect(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            height: MediaQuery.of(context).size.height * 0.8,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'Coming soon...',
-                  style: TextStyle(color: Colors.white54, fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-);
-}
+      backgroundColor: Colors.transparent,
+      builder: (context) => AudienceModal(title: title),
+    );
+  }
+
+  void _showPlusOnesSelection(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PlusOnesSelectionModal(),
+    );
+  }
+
+  void _showTagSelection(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const TagSelectionModal(),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,9 +105,7 @@ class CreateEventScreen extends ConsumerWidget {
           child: Stack(
             children: [
               // The Full Background Stack
-              const Positioned.fill(
-                child: _AuroraBackground(),
-              ),
+              const Positioned.fill(child: _AuroraBackground()),
 
               SafeArea(
                 child: Column(
@@ -414,7 +350,9 @@ class CreateEventScreen extends ConsumerWidget {
                                         width: 50,
                                         height: 50,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.15),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.15,
+                                          ),
                                           border: Border.all(
                                             color: Colors.white.withValues(
                                               alpha: 0.1,
@@ -454,32 +392,21 @@ class CreateEventScreen extends ConsumerWidget {
                               children: [
                                 _buildTappableRow(
                                   context: context,
-                                  icon: Icons.public,
-                                  title: 'Visibility',
-                                  trailing: state.visibility,
+                                  icon: state.visibility.outlinedIcon,
+                                  title: state.visibility.title,
+                                  trailing: 'Set Visibility',
                                   onTap: () =>
-                                      _showSkeletonModal(context, 'Visibility'),
+                                      _showVisibilitySelection(context),
                                 ),
+                                const _AvailableSpotsRow(),
                                 _buildTappableRow(
                                   context: context,
-                                  icon: Icons.groups,
-                                  title: 'Available Spots',
-                                  trailing:
-                                      state.availableSpots?.toString() ??
-                                      'Unlimited',
-                                  onTap: () => _showSkeletonModal(
-                                    context,
-                                    'Available Spots',
-                                  ),
-                                ),
-                                _buildTappableRow(
-                                  context: context,
-                                  title: 'Plus Ones',
-                                  trailing: state.allowPlusOnes
-                                      ? 'Allowed'
+                                  icon: Icons.person_add_outlined,
+                                  title: state.maxPlusOnes > 0
+                                      ? '+${state.maxPlusOnes} allowed'
                                       : 'No plus ones',
-                                  onTap: () =>
-                                      _showSkeletonModal(context, 'Plus Ones'),
+                                  trailing: 'Plus ones',
+                                  onTap: () => _showPlusOnesSelection(context),
                                 ),
                               ],
                             ),
@@ -489,69 +416,115 @@ class CreateEventScreen extends ConsumerWidget {
 
                           // Event Details Section
                           EventSectionCard(
-                            headerIcon: Icons.edit,
+                            headerIcon: Icons.edit_note_outlined,
                             title: 'Event Details',
                             body: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                const Text(
+                                  'Event Tags',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
                                   children: [
-                                    Text(
-                                      '${state.tags.length}/5',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.60,
-                                        ),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    InkWell(
-                                      onTap: () =>
-                                          _showSkeletonModal(context, 'Tags'),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                    ...state.tags.map(
+                                      (tag) => GestureDetector(
+                                        onTap: () => ref
+                                            .read(createEventProvider.notifier)
+                                            .toggleTag(tag),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
                                           ),
-                                          border: Border.all(
+                                          decoration: BoxDecoration(
                                             color: Colors.white.withValues(
-                                              alpha: 0.1,
+                                              alpha: 0.10,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              100,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white54,
                                             ),
                                           ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.add,
-                                              color: Colors.white.withValues(
-                                                alpha: 0.70,
-                                              ),
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'add tag',
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.70,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                tag,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                                fontSize: 14,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(width: 8),
+                                              const Icon(
+                                                Icons.close,
+                                                color: Colors.white,
+                                                size: 14,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
+                                    if (state.tags.length < 5)
+                                      GestureDetector(
+                                        onTap: () => _showTagSelection(context),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              style: BorderStyle.solid,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.add,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                                size: 14,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Add Tag',
+                                                style: TextStyle(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.6),
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
                                 EventDescriptionInput(
                                   initialValue: state.description,
                                   onChanged: (val) => ref
@@ -565,9 +538,9 @@ class CreateEventScreen extends ConsumerWidget {
                                     '${state.description.length} / 2 000',
                                     style: TextStyle(
                                       color: Colors.white.withValues(
-                                        alpha: 0.60,
+                                        alpha: 0.40,
                                       ),
-                                      fontSize: 12,
+                                      fontSize: 10,
                                     ),
                                   ),
                                 ),
@@ -718,17 +691,13 @@ class CreateEventScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    Icon(
-                      icon,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      size: 20,
-                    ),
+                    Icon(icon, color: Colors.white, size: 20),
                     const SizedBox(width: 12),
                   ],
                   Text(
                     title,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.70),
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -838,13 +807,194 @@ class CreateEventScreen extends ConsumerWidget {
   }
 }
 
+class _AvailableSpotsRow extends ConsumerStatefulWidget {
+  const _AvailableSpotsRow();
+
+  @override
+  ConsumerState<_AvailableSpotsRow> createState() => _AvailableSpotsRowState();
+}
+
+class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = ref.read(createEventProvider);
+    _controller = TextEditingController(
+      text: state.availableSpots?.toString() ?? '',
+    );
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text;
+    final spots = int.tryParse(text);
+    ref.read(createEventProvider.notifier).updateSpots(spots);
+    ref.read(createEventProvider.notifier).setEditingSpots(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(createEventProvider);
+    final isEditing = state.isEditingSpots;
+    final availableSpots = state.availableSpots;
+
+    // Trigger focus if entering editing state
+    if (isEditing && !_focusNode.hasFocus) {
+      Future.microtask(() => _focusNode.requestFocus());
+    }
+
+    // "Visibility" style matching _buildTappableRow title
+    const visibilityStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+    );
+
+    final mutedStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.60),
+      fontSize: 12,
+      fontWeight: FontWeight.normal,
+    );
+
+    // State 2: Input/Editing State
+    if (isEditing) {
+      return _buildCard(
+        isEditing: true,
+        child: Row(
+          children: [
+            const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text('# ', style: visibilityStyle),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                keyboardType: TextInputType.number,
+                style: visibilityStyle,
+                cursorColor: Colors.white,
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onSubmitted: (_) => _submit(),
+              ),
+            ),
+            Text('Waitlist', style: mutedStyle),
+            const SizedBox(width: 8),
+            BloomToggle(
+              value: state.isWaitlistEnabled,
+              onChanged: (val) => ref
+                  .read(createEventProvider.notifier)
+                  .setWaitlistEnabled(val),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // State 3: Confirmed/Saved State
+    if (availableSpots != null) {
+      return _buildCard(
+        isEditing: false,
+        onTap: () {
+          ref.read(createEventProvider.notifier).setEditingSpots(true);
+        },
+        child: Row(
+          children: [
+            const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text('$availableSpots spots', style: visibilityStyle),
+            const Spacer(),
+            Text('Waitlist', style: mutedStyle),
+            const SizedBox(width: 8),
+            BloomToggle(
+              value: state.isWaitlistEnabled,
+              onChanged: (val) => ref
+                  .read(createEventProvider.notifier)
+                  .setWaitlistEnabled(val),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // State 1: Empty/Unlimited State
+    return _buildCard(
+      isEditing: false,
+      onTap: () {
+        ref.read(createEventProvider.notifier).setEditingSpots(true);
+      },
+      child: Row(
+        children: [
+          const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
+          Text('Unlimited', style: visibilityStyle),
+          const Spacer(),
+          Text('Available spots', style: mutedStyle),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            color: Colors.white.withValues(alpha: 0.4),
+            size: 18,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCard({
+    required Widget child,
+    VoidCallback? onTap,
+    required bool isEditing,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: isEditing ? 0.15 : 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AuroraBackground extends ConsumerWidget {
   const _AuroraBackground();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auroraColors =
-        ref.watch(createEventProvider.select((state) => state.auroraColors));
+    final auroraColors = ref.watch(
+      createEventProvider.select((state) => state.auroraColors),
+    );
 
     return Stack(
       children: [
@@ -854,9 +1004,7 @@ class _AuroraBackground extends ConsumerWidget {
             child: Stack(
               children: [
                 // Layer 1: Solid Base (Darkened for contrast)
-                Container(
-                  color: const Color(0xFF0B0E12),
-                ),
+                Container(color: const Color(0xFF0B0E12)),
                 // Layer 2: Top Left Blob
                 Positioned(
                   top: -200,
@@ -938,9 +1086,7 @@ class _AuroraBackground extends ConsumerWidget {
                 ),
                 // Midnight Tint ("Sunglasses" for the bright mesh)
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.15),
-                  ),
+                  child: Container(color: Colors.black.withValues(alpha: 0.15)),
                 ),
               ],
             ),

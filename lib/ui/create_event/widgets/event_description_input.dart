@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'format_text_controller.dart';
 
 class EventDescriptionInput extends StatefulWidget {
   final String initialValue;
@@ -16,66 +18,68 @@ class EventDescriptionInput extends StatefulWidget {
 
 class _EventDescriptionInputState extends State<EventDescriptionInput> {
   late TextEditingController _controller;
-  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) {
-        widget.onChanged(_controller.text);
-      }
+    _controller = FormatTextController(text: widget.initialValue);
+    _controller.addListener(() {
+      widget.onChanged(_controller.text);
     });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: _controller,
-      focusNode: _focusNode,
-      minLines: 4,
-      maxLines: 5,
-      maxLength: 2000,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 14,
-      ),
-      decoration: InputDecoration(
-        hintText: 'Add event description...',
-        hintStyle: TextStyle(
-          color: Colors.white.withValues(alpha: 0.60),
-          fontSize: 14,
-        ),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.1),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: DefaultSelectionStyle(
+            cursorColor: Colors.white,
+            selectionColor: Colors.white.withValues(alpha: 0.2),
+            child: TextFormField(
+              controller: _controller,
+              cursorColor: Colors.white,
+              keyboardType: TextInputType.multiline,
+              maxLines: null,
+              minLines: 4,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText:
+                    "Add an event description... (Use bold, !heading!, and * lists)",
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 14,
+                ),
+                filled: false,
+                fillColor: Colors.transparent,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
           ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: 0.1),
-          ),
-        ),
-        contentPadding: const EdgeInsets.all(16),
-        counterText: '',
       ),
     );
   }

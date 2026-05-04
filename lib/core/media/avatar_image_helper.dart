@@ -75,7 +75,7 @@ Future<void> showAvatarSourceSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: const Color(0xFF1A1D24),
+    backgroundColor: const Color(0xFF191B1D),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),

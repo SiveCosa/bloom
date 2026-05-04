@@ -135,8 +135,8 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
-        color: Color(0xFF0B0E12),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: Color(0xFF191B1D),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(
         children: [

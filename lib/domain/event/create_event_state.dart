@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'event_visibility.dart';
 
 class CreateEventState {
   final String title;
@@ -19,7 +20,7 @@ class CreateEventState {
   List<Color> get auroraColors =>
       (_auroraColors == null || _auroraColors.isEmpty)
           ? defaultAuroraColors
-          : _auroraColors!;
+          : _auroraColors;
   
   final DateTime? startDate;
   final bool startTimeTbd;
@@ -32,9 +33,11 @@ class CreateEventState {
   final List<String>? _tags;
   List<String> get tags => _tags ?? const [];
   
-  final String visibility; // Public, Private, Followers
+  final EventVisibility visibility;
   final int? availableSpots; // null for unlimited
-  final bool allowPlusOnes;
+  final bool isEditingSpots;
+  final bool isWaitlistEnabled;
+  final int maxPlusOnes;
   final bool requireApproval;
   final bool allowMaybe;
   final DateTime? rsvpDeadline;
@@ -54,9 +57,11 @@ class CreateEventState {
     this.location,
     this.description = '',
     List<String>? tags,
-    this.visibility = 'Public',
+    this.visibility = EventVisibility.public,
     this.availableSpots,
-    this.allowPlusOnes = false,
+    this.isEditingSpots = false,
+    this.isWaitlistEnabled = false,
+    this.maxPlusOnes = 0,
     this.requireApproval = false,
     this.allowMaybe = true,
     this.rsvpDeadline,
@@ -78,9 +83,11 @@ class CreateEventState {
     Object? location = _undefined,
     String? description,
     Object? tags = _undefined,
-    String? visibility,
+    EventVisibility? visibility,
     Object? availableSpots = _undefined,
-    bool? allowPlusOnes,
+    bool? isEditingSpots,
+    bool? isWaitlistEnabled,
+    int? maxPlusOnes,
     bool? requireApproval,
     bool? allowMaybe,
     Object? rsvpDeadline = _undefined,
@@ -91,7 +98,7 @@ class CreateEventState {
       posterUrl: posterUrl == _undefined ? this.posterUrl : (posterUrl as String?),
       customPosterBytes: customPosterBytes == _undefined ? this.customPosterBytes : (customPosterBytes as Uint8List?),
       posterAspectRatio: posterAspectRatio ?? this.posterAspectRatio,
-      auroraColors: auroraColors == _undefined ? this._auroraColors : (auroraColors as List<Color>?),
+      auroraColors: auroraColors == _undefined ? _auroraColors : (auroraColors as List<Color>?),
       startDate: startDate == _undefined ? this.startDate : (startDate as DateTime?),
       startTimeTbd: startTimeTbd ?? this.startTimeTbd,
       endDate: endDate == _undefined ? this.endDate : (endDate as DateTime?),
@@ -99,10 +106,12 @@ class CreateEventState {
       isLocationSet: isLocationSet ?? this.isLocationSet,
       location: location == _undefined ? this.location : (location as String?),
       description: description ?? this.description,
-      tags: tags == _undefined ? this._tags : (tags as List<String>?),
+      tags: tags == _undefined ? _tags : (tags as List<String>?),
       visibility: visibility ?? this.visibility,
       availableSpots: availableSpots == _undefined ? this.availableSpots : (availableSpots as int?),
-      allowPlusOnes: allowPlusOnes ?? this.allowPlusOnes,
+      isEditingSpots: isEditingSpots ?? this.isEditingSpots,
+      isWaitlistEnabled: isWaitlistEnabled ?? this.isWaitlistEnabled,
+      maxPlusOnes: maxPlusOnes ?? this.maxPlusOnes,
       requireApproval: requireApproval ?? this.requireApproval,
       allowMaybe: allowMaybe ?? this.allowMaybe,
       rsvpDeadline: rsvpDeadline == _undefined ? this.rsvpDeadline : (rsvpDeadline as DateTime?),
@@ -207,15 +216,36 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     );
   }
 
+  void updateTags(List<String> tags) {
+    if (tags.length <= 5) {
+      state = state.copyWith(tags: tags);
+    }
+  }
+
+  void toggleTag(String tag) {
+    final currentTags = List<String>.from(state.tags);
+    if (currentTags.contains(tag)) {
+      currentTags.remove(tag);
+      state = state.copyWith(tags: currentTags);
+    } else if (currentTags.length < 5) {
+      currentTags.add(tag);
+      state = state.copyWith(tags: currentTags);
+    }
+  }
+
+  void clearTags() => state = state.copyWith(tags: []);
+
   void updateDescription(String val) => state = state.copyWith(description: val);
 
-  void updateTags(List<String> tags) => state = state.copyWith(tags: tags);
-
-  void updateVisibility(String val) => state = state.copyWith(visibility: val);
+  void updateVisibility(EventVisibility val) => state = state.copyWith(visibility: val);
 
   void updateSpots(int? spots) => state = state.copyWith(availableSpots: spots);
 
-  void setAllowPlusOnes(bool val) => state = state.copyWith(allowPlusOnes: val);
+  void setEditingSpots(bool editing) => state = state.copyWith(isEditingSpots: editing);
+
+  void setWaitlistEnabled(bool enabled) => state = state.copyWith(isWaitlistEnabled: enabled);
+
+  void setMaxPlusOnes(int val) => state = state.copyWith(maxPlusOnes: val);
 
   void setRequireApproval(bool val) => state = state.copyWith(requireApproval: val);
 

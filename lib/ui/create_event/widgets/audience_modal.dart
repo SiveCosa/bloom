@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/create_event_state.dart';
 import 'bloom_toggle.dart';
+import '../../../domain/event/event_visibility.dart';
 
 class AudienceModal extends ConsumerWidget {
-  const AudienceModal({super.key});
+  final String title;
+  const AudienceModal({super.key, required this.title});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,7 +16,7 @@ class AudienceModal extends ConsumerWidget {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
-        color: Color(0xFF121212),
+        color: Color(0xFF191B1D),
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       child: Column(
@@ -29,9 +31,9 @@ class AudienceModal extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Audience Settings',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -45,23 +47,31 @@ class AudienceModal extends ConsumerWidget {
               children: [
                 _buildOptionSection(
                   title: 'Visibility',
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: ['Public', 'Followers', 'Private'].map((v) {
-                      final isSelected = state.visibility == v;
-                      return ChoiceChip(
-                        label: Text(v),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) notifier.updateVisibility(v);
-                        },
-                        selectedColor: Colors.white,
-                        backgroundColor: Colors.white10,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.black : Colors.white,
-                        ),
-                      );
-                    }).toList(),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const ClampingScrollPhysics(),
+                    child: Row(
+                      children: EventVisibility.values.map((v) {
+                        final isSelected = state.visibility == v;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(v.title),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) notifier.updateVisibility(v);
+                            },
+                            selectedColor: Colors.white,
+                            backgroundColor: Colors.white10,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.black : Colors.white,
+                              fontSize: 12,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -112,8 +122,8 @@ class AudienceModal extends ConsumerWidget {
                     children: [
                       const Text('Allow guests to bring plus ones', style: TextStyle(color: Colors.white70)),
                       BloomToggle(
-                        value: state.allowPlusOnes,
-                        onChanged: (val) => notifier.setAllowPlusOnes(val),
+                        value: state.maxPlusOnes > 0,
+                        onChanged: (val) => notifier.setMaxPlusOnes(val ? 1 : 0),
                       ),
                     ],
                   ),

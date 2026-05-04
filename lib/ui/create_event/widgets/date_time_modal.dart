@@ -94,7 +94,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
 
     return Container(
       height: MediaQuery.of(context).size.height,
-      decoration: const BoxDecoration(color: Color.fromARGB(255, 44, 44, 44)),
+      decoration: const BoxDecoration(color: Color(0xFF191B1D)),
       child: Column(
         children: [
           const SizedBox(height: 12), // space above the pull bar

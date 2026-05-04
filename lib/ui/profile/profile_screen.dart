@@ -725,7 +725,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF161A1F).withValues(alpha: 0.95),
+              color: const Color(0xFF191B1D).withValues(alpha: 0.95),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(30),
               ),
