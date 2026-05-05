@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'event_visibility.dart';
+import 'event_extra.dart';
+import 'event_location.dart';
 
 class CreateEventState {
   final String title;
@@ -27,7 +29,7 @@ class CreateEventState {
   final DateTime? endDate;
   final bool endTimeTbd;
   final bool isLocationSet;
-  final String? location;
+  final EventLocation? location;
   final String description;
   
   final List<String>? _tags;
@@ -42,6 +44,11 @@ class CreateEventState {
   final bool allowMaybe;
   final DateTime? rsvpDeadline;
   final bool isGeneratingPoster;
+  final List<EventExtra>? _extras;
+  List<EventExtra> get extras => _extras ?? const [];
+  
+  final List<String>? _rsvpReminders;
+  List<String> get rsvpReminders => _rsvpReminders ?? const [];
 
   CreateEventState({
     this.title = '',
@@ -66,8 +73,12 @@ class CreateEventState {
     this.allowMaybe = true,
     this.rsvpDeadline,
     this.isGeneratingPoster = false,
+    List<EventExtra>? extras,
+    List<String>? rsvpReminders,
   })  : _auroraColors = auroraColors,
-        _tags = tags;
+        _tags = tags,
+        _extras = extras,
+        _rsvpReminders = rsvpReminders;
 
   CreateEventState copyWith({
     String? title,
@@ -92,6 +103,8 @@ class CreateEventState {
     bool? allowMaybe,
     Object? rsvpDeadline = _undefined,
     bool? isGeneratingPoster,
+    List<EventExtra>? extras,
+    Object? rsvpReminders = _undefined,
   }) {
     return CreateEventState(
       title: title ?? this.title,
@@ -104,7 +117,7 @@ class CreateEventState {
       endDate: endDate == _undefined ? this.endDate : (endDate as DateTime?),
       endTimeTbd: endTimeTbd ?? this.endTimeTbd,
       isLocationSet: isLocationSet ?? this.isLocationSet,
-      location: location == _undefined ? this.location : (location as String?),
+      location: location == _undefined ? this.location : (location as EventLocation?),
       description: description ?? this.description,
       tags: tags == _undefined ? _tags : (tags as List<String>?),
       visibility: visibility ?? this.visibility,
@@ -116,6 +129,8 @@ class CreateEventState {
       allowMaybe: allowMaybe ?? this.allowMaybe,
       rsvpDeadline: rsvpDeadline == _undefined ? this.rsvpDeadline : (rsvpDeadline as DateTime?),
       isGeneratingPoster: isGeneratingPoster ?? this.isGeneratingPoster,
+      extras: extras ?? _extras,
+      rsvpReminders: rsvpReminders == _undefined ? _rsvpReminders : (rsvpReminders as List<String>?),
     );
   }
 }
@@ -253,15 +268,52 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
   void updateRSVPDeadline(DateTime? date) => state = state.copyWith(rsvpDeadline: date);
 
-  void updateLocation(String? loc) {
+  void updateLocation(EventLocation? loc) {
     state = state.copyWith(
       location: loc,
-      isLocationSet: loc != null && loc.isNotEmpty,
+      isLocationSet: loc != null,
     );
   }
 
   void setGeneratingPoster(bool generating) {
     state = state.copyWith(isGeneratingPoster: generating);
+  }
+
+  void addExtra(EventExtra extra) {
+    state = state.copyWith(extras: [...state.extras, extra]);
+  }
+
+  void updateExtra(EventExtra extra) {
+    state = state.copyWith(
+      extras: state.extras.map((e) => e.id == extra.id ? extra : e).toList(),
+    );
+  }
+
+  void removeExtra(String id) {
+    state = state.copyWith(
+      extras: state.extras.where((e) => e.id != id).toList(),
+    );
+  }
+
+  void toggleRSVPReminder(String reminder) {
+    final currentReminders = List<String>.from(state.rsvpReminders);
+    if (currentReminders.contains(reminder)) {
+      currentReminders.remove(reminder);
+    } else {
+      currentReminders.add(reminder);
+    }
+    state = state.copyWith(rsvpReminders: currentReminders);
+  }
+
+  void updateRSVPReminders(List<String> reminders) {
+    state = state.copyWith(rsvpReminders: reminders);
+  }
+
+  void clearRSVPDeadline() {
+    state = state.copyWith(
+      rsvpDeadline: null,
+      rsvpReminders: [],
+    );
   }
 }
 

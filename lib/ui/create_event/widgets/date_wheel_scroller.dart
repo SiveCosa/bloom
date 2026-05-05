@@ -35,7 +35,11 @@ class _CustomDateWheelScrollerState extends State<CustomDateWheelScroller> {
   @override
   void didUpdateWidget(CustomDateWheelScroller oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialIndex != oldWidget.initialIndex) {
+    // Only jump if the provided index differs from our current selection
+    // to avoid interrupting active scrolls or causing redundant jumps.
+    if (widget.initialIndex != _selectedIndex && 
+        widget.initialIndex >= 0 && 
+        widget.initialIndex < widget.items.length) {
       _selectedIndex = widget.initialIndex;
       _controller.jumpToItem(widget.initialIndex);
     }

@@ -9,9 +9,8 @@ class FirebaseProvider {
 
     // Firebase App Check Enforcement
     await FirebaseAppCheck.instance.activate(
-      // ignore: deprecated_member_use`n      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-      // ignore: deprecated_member_use`n      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
-      // webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
     );
   }
 }

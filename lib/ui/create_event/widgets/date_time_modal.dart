@@ -111,35 +111,43 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
           const SizedBox(height: 10),
 
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 10,
-            ), // Padding above the segmented view
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                TextButton(
-                  onPressed: _onClearAll,
-                  child: const Text(
-                    'Clear',
-                    style: TextStyle(color: Colors.white54, fontSize: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: _onClearAll,
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 const Text(
                   'Date & Time',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                TextButton(
-                  onPressed: _onSave,
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                      color: Color(0xFF4A80F0),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _onSave,
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Color(0xFF6C8EEF),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),

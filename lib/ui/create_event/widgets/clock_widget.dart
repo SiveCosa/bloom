@@ -95,74 +95,47 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
                 ),
 
                 // Layer 2 & 3: Selector and Clipped Black Text
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0.0, end: widget.isTbd ? 0.0 : 1.0),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOutCubic,
-                  builder: (context, factor, child) {
-                    if (factor == 0 && widget.isTbd) return const SizedBox.shrink();
-                    
-                    return TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: _currentAngle, end: _currentAngle),
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOutCubic,
-                      builder: (context, angle, child) {
-                        final selectorAngle = angle - pi / 2;
-                        final selectorRadius = 100.0 * factor;
-
-                        return Stack(
-                          children: [
-                            // Layer 2: The Selector (White Arm and Circle)
-                            CustomPaint(
-                              painter: ClockSelectorPainter(
-                                angle: selectorAngle,
-                                radius: selectorRadius,
-                              ),
-                              size: const Size(240, 240),
-                            ),
-                            // Layer 3: The Black Text Mask (Clipped)
-                            ClipPath(
-                              clipper: SelectorClipper(
-                                angle: selectorAngle,
-                                radius: selectorRadius,
-                              ),
-                              child: CustomPaint(
-                                painter: ClockNumbersPainter(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  selectedHour: widget.selectedHour,
-                                ),
-                                size: const Size(240, 240),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
+                if (!widget.isTbd)
+                  Stack(
+                    children: [
+                      // Layer 2: The Selector (White Arm and Circle)
+                      CustomPaint(
+                        painter: ClockSelectorPainter(
+                          angle: _currentAngle - pi / 2,
+                          radius: 100.0,
+                        ),
+                        size: const Size(240, 240),
+                      ),
+                      // Layer 3: The Black Text Mask (Clipped)
+                      ClipPath(
+                        clipper: SelectorClipper(
+                          angle: _currentAngle - pi / 2,
+                          radius: 100.0,
+                        ),
+                        child: CustomPaint(
+                          painter: ClockNumbersPainter(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            selectedHour: widget.selectedHour,
+                          ),
+                          size: const Size(240, 240),
+                        ),
+                      ),
+                    ],
+                  ),
 
                 // Center Anchor / TBD Button
-                TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0.0, end: widget.isTbd ? 1.0 : 0.0),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOutCubic,
-                  builder: (context, tbdFactor, child) {
-                    // When not TBD (tbdFactor -> 0), size is 8. When TBD, size is 40.
-                    final size = 8.0 + (32.0 * tbdFactor);
-                    return Container(
-                      width: size,
-                      height: size,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: tbdFactor > 0.8 
-                        ? const Text('TBD', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold))
-                        : null,
-                    );
-                  },
+                Container(
+                  width: widget.isTbd ? 40 : 8,
+                  height: widget.isTbd ? 40 : 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: widget.isTbd 
+                    ? const Text('TBD', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold))
+                    : null,
                 ),
               ],
             ),

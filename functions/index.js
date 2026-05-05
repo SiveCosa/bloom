@@ -1,6 +1,9 @@
 const { auth } = require("firebase-functions/v1");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+
+const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 
 // Initialize the Firebase Admin SDK
 admin.initializeApp();
@@ -245,3 +248,48 @@ exports.initializeUserProfile = auth.user().onCreate(async (user) => {
     console.log(`Initialized profile for user: ${uid}`);
   }
 });
+
+// 6. Google Maps Proxy Function
+exports.googleMapsProxy = onCall(
+  { 
+    region: "africa-south1",
+    enforceAppCheck: false, // Set to false for monitoring/debugging; still secured by Auth below
+    secrets: [GOOGLE_MAPS_API_KEY]
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const { endpoint, params } = request.data;
+    if (!endpoint || !params) {
+      throw new HttpsError("invalid-argument", "Endpoint and params are required.");
+    }
+
+    const apiKey = GOOGLE_MAPS_API_KEY.value();
+    let url = "";
+
+    switch (endpoint) {
+      case "autocomplete":
+        url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(params.input)}&key=${apiKey}`;
+        break;
+      case "details":
+        url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${params.place_id}&fields=name,formatted_address,geometry&key=${apiKey}`;
+        break;
+      case "geocode":
+        url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${params.latlng}&key=${apiKey}`;
+        break;
+      default:
+        throw new HttpsError("invalid-argument", "Invalid endpoint.");
+    }
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Google Maps API Proxy Error:", error);
+      throw new HttpsError("internal", "Failed to fetch data from Google Maps API.");
+    }
+  }
+);

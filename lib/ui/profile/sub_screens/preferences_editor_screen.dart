@@ -138,44 +138,46 @@ class _PreferencesEditorScreenState
                               ),
                             ),
                             const SizedBox(height: 24),
-                            TextField(
-                              controller: _searchController,
-                              onChanged: (_) => setState(() {}),
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                prefixIcon: const Icon(
-                                  Icons.search,
-                                  color: Colors.white54,
+                            SizedBox(
+                              height: 50,
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: (_) => setState(() {}),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
                                 ),
-                                hintText: 'Search an interest',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white54,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white.withValues(alpha: 0.05),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 0,
-                                  horizontal: 20,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(_kRadius),
-                                  borderSide: BorderSide(
-                                    color: _kBorderColor,
-                                    width: 1.5,
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    size: 20,
                                   ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(_kRadius),
-                                  borderSide: BorderSide(
-                                    color: _kBorderColor,
-                                    width: 1.5,
+                                  hintText: 'Search an interest',
+                                  hintStyle: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    fontSize: 14,
                                   ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(_kRadius),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFC151FD),
-                                    width: 1.5,
+                                  filled: true,
+                                  fillColor: Colors.white.withValues(
+                                    alpha: 0.05,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                    borderSide: const BorderSide(
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),

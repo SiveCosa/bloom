@@ -400,10 +400,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               value: _selectedGender.isEmpty ? null : _selectedGender,
               hint: const Text(
                 'Select Gender',
-                style: TextStyle(color: Colors.white24, fontSize: 16),
+                style: TextStyle(color: Colors.white24, fontSize: 14),
               ),
               dropdownColor: const Color(0xFF1E2128),
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
               isExpanded: true,
               onChanged: isLocked
                   ? null
@@ -583,13 +583,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               : null,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
           decoration: InputDecoration(
             counterText: maxLength == null ? "" : null,
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.2)),
+            hintStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.2),
+              fontSize: 14,
+            ),
             prefixIcon: prefixText != null
                 ? Padding(
                     padding: const EdgeInsets.symmetric(
@@ -601,7 +604,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       style: const TextStyle(
                         color: Color(0xFFC151FD), // Match brand
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 14,
                       ),
                     ),
                   )

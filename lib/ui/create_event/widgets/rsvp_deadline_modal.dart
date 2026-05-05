@@ -1,93 +1,341 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../domain/event/create_event_state.dart';
+import 'date_wheel_scroller.dart';
 
-class RSVPDeadlineModal extends ConsumerWidget {
+class RSVPDeadlineModal extends ConsumerStatefulWidget {
   const RSVPDeadlineModal({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(createEventProvider);
+  ConsumerState<RSVPDeadlineModal> createState() => _RSVPDeadlineModalState();
+}
+
+class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
+  late DateTime _selectedDate;
+  late List<String> _selectedReminders;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = ref.read(createEventProvider);
+    _selectedDate = state.rsvpDeadline ?? DateTime.now();
+    _selectedReminders = List<String>.from(state.rsvpReminders);
+  }
+
+  void _onSave() {
     final notifier = ref.read(createEventProvider.notifier);
+    // Set time to 11:59 PM
+    final finalDate = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      23,
+      59,
+    );
+    notifier.updateRSVPDeadline(finalDate);
+    notifier.updateRSVPReminders(_selectedReminders);
+    Navigator.pop(context);
+  }
+
+  void _onClear() {
+    ref.read(createEventProvider.notifier).clearRSVPDeadline();
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('EEE, d MMM yyyy');
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.5,
-      decoration: const BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
+      height: MediaQuery.of(context).size.height,
+      decoration: const BoxDecoration(color: Color(0xFF191B1D)),
       child: Column(
         children: [
           const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'RSVP Deadline',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 30),
-          ListTile(
-            leading: const Icon(Icons.event_available, color: Colors.white),
-            title: const Text('Deadline Date', style: TextStyle(color: Colors.white)),
-            trailing: Text(
-              state.rsvpDeadline != null 
-                  ? '${state.rsvpDeadline!.day}/${state.rsvpDeadline!.month}/${state.rsvpDeadline!.year}' 
-                  : 'Select Date',
-              style: const TextStyle(color: Colors.white70),
-            ),
-            onTap: () async {
-              final lastDate = state.startDate ?? DateTime.now().add(const Duration(days: 365));
-              final initialDate = state.rsvpDeadline ?? 
-                  (state.startDate != null 
-                    ? state.startDate!.subtract(const Duration(days: 1)) 
-                    : DateTime.now());
-              
-              // Ensure initialDate is not after lastDate
-              final safeInitialDate = initialDate.isAfter(lastDate) ? lastDate : initialDate;
-
-              final date = await showDatePicker(
-                context: context,
-                initialDate: safeInitialDate,
-                firstDate: DateTime.now().subtract(const Duration(days: 365)), // Allow past for safety if needed, but usually now()
-                lastDate: lastDate,
-              );
-              if (date != null) notifier.updateRSVPDeadline(date);
-            },
-          ),
-          const Divider(color: Colors.white12),
-          ListTile(
-            leading: const Icon(Icons.block, color: Colors.redAccent),
-            title: const Text('No Deadline', style: TextStyle(color: Colors.redAccent)),
-            onTap: () {
-              notifier.updateRSVPDeadline(null);
-              Navigator.pop(context);
-            },
-          ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: _onClear,
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'RSVP Deadline',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _onSave,
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Color(0xFF6C8EEF),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          // Selected Date Display
+          Text(
+            dateFormat.format(_selectedDate),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            'at 11:59 PM',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 16,
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          // Date Scrollers
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Selector Boxes Behind
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildSelectorBox(75),
+                  const SizedBox(width: 10),
+                  _buildSelectorBox(75),
+                  const SizedBox(width: 10),
+                  _buildSelectorBox(75),
+                ],
+              ),
+              // Scrollers on Top
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Day
+                  CustomDateWheelScroller(
+                    width: 75,
+                    items: List.generate(31, (i) => (i + 1).toString().padLeft(2, '0')),
+                    initialIndex: (_selectedDate.day - 1).clamp(0, 30),
+                    onSelectedItemChanged: (i) {
+                      setState(() {
+                        // DateTime handles normalization (e.g. Feb 31 -> Mar 3)
+                        _selectedDate = DateTime(
+                          _selectedDate.year,
+                          _selectedDate.month,
+                          i + 1,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  // Month
+                  CustomDateWheelScroller(
+                    width: 75,
+                    items: const [
+                      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+                    ],
+                    initialIndex: (_selectedDate.month - 1).clamp(0, 11),
+                    onSelectedItemChanged: (i) {
+                      setState(() {
+                        _selectedDate = DateTime(
+                          _selectedDate.year,
+                          i + 1,
+                          _selectedDate.day,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  // Year
+                  Builder(
+                    builder: (context) {
+                      final currentYear = DateTime.now().year;
+                      // Ensure we include at least the selected year and current year
+                      final startYear = _selectedDate.year < currentYear 
+                          ? _selectedDate.year 
+                          : currentYear;
+                      final yearItems = List.generate(20, (i) => (startYear + i).toString());
+                      final yearIndex = (_selectedDate.year - startYear).clamp(0, yearItems.length - 1);
+
+                      return CustomDateWheelScroller(
+                        width: 75,
+                        items: yearItems,
+                        initialIndex: yearIndex,
+                        onSelectedItemChanged: (i) {
+                          setState(() {
+                            _selectedDate = DateTime(
+                              startYear + i,
+                              _selectedDate.month,
+                              _selectedDate.day,
+                            );
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 40),
+          const Divider(color: Colors.white12, indent: 20, endIndent: 20),
+          const SizedBox(height: 20),
+
+          // Reminders Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Set Reminder Button (Now at top of section)
+                PopupMenuButton<String>(
+                  onSelected: (val) {
+                    if (!_selectedReminders.contains(val)) {
+                      setState(() {
+                        _selectedReminders.add(val);
+                      });
+                    }
+                  },
+                  offset: const Offset(0, 50), // Open below the pill
+                  color: const Color(0xFF1E2128),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  itemBuilder: (context) => [
+                    _buildPopupItem('Week before'),
+                    _buildPopupItem('Day before'),
+                    _buildPopupItem('The day of'),
+                  ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Set Reminder',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(Icons.keyboard_arrow_down, color: Colors.white.withValues(alpha: 0.5), size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+                
+                // Reminders Pills (Now below the button)
+                if (_selectedReminders.isNotEmpty)
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _selectedReminders.map((reminder) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              reminder,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedReminders.remove(reminder);
+                                });
+                              },
+                              child: const Icon(Icons.close, color: Colors.white70, size: 14),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildPopupItem(String value) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+    );
+  }
+
+  Widget _buildSelectorBox(double width) {
+    return Container(
+      height: 45,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
+        ),
       ),
     );
   }

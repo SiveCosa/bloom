@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/auth/auth_providers.dart';
 import 'widgets/event_title_input.dart';
@@ -17,6 +19,13 @@ import 'widgets/audience_modal.dart';
 import 'widgets/plus_ones_selection_modal.dart';
 import 'widgets/tag_selection_modal.dart';
 import '../../domain/event/event_visibility.dart';
+import '../../domain/event/event_extra.dart';
+import 'widgets/extra_field_modal.dart';
+import 'widgets/location_selection_modal.dart';
+import 'widgets/rsvp_deadline_modal.dart';
+import 'widgets/rsvp_option_preview.dart';
+import '../../domain/event/event_location.dart';
+
 
 class CreateEventScreen extends ConsumerWidget {
   const CreateEventScreen({super.key});
@@ -26,6 +35,7 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const PosterSelectionModal(),
     );
@@ -61,6 +71,7 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AudienceModal(title: title),
     );
@@ -71,6 +82,7 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const PlusOnesSelectionModal(),
     );
@@ -81,8 +93,53 @@ class CreateEventScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const TagSelectionModal(),
+    );
+  }
+
+  void _showRSVPDeadlineSelection(BuildContext context) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const RSVPDeadlineModal(),
+    );
+  }
+
+  void _showExtraFieldModal(
+    BuildContext context,
+    WidgetRef ref,
+    ExtraType type, {
+    EventExtra? existingExtra,
+  }) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ExtraFieldModal(
+        initialType: type,
+        initialExtra: existingExtra,
+        onSave: (extra) {
+          if (existingExtra != null) {
+            ref.read(createEventProvider.notifier).updateExtra(extra);
+          } else {
+            ref.read(createEventProvider.notifier).addExtra(extra);
+          }
+        },
+        onDelete: existingExtra != null
+            ? () {
+                ref
+                    .read(createEventProvider.notifier)
+                    .removeExtra(existingExtra.id);
+              }
+            : null,
+      ),
     );
   }
 
@@ -228,8 +285,25 @@ class CreateEventScreen extends ConsumerWidget {
 
                           // Location Section
                           GestureDetector(
-                            onTap: () =>
-                                _showSkeletonModal(context, 'Location'),
+                            onTap: () async {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              final result =
+                                  await showModalBottomSheet<EventLocation>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) =>
+                                        LocationSelectionModal(
+                                      initialLocation: state.location,
+                                    ),
+                                  );
+                              if (result != null) {
+                                ref
+                                    .read(createEventProvider.notifier)
+                                    .updateLocation(result);
+                              }
+                            },
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -250,26 +324,57 @@ class CreateEventScreen extends ConsumerWidget {
                                     size: 24,
                                   ),
                                   const SizedBox(width: 12),
-                                  const Text(
-                                    'Location',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    state.isLocationSet
-                                        ? (state.location ?? 'Set location')
-                                        : 'Set location',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.5,
+                                  if (!state.isLocationSet) ...[
+                                    const Text(
+                                      'Location',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      fontSize: 14,
                                     ),
-                                  ),
+                                    const Spacer(),
+                                    Text(
+                                      'Set the location',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            state.location?.displayName ?? '',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            state.location?.formattedAddress ??
+                                                '',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.8,
+                                              ),
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(width: 4),
                                   Icon(
                                     Icons.chevron_right,
@@ -414,22 +519,116 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Event Details Section
+                          // Extras Section
+                          EventSectionCard(
+                            headerIcon: Icons.auto_awesome,
+                            title: 'Extras',
+                            body: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _buildPillButton(
+                                      context,
+                                      ref,
+                                      'Link',
+                                      ExtraType.link,
+                                    ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.playlist,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Playlist',
+                                        ExtraType.playlist,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.dressCode,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Dress code',
+                                        ExtraType.dressCode,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.food,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Food',
+                                        ExtraType.food,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.drinks,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Drinks',
+                                        ExtraType.drinks,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.parking,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Parking',
+                                        ExtraType.parking,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.accommodation,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Accommodation',
+                                        ExtraType.accommodation,
+                                      ),
+                                    if (!state.extras.any(
+                                      (e) => e.type == ExtraType.giftRegistry,
+                                    ))
+                                      _buildPillButton(
+                                        context,
+                                        ref,
+                                        'Gift Registry',
+                                        ExtraType.giftRegistry,
+                                      ),
+                                  ],
+                                ),
+                                if (state.extras.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  const Divider(
+                                    color: Colors.white12,
+                                    height: 1,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ...state.extras.map(
+                                    (extra) => _buildExtraItem(
+                                      context,
+                                      ref,
+                                      extra,
+                                      state.auroraColors,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
                           EventSectionCard(
                             headerIcon: Icons.edit_note_outlined,
                             title: 'Event Details',
                             body: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Event Tags',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 8,
@@ -524,7 +723,7 @@ class CreateEventScreen extends ConsumerWidget {
                                       ),
                                   ],
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 EventDescriptionInput(
                                   initialValue: state.description,
                                   onChanged: (val) => ref
@@ -547,42 +746,6 @@ class CreateEventScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-
-                          const SizedBox(height: 10),
-
-                          // Extras Section
-                          EventSectionCard(
-                            headerIcon: Icons.auto_awesome,
-                            title: 'Extras',
-                            body: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                _buildPillButton(context, '+ Link', 'Link'),
-                                _buildPillButton(
-                                  context,
-                                  '+ Dress code',
-                                  'Dress code',
-                                ),
-                                _buildPillButton(
-                                  context,
-                                  '+ Food situation',
-                                  'Food situation',
-                                ),
-                                _buildPillButton(
-                                  context,
-                                  '+ Parking',
-                                  'Parking',
-                                ),
-                                _buildPillButton(
-                                  context,
-                                  '+ Accommodation',
-                                  'Accommodation',
-                                ),
-                              ],
-                            ),
-                          ),
-
                           const SizedBox(height: 10),
 
                           // RSVP Options Section
@@ -591,28 +754,69 @@ class CreateEventScreen extends ConsumerWidget {
                             title: 'RSVP Options',
                             body: Column(
                               children: [
-                                // Graphic Header
-                                Padding(
+                                // RSVP Preview Pill
+                                Container(
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
+                                    vertical: 12,
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _buildRSVPVisual(
-                                        Icons.check_circle_outline,
-                                        'Going',
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(50),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
                                       ),
-                                      _buildRSVPVisual(
-                                        Icons.help_outline,
-                                        'Maybe',
-                                      ),
-                                      _buildRSVPVisual(
-                                        Icons.cancel_outlined,
-                                        'Not Going',
-                                      ),
-                                    ],
+                                    ),
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: state.requireApproval
+                                        ? Row(
+                                            key: const ValueKey('approval'),
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.add_circle_outline,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.54,
+                                                ),
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                'Get on the list',
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.54,
+                                                  ),
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Row(
+                                            key: const ValueKey('standard'),
+                                            children: [
+                                              const RsvpOptionPreview(
+                                                icon: Icons.check_circle_outline,
+                                                label: 'Going',
+                                              ),
+                                              _buildVerticalDivider(),
+                                              if (state.allowMaybe) ...[
+                                                const RsvpOptionPreview(
+                                                  icon: Icons.help_outline,
+                                                  label: 'Maybe',
+                                                ),
+                                                _buildVerticalDivider(),
+                                              ],
+                                              const RsvpOptionPreview(
+                                                icon: Icons.cancel_outlined,
+                                                label: 'Not Going',
+                                              ),
+                                            ],
+                                          ),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -625,27 +829,24 @@ class CreateEventScreen extends ConsumerWidget {
                                         .setRequireApproval(val);
                                   },
                                 ),
-                                _buildToggleRow(
-                                  "Guest can RSVP 'Maybe'",
-                                  state.allowMaybe,
-                                  (val) {
-                                    ref
-                                        .read(createEventProvider.notifier)
-                                        .setAllowMaybe(val);
-                                  },
-                                ),
-                                const SizedBox(height: 8),
+                                if (!state.requireApproval)
+                                  _buildToggleRow(
+                                    "Guest can RSVP 'Maybe'",
+                                    state.allowMaybe,
+                                    (val) {
+                                      ref
+                                          .read(createEventProvider.notifier)
+                                          .setAllowMaybe(val);
+                                    },
+                                  ),
                                 _buildTappableRow(
                                   context: context,
                                   icon: Icons.access_time,
                                   title: 'RSVP Deadline',
                                   trailing: state.rsvpDeadline != null
-                                      ? 'Set'
+                                      ? DateFormat('d MMM yyyy').format(state.rsvpDeadline!)
                                       : 'Optional',
-                                  onTap: () => _showSkeletonModal(
-                                    context,
-                                    'RSVP Deadline',
-                                  ),
+                                  onTap: () => _showRSVPDeadlineSelection(context),
                                 ),
                               ],
                             ),
@@ -728,25 +929,36 @@ class CreateEventScreen extends ConsumerWidget {
 
   Widget _buildPillButton(
     BuildContext context,
+    WidgetRef ref,
     String label,
-    String modalTitle,
+    ExtraType type,
   ) {
-    return InkWell(
-      onTap: () => _showSkeletonModal(context, modalTitle),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: InkWell(
+            onTap: () => _showExtraFieldModal(context, ref, type),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(type.icon, color: Colors.white, size: 15),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -754,19 +966,11 @@ class CreateEventScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRSVPVisual(IconData icon, String label) {
-    return Opacity(
-      opacity: 0.5,
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 10),
-          ),
-        ],
-      ),
+  Widget _buildVerticalDivider() {
+    return Container(
+      width: 1,
+      height: 24,
+      color: Colors.white.withValues(alpha: 0.1),
     );
   }
 
@@ -781,29 +985,77 @@ class CreateEventScreen extends ConsumerWidget {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.70),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+          child: InkWell(
+            onTap: () => onChanged(!value),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  BloomToggle(value: value, onChanged: onChanged),
+                ],
               ),
-              BloomToggle(value: value, onChanged: onChanged),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildExtraItem(
+    BuildContext context,
+    WidgetRef ref,
+    EventExtra extra,
+    List<Color> auroraColors,
+  ) {
+    final bool isLink = extra.url != null && extra.url!.isNotEmpty;
+    final Color textColor = isLink
+        ? _getBestExtraColor(auroraColors)
+        : Colors.white;
+
+    return _ExtraItemTile(
+      extra: extra,
+      textColor: textColor,
+      onEdit: () =>
+          _showExtraFieldModal(context, ref, extra.type, existingExtra: extra),
+    );
+  }
+
+  Color _getBestExtraColor(List<Color> colors) {
+    if (colors.isEmpty) return const Color(0xFF6C8EEF);
+
+    // Find the color with the highest luminance that is bright enough
+    Color best = colors.first;
+    double maxLuminance = best.computeLuminance();
+
+    for (final color in colors) {
+      final lum = color.computeLuminance();
+      if (lum > maxLuminance) {
+        maxLuminance = lum;
+        best = color;
+      }
+    }
+
+    // If it's too dark (against our dark background), use brand blue or a default
+    if (maxLuminance < 0.3) {
+      return const Color(0xFF6C8EEF);
+    }
+
+    return best;
   }
 }
 
@@ -1093,6 +1345,151 @@ class _AuroraBackground extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ExtraItemTile extends StatefulWidget {
+  final EventExtra extra;
+  final Color textColor;
+  final VoidCallback onEdit;
+
+  const _ExtraItemTile({
+    required this.extra,
+    required this.textColor,
+    required this.onEdit,
+  });
+
+  @override
+  State<_ExtraItemTile> createState() => _ExtraItemTileState();
+}
+
+class _ExtraItemTileState extends State<_ExtraItemTile> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isLink =
+        widget.extra.url != null && widget.extra.url!.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              widget.extra.type.icon,
+              color: Colors.white.withValues(alpha: 0.6),
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.extra.displayText,
+                    maxLines: _isExpanded ? null : 1,
+                    overflow: _isExpanded
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: widget.textColor,
+                      fontSize: 14,
+                      fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                    ),
+                  ),
+                  if (isLink && _isExpanded) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final url = widget.extra.url!.trim();
+                        final uri = Uri.parse(
+                          url.startsWith('http') ? url : 'https://$url',
+                        );
+                        try {
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.platformDefault,
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Error launching $uri: $e');
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: widget.textColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: widget.textColor.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.open_in_new,
+                              size: 14,
+                              color: widget.textColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Open Link',
+                              style: TextStyle(
+                                color: widget.textColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: widget.onEdit,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'edit',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.white.withValues(alpha: 0.4),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

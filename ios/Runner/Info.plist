@@ -63,6 +63,8 @@
 	<string>Bloom needs camera access to take your profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Bloom needs photo library access to set your profile photo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bloom needs your location to find nearby event places.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
