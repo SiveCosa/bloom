@@ -52,7 +52,7 @@ class AudienceModal extends ConsumerWidget {
                     physics: const ClampingScrollPhysics(),
                     child: Row(
                       children: EventVisibility.values.map((v) {
-                        final isSelected = state.visibility == v;
+                        final isSelected = state.audience.visibility == v;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
@@ -84,14 +84,14 @@ class AudienceModal extends ConsumerWidget {
                         children: [
                           const Text('Unlimited', style: TextStyle(color: Colors.white70)),
                           BloomToggle(
-                            value: state.availableSpots == null,
+                            value: state.audience.capacity == null,
                             onChanged: (val) {
                               notifier.updateSpots(val ? null : 50);
                             },
                           ),
                         ],
                       ),
-                      if (state.availableSpots != null) ...[
+                      if (state.audience.capacity != null) ...[
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -99,7 +99,7 @@ class AudienceModal extends ConsumerWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Slider(
-                                value: state.availableSpots!.toDouble(),
+                                value: state.audience.capacity!.toDouble(),
                                 min: 1,
                                 max: 500,
                                 activeColor: Colors.white,
@@ -107,7 +107,7 @@ class AudienceModal extends ConsumerWidget {
                                 onChanged: (val) => notifier.updateSpots(val.toInt()),
                               ),
                             ),
-                            Text('${state.availableSpots}', style: const TextStyle(color: Colors.white)),
+                            Text('${state.audience.capacity}', style: const TextStyle(color: Colors.white)),
                           ],
                         ),
                       ],
@@ -122,7 +122,7 @@ class AudienceModal extends ConsumerWidget {
                     children: [
                       const Text('Allow guests to bring plus ones', style: TextStyle(color: Colors.white70)),
                       BloomToggle(
-                        value: state.maxPlusOnes > 0,
+                        value: state.audience.maxPlusOnes > 0,
                         onChanged: (val) => notifier.setMaxPlusOnes(val ? 1 : 0),
                       ),
                     ],

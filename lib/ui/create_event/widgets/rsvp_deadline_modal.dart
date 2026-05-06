@@ -19,7 +19,7 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
   void initState() {
     super.initState();
     final state = ref.read(createEventProvider);
-    _selectedDate = state.rsvpDeadline ?? DateTime.now();
+    _selectedDate = state.audience.rsvpDeadline ?? DateTime.now();
     _selectedReminders = List<String>.from(state.rsvpReminders);
   }
 

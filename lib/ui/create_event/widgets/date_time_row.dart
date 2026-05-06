@@ -26,8 +26,8 @@ class DateTimeRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(createEventProvider);
-    final startDate = state.startDate;
-    final endDate = state.endDate;
+    final startDate = state.timing.startDate;
+    final endDate = state.timing.endDate;
 
     bool isUnset = startDate == null;
     bool isSingleDay = startDate != null && (endDate == null || _isSameDay(startDate, endDate));
@@ -95,15 +95,15 @@ class DateTimeRow extends ConsumerWidget {
     }
 
     if (isSingleDay) {
-      final startTimeStr = _formatTime(state.startDate!, state.startTimeTbd);
-      final endTimeStr = state.endDate != null ? _formatTime(state.endDate!, state.endTimeTbd) : null;
+      final startTimeStr = _formatTime(state.timing.startDate!, state.timing.startTimeTbd);
+      final endTimeStr = state.timing.endDate != null ? _formatTime(state.timing.endDate!, state.timing.endTimeTbd) : null;
       
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            _formatDate(state.startDate!),
+            _formatDate(state.timing.startDate!),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -130,7 +130,7 @@ class DateTimeRow extends ConsumerWidget {
           text: TextSpan(
             children: [
               TextSpan(
-                text: '${_formatDate(state.startDate!)} \u2022 ',
+                text: '${_formatDate(state.timing.startDate!)} \u2022 ',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -138,7 +138,7 @@ class DateTimeRow extends ConsumerWidget {
                 ),
               ),
               TextSpan(
-                text: _formatTime(state.startDate!, state.startTimeTbd),
+                text: _formatTime(state.timing.startDate!, state.timing.startTimeTbd),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 16,
@@ -153,7 +153,7 @@ class DateTimeRow extends ConsumerWidget {
           text: TextSpan(
             children: [
               TextSpan(
-                text: '${_formatDate(state.endDate!)} \u2022 ',
+                text: '${_formatDate(state.timing.endDate!)} \u2022 ',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -161,7 +161,7 @@ class DateTimeRow extends ConsumerWidget {
                 ),
               ),
               TextSpan(
-                text: _formatTime(state.endDate!, state.endTimeTbd),
+                text: _formatTime(state.timing.endDate!, state.timing.endTimeTbd),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 16,

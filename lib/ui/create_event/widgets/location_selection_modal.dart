@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dart_geohash/dart_geohash.dart';
 
 import '../../../domain/event/event_location.dart';
 
@@ -139,6 +140,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           _selectedLocation = EventLocation(
             latitude: lat,
             longitude: lng,
+            geohash: GeoHasher().encode(lng, lat),
             formattedAddress: details['formatted_address'],
             displayName: details['name'],
           );
@@ -191,6 +193,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           _selectedLocation = EventLocation(
             latitude: position.latitude,
             longitude: position.longitude,
+            geohash: GeoHasher().encode(position.longitude, position.latitude),
             formattedAddress: resultData['formatted_address'],
             displayName: resultData['formatted_address'].split(',')[0],
           );
@@ -218,6 +221,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
     final finalLocation = EventLocation(
       latitude: _selectedLocation!.latitude,
       longitude: _selectedLocation!.longitude,
+      geohash: _selectedLocation!.geohash,
       formattedAddress: _selectedLocation!.formattedAddress,
       displayName: _displayNameController.text.isNotEmpty 
           ? _displayNameController.text 

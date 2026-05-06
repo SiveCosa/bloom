@@ -30,10 +30,10 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
     super.initState();
     final state = ref.read(createEventProvider);
     final now = DateTime.now();
-    _startDate = state.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
-    _startTimeTbd = state.startTimeTbd;
-    _endDate = state.endDate;
-    _endTimeTbd = state.endTimeTbd;
+    _startDate = state.timing.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
+    _startTimeTbd = state.timing.startTimeTbd;
+    _endDate = state.timing.endDate;
+    _endTimeTbd = state.timing.endTimeTbd;
 
     _updateClockFromState();
   }

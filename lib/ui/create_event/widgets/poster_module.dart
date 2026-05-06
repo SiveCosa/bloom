@@ -14,8 +14,8 @@ class PosterModule extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(createEventProvider);
-    final aspectRatio = state.posterAspectRatio;
-    final posterUrl = state.posterUrl;
+    final aspectRatio = state.visuals.aspectRatio;
+    final posterUrl = state.visuals.posterUrl;
 
     final screenWidth = MediaQuery.of(context).size.width;
 
@@ -57,6 +57,7 @@ class PosterModule extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: Image.memory(
                           state.customPosterBytes!,
+                          key: ValueKey(state.customPosterBytes),
                           fit: BoxFit.cover,
                           cacheWidth: 800,
                         ),

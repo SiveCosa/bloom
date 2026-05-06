@@ -1,43 +1,1143 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../domain/event/create_event_state.dart';
+import '../../domain/event/event_extra.dart';
+import '../../domain/auth/auth_providers.dart';
+import 'widgets/aurora_background.dart';
 
-class EventPreviewScreen extends StatelessWidget {
+class EventPreviewScreen extends ConsumerStatefulWidget {
   const EventPreviewScreen({super.key});
 
   @override
+  ConsumerState<EventPreviewScreen> createState() => _EventPreviewScreenState();
+}
+
+class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
+  bool _isPublishing = false;
+  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  final ValueNotifier<double> _sheetSize = ValueNotifier(0.64);
+
+  @override
+  void initState() {
+    super.initState();
+    _sheetController.addListener(() {
+      if (_sheetController.isAttached) {
+        _sheetSize.value = _sheetController.size;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    _sheetSize.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePublish() async {
+    setState(() => _isPublishing = true);
+    try {
+      final success = await ref.read(createEventProvider.notifier).compileAndPublishEvent();
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event posted successfully!')),
+          );
+          context.go('/');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to post event. Please try again.')),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(createEventProvider);
+    final userProfile = ref.watch(currentUserProfileProvider).value;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final topBarHeight = MediaQuery.of(context).padding.top + 60;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Preview',
-          style: TextStyle(color: Colors.white, fontSize: 20),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Stub: Save logic
-              context.go('/');
+      body: Stack(
+        children: [
+          // 1. Poster Image + Glow (Reactive)
+          ValueListenableBuilder<double>(
+            valueListenable: _sheetSize,
+            builder: (context, size, child) {
+              final double screenHeight = MediaQuery.of(context).size.height;
+              final double topBarHeight = MediaQuery.of(context).padding.top + 56;
+              final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+              final double maxSheetSize = 0.9 - (10 / screenHeight);
+              final double expandedProgress = ((size - 0.64) / (maxSheetSize - 0.64)).clamp(0.0, 1.0);
+              final double posterOpacity = (1.0 - expandedProgress).clamp(0.0, 1.0);
+              
+              final double actualPosterHeight = MediaQuery.of(context).size.width / (state.visuals.aspectRatio > 0 ? state.visuals.aspectRatio : 1.0);
+              final bool isSquare = (state.visuals.aspectRatio - 1.0).abs() < 0.1;
+              final double sheetTopMinimized = screenHeight * (1.0 - 0.35);
+              final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
+              
+              final double targetTop = isSquare 
+                ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
+                : topBarHeight;
+
+              final double posterTop = lerpDouble(0, targetTop, minimizedProgress) ?? 0;
+
+              return Positioned(
+                top: posterTop,
+                left: 0,
+                right: 0,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (_sheetController.isAttached) {
+                      _sheetController.animateTo(
+                        0.35,
+                        duration: const Duration(milliseconds: 400),
+                        curve: Curves.easeInOutCubic,
+                      );
+                    }
+                  },
+                  child: Opacity(
+                    opacity: posterOpacity,
+                    child: Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            if (minimizedProgress > 0)
+                              BoxShadow(
+                                color: (state.auroraColors.isNotEmpty ? state.auroraColors[0] : const Color(0xFFAD83FE))
+                                    .withValues(alpha: 0.45 * minimizedProgress * (1.0 - expandedProgress)),
+                                blurRadius: 120,
+                                spreadRadius: 40,
+                              ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          child: AspectRatio(
+                            aspectRatio: state.visuals.aspectRatio,
+                            child: state.visuals.posterUrl != null
+                                ? Image.network(
+                                    state.visuals.posterUrl!,
+                                    key: ValueKey(state.visuals.posterUrl),
+                                    fit: BoxFit.cover,
+                                  )
+                                : (state.customPosterBytes != null
+                                    ? Image.memory(
+                                        state.customPosterBytes!,
+                                        key: ValueKey(state.customPosterBytes),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(color: Colors.grey[900])),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
             },
-            child: const Text(
-              'Save & post',
-              style: TextStyle(color: Colors.blue, fontSize: 14),
+          ),
+
+          // 2. Draggable Scrollable Sheet
+          DraggableScrollableSheet(
+            controller: _sheetController,
+            initialChildSize: 0.64,
+            minChildSize: 0.35,
+            maxChildSize: 0.9 - (10 / MediaQuery.of(context).size.height),
+            snap: true,
+            snapSizes: [0.35, 0.64, 0.9 - (10 / MediaQuery.of(context).size.height)],
+            builder: (context, scrollController) {
+              final double screenHeight = MediaQuery.of(context).size.height;
+              
+              return GestureDetector(
+                onTap: () {
+                  if (_sheetSize.value < 0.45) {
+                    _sheetController.animateTo(
+                      0.64,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  }
+                },
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.transparent, 
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                  ),
+                  child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  child: Stack(
+                    children: [
+                      // Sheet's Aurora Background (Reactive)
+                      ValueListenableBuilder<double>(
+                        valueListenable: _sheetSize,
+                        builder: (context, size, child) {
+                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          return Positioned(
+                            top: -(MediaQuery.of(context).size.height * (1.0 - size)),
+                            left: 0,
+                            right: 0,
+                            height: MediaQuery.of(context).size.height,
+                            child: Opacity(
+                              opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                              child: AuroraBackground(colors: state.auroraColors),
+                            ),
+                          );
+                        },
+                      ),
+                      // Subtle Glass Overlay (Reactive)
+                      ValueListenableBuilder<double>(
+                        valueListenable: _sheetSize,
+                        builder: (context, size, child) {
+                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          return Positioned.fill(
+                            child: Opacity(
+                              opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                              child: Container(
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      // Sticky Gripper (Reactive)
+                      ValueListenableBuilder<double>(
+                        valueListenable: _sheetSize,
+                        builder: (context, size, child) {
+                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          final double maxSheetSize = 0.9 - (10 / screenHeight);
+                          final double expandedProgress = ((size - 0.64) / (maxSheetSize - 0.64)).clamp(0.0, 1.0);
+                          
+                          return Positioned(
+                            top: lerpDouble(20, 70, minimizedProgress) ?? 20,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Transform.rotate(
+                                    angle: (lerpDouble(0, -0.5, minimizedProgress) ?? 0) + 
+                                           (lerpDouble(0, 0.5, expandedProgress) ?? 0),
+                                    child: Container(
+                                      width: 20,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(2)),
+                                      ),
+                                    ),
+                                  ),
+                                  Transform.rotate(
+                                    angle: (lerpDouble(0, 0.5, minimizedProgress) ?? 0) + 
+                                           (lerpDouble(0, -0.5, expandedProgress) ?? 0),
+                                    child: Container(
+                                      width: 20,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 150),
+                        children: [
+                            // Dynamic gap (Reactive)
+                            ValueListenableBuilder<double>(
+                              valueListenable: _sheetSize,
+                              builder: (context, size, child) {
+                                final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                                return SizedBox(height: lerpDouble(20, 70, minimizedProgress) ?? 20);
+                              },
+                            ),
+
+                            const SizedBox(height: 4 + 10),
+
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Colors.white, Colors.white70],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ).createShader(bounds),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Text(
+                                  state.title.isEmpty ? 'Untitled Event' : state.title,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.8,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            
+                            _buildDateRow(state),
+                            const SizedBox(height: 5),
+
+                            if (state.location != null) ...[
+                              _buildLocationRow(state),
+                              ValueListenableBuilder<double>(
+                                valueListenable: _sheetSize,
+                                builder: (context, size, child) {
+                                  return SizedBox(height: size <= 0.35 ? 40 : 16);
+                                },
+                              ),
+                            ],
+
+                            // Non-essential content (Reactive)
+                            ValueListenableBuilder<double>(
+                              valueListenable: _sheetSize,
+                              builder: (context, size, child) {
+                                final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                                return AnimatedOpacity(
+                                  duration: const Duration(milliseconds: 200),
+                                  opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                  child: Visibility(
+                                    visible: size > 0.4,
+                                    child: Column(
+                                      children: [
+                                        if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
+                                          _buildDescriptionCard(
+                                            state,
+                                            userProfile?['username'] ?? 'Host',
+                                            userProfile?['profile_image_url'],
+                                          ),
+                                          const SizedBox(height: 16),
+                                        ],
+                                        _buildHostedBySection(userProfile),
+                                        const SizedBox(height: 16),
+                                        _buildGuestListSection(),
+                                        const SizedBox(height: 16),
+                                        _buildWeatherCard(),
+                                        const SizedBox(height: 16),
+                                        if (state.location != null) ...[
+                                          _buildMapCard(state),
+                                          const SizedBox(height: 16),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 3. Top App Bar
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.chevron_left, color: Colors.black),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isPublishing ? null : _handlePublish,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const Text(
+                        'Post event',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+
+          // 4. Loading Overlay
+          if (_isPublishing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.5),
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
+              ),
+            ),
+
+          // 5. Bottom Gradient Grounding (Reactive)
+          ValueListenableBuilder<double>(
+            valueListenable: _sheetSize,
+            builder: (context, size, child) {
+              final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+              return Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 150,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.5),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // 6. Floating RSVP Action Bar
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 30, 
+            child: _buildRSVPActionBar(state),
           ),
         ],
       ),
-      body: const Center(
-        child: Text(
-          'Event Preview stub',
-          style: TextStyle(color: Colors.white),
+    );
+
+  }
+
+  Widget _buildDateRow(CreateEventState state) {
+    final start = state.timing.startDate;
+    final end = state.timing.endDate;
+    final startTbd = state.timing.startTimeTbd;
+    final endTbd = state.timing.endTimeTbd;
+
+    if (start == null) return const SizedBox.shrink();
+
+    String startStr = DateFormat('EEE, d MMM').format(start);
+    if (!startTbd) {
+      startStr += ' ${DateFormat('h a').format(start).toLowerCase()}';
+    }
+
+    String display = startStr;
+    if (end != null) {
+      String endStr = '';
+      // If same day, only show time
+      if (start.year == end.year && start.month == end.month && start.day == end.day) {
+        if (!endTbd) {
+          endStr = DateFormat('h a').format(end).toLowerCase();
+        }
+      } else {
+        endStr = DateFormat('EEE, d MMM').format(end);
+        if (!endTbd) {
+          endStr += ' ${DateFormat('h a').format(end).toLowerCase()}';
+        }
+      }
+      if (endStr.isNotEmpty) {
+        display += ' \u2014 $endStr';
+      }
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        const Icon(Icons.event, color: Colors.white70, size: 20),
+        const SizedBox(width: 10),
+        Text(
+          display,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationRow(CreateEventState state) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        const Icon(Icons.location_on, color: Colors.white70, size: 20),
+        const SizedBox(width: 10),
+        Text(
+          state.location?.displayName ?? '',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _isTagsExpanded = false;
+
+  Widget _buildTagsSection(CreateEventState state) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tags = state.tags;
+        if (tags.isEmpty) return const SizedBox.shrink();
+
+        if (_isTagsExpanded) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tags.map((tag) => _buildTagChip(tag)).toList(),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => setState(() => _isTagsExpanded = false),
+                child: Text(
+                  'Show less',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Logic for single line with "+x more"
+        // This is a simplified approach: we try to fit as many as possible
+        // A more robust way would involve measuring each tag text
+        return Row(
+          children: [
+            Expanded(
+              child: _SingleLineTags(
+                tags: tags,
+                onExpand: () => setState(() => _isTagsExpanded = true),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTagChip(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+      ),
+      child: Text(
+        tag,
+        style: const TextStyle(color: Colors.white70, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionCard(CreateEventState state, String hostName, String? avatarUrl) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: Colors.grey[800],
+                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    child: avatarUrl == null ? const Icon(Icons.person, size: 16, color: Colors.white24) : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    hostName.toLowerCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              if (state.description.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildFormattedDescription(state.description),
+              ],
+              if (state.tags.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildTagsSection(state),
+              ],
+              if (state.extras.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.0),
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                 ...state.extras.map((extra) {
+                  final bool isLink = extra.url != null && extra.url!.isNotEmpty;
+                  final Color textColor = isLink ? _getBestExtraColor(state.auroraColors) : Colors.white;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
+                      onTap: isLink ? () async {
+                        final url = extra.url!.trim();
+                        final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+                        try {
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.platformDefault);
+                          }
+                        } catch (e) {
+                          debugPrint('Error launching $uri: $e');
+                        }
+                      } : null,
+                      child: Row(
+                        children: [
+                          Icon(
+                            extra.type.icon,
+                            color: isLink ? textColor.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.6),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              extra.displayText,
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 14,
+                                fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (isLink)
+                            Icon(Icons.open_in_new, color: textColor.withValues(alpha: 0.4), size: 16),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildAvatarStack(int count) {
+    final int visibleAvatars = count > 3 ? 3 : count;
+    if (visibleAvatars == 0) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(2, 2, 10, 2), // Tighter padding
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 25 + (visibleAvatars - 1) * 10.0,
+            height: 25,
+            child: Stack(
+              children: List.generate(visibleAvatars, (index) {
+                return Positioned(
+                  left: index * 10.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.black, width: 1),
+                    ),
+                    child: CircleAvatar(
+                      radius: 12.5,
+                      backgroundColor: Colors.grey[800],
+                      child: Icon(Icons.person, size: 14, color: Colors.white.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          if (count > visibleAvatars) ...[
+            const SizedBox(width: 6),
+            Text(
+              '+${count - visibleAvatars}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildHostedBySection(Map<String, dynamic>? userProfile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Center(
+          child: Text(
+            'Hosted by',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildHostAvatar(userProfile?['username'] ?? 'username', userProfile?['profile_image_url']),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHostAvatar(String name, String? avatarUrl) {
+    return Column(
+      children: [
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.grey[800],
+              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+              child: avatarUrl == null ? const Icon(Icons.person, size: 30, color: Colors.white24) : null,
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFC151FD),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.workspace_premium, size: 12, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name.toLowerCase(),
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormattedDescription(String text) {
+    final pattern = RegExp(
+      r'(\*[^\s\*](?:.*?[^\s\*])?\*)|(![^\s!](?:.*?[^\s!])?!)',
+      multiLine: true,
+    );
+
+    final List<TextSpan> children = [];
+    int lastMatchEnd = 0;
+    final baseStyle = TextStyle(
+      color: Colors.white.withValues(alpha: 0.8),
+      fontSize: 14,
+      height: 1.4,
+    );
+
+    for (final match in pattern.allMatches(text)) {
+      // Add text before the match
+      if (match.start > lastMatchEnd) {
+        children.add(TextSpan(
+          text: text.substring(lastMatchEnd, match.start),
+          style: baseStyle,
+        ));
+      }
+
+      final matchText = match.group(0)!;
+
+      if (match.group(1) != null) {
+        // Bold: *text* (hide symbols)
+        children.add(TextSpan(
+          text: matchText.substring(1, matchText.length - 1),
+          style: baseStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ));
+      } else if (match.group(2) != null) {
+        // Heading: !Heading! (hide symbols)
+        children.add(TextSpan(
+          text: matchText.substring(1, matchText.length - 1),
+          style: baseStyle.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 22.0,
+            color: Colors.white,
+          ),
+        ));
+      }
+
+      lastMatchEnd = match.end;
+    }
+
+    // Add remaining text
+    if (lastMatchEnd < text.length) {
+      children.add(TextSpan(
+        text: text.substring(lastMatchEnd),
+        style: baseStyle,
+      ));
+    }
+
+    return Text.rich(
+      TextSpan(children: children),
+    );
+  }
+
+  Widget _buildGuestListSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          const Text('Guest List', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          _buildAvatarStack(7),
+          const SizedBox(height: 12),
+          Text(
+            '10 friends will be joining',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeatherCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Weather',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+          ),
+          const Text(
+            'dd Month',
+            style: TextStyle(color: Colors.white24, fontSize: 10),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.wb_sunny, color: Colors.yellow, size: 32),
+              const SizedBox(width: 12),
+              const Text(
+                '00\u00B0',
+                style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Weather Condition', style: TextStyle(color: Colors.white, fontSize: 14)),
+                  Text(
+                    'H: 00\u00B0 L: 00\u00B0',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMapCard(CreateEventState state) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 2.1,
+              child: Container(
+                color: Colors.grey[800],
+                child: const Center(
+                  child: Icon(Icons.map_outlined, color: Colors.white24, size: 40),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    state.location?.displayName ?? '',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.location?.formattedAddress ?? '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRSVPActionBar(CreateEventState state) {
+    final allowMaybe = state.audience.allowMaybe;
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32.5),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          height: 65,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(32.5),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                spreadRadius: 0,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _buildRSVPButton(Icons.check_circle_outline, 'Going'),
+              if (allowMaybe) ...[
+                _buildRSVPDivider(),
+                _buildRSVPButton(Icons.help_outline, 'Maybe'),
+              ],
+              _buildRSVPDivider(),
+              _buildRSVPButton(Icons.highlight_off, 'Decline'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRSVPButton(IconData icon, String label) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This is a preview. RSVP actions are disabled.')),
+          );
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRSVPDivider() {
+    return Container(
+      width: 1,
+      height: 30,
+      color: Colors.white.withValues(alpha: 0.1),
+    );
+  }
+
+  Color _getBestExtraColor(List<Color> colors) {
+    if (colors.isEmpty) return const Color(0xFF6C8EEF);
+
+    // Find the color with the highest luminance that is bright enough
+    Color best = colors.first;
+    double maxLuminance = best.computeLuminance();
+
+    for (final color in colors) {
+      final lum = color.computeLuminance();
+      if (lum > maxLuminance) {
+        maxLuminance = lum;
+        best = color;
+      }
+    }
+
+    // If it's too dark (against our dark background), use brand blue or a default
+    if (maxLuminance < 0.3) {
+      return const Color(0xFF6C8EEF);
+    }
+
+    return best;
+  }
+}
+
+class _SingleLineTags extends StatelessWidget {
+  final List<String> tags;
+  final VoidCallback onExpand;
+
+  const _SingleLineTags({
+    required this.tags,
+    required this.onExpand,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double currentWidth = 0;
+        const double spacing = 8;
+        const double chipPadding = 24; // horizontal padding 12*2
+        final List<Widget> visibleTags = [];
+        int hiddenCount = 0;
+
+        for (int i = 0; i < tags.length; i++) {
+          final String tag = tags[i];
+          // Approximate width calculation: character count * avg char width + padding
+          final double tagWidth = (tag.length * 7.5) + chipPadding;
+
+          if (currentWidth + tagWidth + spacing < constraints.maxWidth - 60) {
+            visibleTags.add(_buildTagChip(tag));
+            currentWidth += tagWidth + spacing;
+          } else {
+            hiddenCount = tags.length - i;
+            break;
+          }
+        }
+
+        return Row(
+          children: [
+            ...visibleTags.expand((w) => [w, const SizedBox(width: spacing)]).toList()
+              ..removeLast(),
+            if (hiddenCount > 0) ...[
+              const SizedBox(width: spacing),
+              GestureDetector(
+                onTap: onExpand,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: Text(
+                    '+$hiddenCount more',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTagChip(String tag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Text(
+        tag,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+    );
+  }
+
 }

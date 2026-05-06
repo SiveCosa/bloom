@@ -29,6 +29,7 @@ dependencies:
   geolocator: ^14.0.2
   http: ^1.6.0
   shared_preferences: ^2.5.5
+  dart_geohash: ^2.1.0
 
 dev_dependencies:
   flutter_test:

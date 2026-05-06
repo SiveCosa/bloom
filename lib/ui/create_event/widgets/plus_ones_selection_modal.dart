@@ -7,7 +7,7 @@ class PlusOnesSelectionModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final maxPlusOnes = ref.watch(createEventProvider).maxPlusOnes;
+    final maxPlusOnes = ref.watch(createEventProvider).audience.maxPlusOnes;
     final options = [0, 1, 2, 3, 4, 5];
 
     return Container(
