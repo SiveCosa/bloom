@@ -13,6 +13,7 @@ import '../../core/media/avatar_image_helper.dart';
 import '../../domain/auth/auth_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/media/image_loader_helper.dart';
+import '../../core/media/image_compression_helper.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -30,12 +31,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (user == null) return;
 
     final file = File(localPath);
+    final bytes = await file.readAsBytes();
+    
+    // Ensure all uploads are WebP 80%
+    final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
+
     final storageRef = FirebaseStorage.instance
         .ref()
         .child('users')
         .child(user.uid)
         .child('avatar.webp');
-    await storageRef.putFile(file, SettableMetadata(contentType: 'image/webp'));
+        
+    await storageRef.putData(
+      compressedBytes, 
+      SettableMetadata(contentType: 'image/webp'),
+    );
     final url = await storageRef.getDownloadURL();
     await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
       'profile_image_url': url,
@@ -491,6 +501,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Stat item with label and count
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

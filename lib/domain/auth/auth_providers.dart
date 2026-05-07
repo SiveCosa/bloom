@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../../core/media/image_compression_helper.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -428,21 +430,7 @@ class AuthController extends AsyncNotifier<void> {
         if (!isRemote) {
           final file = File(profileImageUrl);
           if (await file.exists()) {
-            // Point to the exact bucket location we secured
-            final storageRef = FirebaseStorage.instance
-                .ref()
-                .child('users')
-                .child(currentUser.uid)
-                .child('profile_pic.webp');
-
-            // Execute the upload
-            await storageRef.putFile(
-              file,
-              SettableMetadata(contentType: 'image/webp'),
-            );
-
-            // Retrieve the permanent web URL for Firestore
-            profileImageUrl = await storageRef.getDownloadURL();
+            profileImageUrl = await _uploadProfileImage(currentUser.uid, file) ?? '';
           } else {
             // Fallback: If the file path is invalid, wipe it to prevent DB corruption
             profileImageUrl = '';
@@ -475,13 +463,22 @@ class AuthController extends AsyncNotifier<void> {
   }
 
   Future<String?> _uploadProfileImage(String uid, File file) async {
+    // Read the file bytes
+    final bytes = await file.readAsBytes();
+
+    // Centralized WebP 80% compression
+    final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
+
     final storageRef = FirebaseStorage.instance
         .ref()
         .child('users')
         .child(uid)
         .child('profile_pic.webp');
 
-    await storageRef.putFile(file, SettableMetadata(contentType: 'image/webp'));
+    await storageRef.putData(
+      compressedBytes,
+      SettableMetadata(contentType: 'image/webp'),
+    );
 
     return await storageRef.getDownloadURL();
   }

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/event/event_repository.dart';
 import '../auth/auth_providers.dart';
 import 'event.dart';
@@ -275,29 +276,41 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   Future<bool> compileAndPublishEvent() async {
     final userProfile = ref.read(currentUserProfileProvider).value;
     final hostId = userProfile?['uid'] as String? ?? 'anonymous';
+    final repo = ref.read(eventRepositoryProvider);
 
-    final event = Event(
-      id: '', // Firestore will generate this
-      title: state.title,
-      description: state.description,
-      tags: state.tags,
-      visuals: state.visuals,
-      timing: state.timing,
-      location: state.location,
-      audience: state.audience,
-      extras: state.extras,
-      rsvpReminders: state.rsvpReminders,
-      metadata: EventMetadata(
-        hostId: hostId,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        status: EventStatus.active,
-      ),
-    );
-
-    // Trigger the actual publish to Firestore
     try {
-      final eventId = await ref.read(eventRepositoryProvider).createEvent(event);
+      // 1. Generate ID early for image path consistency
+      final eventId = FirebaseFirestore.instance.collection('events').doc().id;
+      
+      String? finalPosterUrl = state.visuals.posterUrl;
+      
+      // 2. Upload custom poster if present
+      if (state.customPosterBytes != null) {
+        finalPosterUrl = await repo.uploadPoster(eventId, state.customPosterBytes!);
+      }
+
+      // 3. Compile final event data
+      final event = Event(
+        id: eventId,
+        title: state.title,
+        description: state.description,
+        tags: state.tags,
+        visuals: state.visuals.copyWith(posterUrl: finalPosterUrl),
+        timing: state.timing,
+        location: state.location,
+        audience: state.audience,
+        extras: state.extras,
+        rsvpReminders: state.rsvpReminders,
+        metadata: EventMetadata(
+          hostId: hostId,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          status: EventStatus.active,
+        ),
+      );
+
+      // 4. Save to repository
+      await repo.createEvent(event);
       debugPrint('Event published successfully with ID: $eventId');
       return true;
     } catch (e) {

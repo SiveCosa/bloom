@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../domain/event/create_event_state.dart';
+import '../../domain/event/event_visibility.dart';
 import '../../domain/event/event_extra.dart';
 import '../../domain/auth/auth_providers.dart';
 import 'widgets/aurora_background.dart';
+import '../shared/widgets/event_weather_card.dart';
 
 class EventPreviewScreen extends ConsumerStatefulWidget {
   const EventPreviewScreen({super.key});
@@ -65,8 +67,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(createEventProvider);
     final userProfile = ref.watch(currentUserProfileProvider).value;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final topBarHeight = MediaQuery.of(context).padding.top + 60;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -222,7 +222,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           final double expandedProgress = ((size - 0.64) / (maxSheetSize - 0.64)).clamp(0.0, 1.0);
                           
                           return Positioned(
-                            top: lerpDouble(20, 70, minimizedProgress) ?? 20,
+                            top: 10,
                             left: 0,
                             right: 0,
                             child: Center(
@@ -268,11 +268,12 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                               valueListenable: _sheetSize,
                               builder: (context, size, child) {
                                 final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
-                                return SizedBox(height: lerpDouble(20, 70, minimizedProgress) ?? 20);
+                                return SizedBox(height: lerpDouble(29, 79, minimizedProgress) ?? 29);
                               },
                             ),
-
-                            const SizedBox(height: 4 + 10),
+                            
+                            _buildVisibilityPill(state),
+                            const SizedBox(height: 5),
 
                             ShaderMask(
                               shaderCallback: (bounds) => const LinearGradient(
@@ -298,15 +299,17 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                             const SizedBox(height: 10),
                             
                             _buildDateRow(state),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 10),
 
                             if (state.location != null) ...[
                               _buildLocationRow(state),
-                              ValueListenableBuilder<double>(
-                                valueListenable: _sheetSize,
-                                builder: (context, size, child) {
-                                  return SizedBox(height: size <= 0.35 ? 40 : 16);
-                                },
+                              const SizedBox(height: 10),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: EventWeatherCard(
+                                  location: state.location,
+                                  startDate: state.timing.startDate,
+                                ),
                               ),
                             ],
 
@@ -323,6 +326,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     child: Column(
                                       children: [
                                         if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
+                                          const SizedBox(height: 10),
                                           _buildDescriptionCard(
                                             state,
                                             userProfile?['username'] ?? 'Host',
@@ -333,8 +337,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                         _buildHostedBySection(userProfile),
                                         const SizedBox(height: 16),
                                         _buildGuestListSection(),
-                                        const SizedBox(height: 16),
-                                        _buildWeatherCard(),
                                         const SizedBox(height: 16),
                                         if (state.location != null) ...[
                                           _buildMapCard(state),
@@ -485,16 +487,18 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Icon(Icons.event, color: Colors.white70, size: 20),
         const SizedBox(width: 10),
-        Text(
-          display,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+        Flexible(
+          child: Text(
+            display,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -503,16 +507,20 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
   Widget _buildLocationRow(CreateEventState state) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Icon(Icons.location_on, color: Colors.white70, size: 20),
         const SizedBox(width: 10),
-        Text(
-          state.location?.displayName ?? '',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+        Flexible(
+          child: Text(
+            state.location?.displayName ?? '',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -643,49 +651,58 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                 ...state.extras.map((extra) {
-                  final bool isLink = extra.url != null && extra.url!.isNotEmpty;
-                  final Color textColor = isLink ? _getBestExtraColor(state.auroraColors) : Colors.white;
+                ...(() {
+                  final sortedExtras = [...state.extras]..sort((a, b) {
+                    final aIsLink = a.url != null && a.url!.isNotEmpty;
+                    final bIsLink = b.url != null && b.url!.isNotEmpty;
+                    if (aIsLink && !bIsLink) return -1;
+                    if (!aIsLink && bIsLink) return 1;
+                    return 0;
+                  });
+                  return sortedExtras.map((extra) {
+                    final bool isLink = extra.url != null && extra.url!.isNotEmpty;
+                    final Color textColor = isLink ? _getBestExtraColor(state.auroraColors) : Colors.white;
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: GestureDetector(
-                      onTap: isLink ? () async {
-                        final url = extra.url!.trim();
-                        final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
-                        try {
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri, mode: LaunchMode.platformDefault);
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GestureDetector(
+                        onTap: isLink ? () async {
+                          final url = extra.url!.trim();
+                          final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+                          try {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.platformDefault);
+                            }
+                          } catch (e) {
+                            debugPrint('Error launching $uri: $e');
                           }
-                        } catch (e) {
-                          debugPrint('Error launching $uri: $e');
-                        }
-                      } : null,
-                      child: Row(
-                        children: [
-                          Icon(
-                            extra.type.icon,
-                            color: isLink ? textColor.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.6),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              extra.displayText,
-                              style: TextStyle(
-                                color: textColor,
-                                fontSize: 14,
-                                fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                        } : null,
+                        child: Row(
+                          children: [
+                            Icon(
+                              isLink ? Icons.link : extra.type.icon,
+                              color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                extra.displayText,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 14,
+                                  fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                          if (isLink)
-                            Icon(Icons.open_in_new, color: textColor.withValues(alpha: 0.4), size: 16),
-                        ],
+                            if (isLink)
+                              Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  });
+                })(),
               ],
             ],
           ),
@@ -810,9 +827,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     final List<TextSpan> children = [];
     int lastMatchEnd = 0;
     final baseStyle = TextStyle(
-      color: Colors.white.withValues(alpha: 0.8),
+      color: Colors.white,
       fontSize: 14,
-      height: 1.4,
+      height: 1.5,
     );
 
     for (final match in pattern.allMatches(text)) {
@@ -886,51 +903,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     );
   }
 
-  Widget _buildWeatherCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'Weather',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-          ),
-          const Text(
-            'dd Month',
-            style: TextStyle(color: Colors.white24, fontSize: 10),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.wb_sunny, color: Colors.yellow, size: 32),
-              const SizedBox(width: 12),
-              const Text(
-                '00\u00B0',
-                style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Weather Condition', style: TextStyle(color: Colors.white, fontSize: 14)),
-                  Text(
-                    'H: 00\u00B0 L: 00\u00B0',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMapCard(CreateEventState state) {
     return ClipRRect(
@@ -1026,6 +998,46 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             Icon(icon, color: Colors.white, size: 24),
             const SizedBox(height: 4),
             Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisibilityPill(CreateEventState state) {
+    final visibility = state.audience.visibility;
+    String text = visibility.title;
+    if (visibility == EventVisibility.public || visibility == EventVisibility.private) {
+      text += ' event';
+    }
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: FittedBox(
+                child: Icon(visibility.outlinedIcon, color: Colors.white, size: 28),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
