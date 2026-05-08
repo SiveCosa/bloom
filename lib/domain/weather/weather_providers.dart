@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'weather_forecast.dart';
 
 class WeatherParams {
@@ -42,7 +43,7 @@ final weatherForecastProvider =
     final data = Map<String, dynamic>.from(response.data as Map);
     return WeatherForecast.fromMap(data);
   } catch (e) {
-    print('Error fetching weather forecast: $e');
+    debugPrint('Error fetching weather forecast: $e');
     return null;
   }
 });

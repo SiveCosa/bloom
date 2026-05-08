@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../../../core/media/image_compression_helper.dart';
 import '../../../domain/event/create_event_state.dart';

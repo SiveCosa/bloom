@@ -25,6 +25,7 @@ import 'widgets/location_selection_modal.dart';
 import 'widgets/rsvp_deadline_modal.dart';
 import 'widgets/rsvp_option_preview.dart';
 import 'widgets/aurora_background.dart';
+import 'widgets/host_invite_section.dart';
 import '../../domain/event/event_location.dart';
 
 
@@ -389,103 +390,10 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Hosted by Section
-                          EventSectionCard(
-                            headerIcon: Icons.workspace_premium,
-                            title: 'Hosted by',
-                            body: Row(
-                              children: [
-                                Column(
-                                  children: [
-                                    Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 25,
-                                          backgroundImage:
-                                              userProfile?['profile_image_url'] !=
-                                                  null
-                                              ? NetworkImage(
-                                                  userProfile!['profile_image_url'],
-                                                )
-                                              : null,
-                                          backgroundColor: Colors.white10,
-                                          child:
-                                              userProfile?['profile_image_url'] ==
-                                                  null
-                                              ? const Icon(
-                                                  Icons.person,
-                                                  color: Colors.white54,
-                                                )
-                                              : null,
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFFE91E63),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.workspace_premium,
-                                              color: Colors.white,
-                                              size: 10,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      userProfile?['username'] ?? 'username',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 16),
-                                InkWell(
-                                  onTap: () =>
-                                      _showSkeletonModal(context, 'Add Cohost'),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.15,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            width: 1,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.add,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Add Cohost',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          HostInviteSection(
+                            showInviteFriends: false,
+                            userProfile: userProfile,
+                            onAddCoHost: () => _showSkeletonModal(context, 'Add Cohost'),
                           ),
 
                           const SizedBox(height: 10),

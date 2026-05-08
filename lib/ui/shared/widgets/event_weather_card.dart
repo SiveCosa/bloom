@@ -58,7 +58,6 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
       },
       loading: () => _buildShimmer(),
       error: (err, stack) {
-        print('Weather Error: $err');
         return const SizedBox.shrink();
       },
     );

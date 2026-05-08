@@ -9,6 +9,7 @@ import '../../domain/event/event_visibility.dart';
 import '../../domain/event/event_extra.dart';
 import '../../domain/auth/auth_providers.dart';
 import 'widgets/aurora_background.dart';
+import 'widgets/host_invite_section.dart';
 import '../shared/widgets/event_weather_card.dart';
 
 class EventPreviewScreen extends ConsumerStatefulWidget {
@@ -128,10 +129,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           width: MediaQuery.of(context).size.width,
                           child: AspectRatio(
                             aspectRatio: state.visuals.aspectRatio,
-                            child: state.visuals.posterUrl != null
+                            child: (state.visuals.posterUrl != null || state.defaultPosterUrl != null)
                                 ? Image.network(
-                                    state.visuals.posterUrl!,
-                                    key: ValueKey(state.visuals.posterUrl),
+                                    state.visuals.posterUrl ?? state.defaultPosterUrl!,
+                                    key: ValueKey(state.visuals.posterUrl ?? state.defaultPosterUrl),
                                     fit: BoxFit.cover,
                                   )
                                 : (state.customPosterBytes != null
@@ -326,7 +327,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     child: Column(
                                       children: [
                                         if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
-                                          const SizedBox(height: 10),
+                                          const SizedBox(height: 16),
                                           _buildDescriptionCard(
                                             state,
                                             userProfile?['username'] ?? 'Host',
@@ -334,9 +335,11 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                         ],
-                                        _buildHostedBySection(userProfile),
-                                        const SizedBox(height: 16),
-                                        _buildGuestListSection(),
+                                        HostInviteSection(
+                                          showInviteFriends: true,
+                                          userProfile: userProfile,
+                                          onAddCoHost: () {},
+                                        ),
                                         const SizedBox(height: 16),
                                         if (state.location != null) ...[
                                           _buildMapCard(state),
@@ -711,112 +714,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     );
   }
 
-  Widget _buildAvatarStack(int count) {
-    final int visibleAvatars = count > 3 ? 3 : count;
-    if (visibleAvatars == 0) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(2, 2, 10, 2), // Tighter padding
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 25 + (visibleAvatars - 1) * 10.0,
-            height: 25,
-            child: Stack(
-              children: List.generate(visibleAvatars, (index) {
-                return Positioned(
-                  left: index * 10.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 1),
-                    ),
-                    child: CircleAvatar(
-                      radius: 12.5,
-                      backgroundColor: Colors.grey[800],
-                      child: Icon(Icons.person, size: 14, color: Colors.white.withValues(alpha: 0.5)),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          if (count > visibleAvatars) ...[
-            const SizedBox(width: 6),
-            Text(
-              '+${count - visibleAvatars}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
 
-  Widget _buildHostedBySection(Map<String, dynamic>? userProfile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Center(
-          child: Text(
-            'Hosted by',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildHostAvatar(userProfile?['username'] ?? 'username', userProfile?['profile_image_url']),
-          ],
-        ),
-      ],
-    );
-  }
 
-  Widget _buildHostAvatar(String name, String? avatarUrl) {
-    return Column(
-      children: [
-        Stack(
-          children: [
-            CircleAvatar(
-              radius: 35,
-              backgroundColor: Colors.grey[800],
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl == null ? const Icon(Icons.person, size: 30, color: Colors.white24) : null,
-            ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFC151FD),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.workspace_premium, size: 12, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          name.toLowerCase(),
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
-        ),
-      ],
-    );
-  }
 
   Widget _buildFormattedDescription(String text) {
     final pattern = RegExp(
@@ -880,28 +780,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     );
   }
 
-  Widget _buildGuestListSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          const Text('Guest List', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          _buildAvatarStack(7),
-          const SizedBox(height: 12),
-          Text(
-            '10 friends will be joining',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
 
 
   Widget _buildMapCard(CreateEventState state) {

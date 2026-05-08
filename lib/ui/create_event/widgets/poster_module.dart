@@ -38,9 +38,9 @@ class PosterModule extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               color: Colors.white.withValues(alpha: 0.1),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              image: posterUrl != null
+              image: (posterUrl != null || state.defaultPosterUrl != null)
                   ? DecorationImage(
-                      image: NetworkImage(posterUrl),
+                      image: NetworkImage(posterUrl ?? state.defaultPosterUrl!),
                       fit: BoxFit.cover,
                     )
                   : null,
@@ -63,7 +63,7 @@ class PosterModule extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  if (posterUrl == null && state.customPosterBytes == null && !state.isGeneratingPoster)
+                  if (posterUrl == null && state.defaultPosterUrl == null && state.customPosterBytes == null && !state.isGeneratingPoster)
                     const Center(
                       child: Icon(Icons.image, color: Colors.white24, size: 48),
                     ),

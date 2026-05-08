@@ -7,7 +7,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../../core/media/image_compression_helper.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {

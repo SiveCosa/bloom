@@ -25,6 +25,7 @@ class CreateEventState {
   final bool isGeneratingPoster;
   final bool isEditingSpots;
   final List<Color> auroraColors; // For UI rendering
+  final String? defaultPosterUrl;
 
   static const List<Color> defaultAuroraColors = [
     Color(0xFFFFB965),
@@ -51,6 +52,7 @@ class CreateEventState {
     this.isGeneratingPoster = false,
     this.isEditingSpots = false,
     this.auroraColors = defaultAuroraColors,
+    this.defaultPosterUrl,
   });
 
   CreateEventState copyWith({
@@ -67,6 +69,7 @@ class CreateEventState {
     bool? isGeneratingPoster,
     bool? isEditingSpots,
     List<Color>? auroraColors,
+    Object? defaultPosterUrl = _undefined,
   }) {
     return CreateEventState(
       title: title ?? this.title,
@@ -84,6 +87,7 @@ class CreateEventState {
       isGeneratingPoster: isGeneratingPoster ?? this.isGeneratingPoster,
       isEditingSpots: isEditingSpots ?? this.isEditingSpots,
       auroraColors: auroraColors ?? this.auroraColors,
+      defaultPosterUrl: defaultPosterUrl == _undefined ? this.defaultPosterUrl : (defaultPosterUrl as String?),
     );
   }
 
@@ -95,7 +99,22 @@ const _undefined = Object();
 class CreateEventNotifier extends Notifier<CreateEventState> {
   @override
   CreateEventState build() {
+    _fetchDefaultPoster();
     return CreateEventState();
+  }
+
+  Future<void> _fetchDefaultPoster() async {
+    try {
+      final snap = await FirebaseFirestore.instance.collection('posters').doc('default').get();
+      if (snap.exists) {
+        final url = snap.data()?['url'] as String?;
+        if (url != null) {
+          state = state.copyWith(defaultPosterUrl: url);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching default poster: $e');
+    }
   }
 
   void reset() {
@@ -282,7 +301,7 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       // 1. Generate ID early for image path consistency
       final eventId = FirebaseFirestore.instance.collection('events').doc().id;
       
-      String? finalPosterUrl = state.visuals.posterUrl;
+      String? finalPosterUrl = state.visuals.posterUrl ?? state.defaultPosterUrl;
       
       // 2. Upload custom poster if present
       if (state.customPosterBytes != null) {
