@@ -14,22 +14,12 @@ class CalendarScreen extends ConsumerStatefulWidget {
 }
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
   final ValueNotifier<double> _sheetExtent = ValueNotifier(0.35);
   late PageController _pageController = PageController(initialPage: 10000);
   late DateTime _displayedMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
 
   @override
-  void initState() {
-    super.initState();
-    _sheetController.addListener(() {
-      _sheetExtent.value = _sheetController.size;
-    });
-  }
-
-  @override
   void dispose() {
-    _sheetController.dispose();
     _sheetExtent.dispose();
     _pageController.dispose();
     super.dispose();
@@ -46,7 +36,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
     final safeAreaTop = mediaQuery.padding.top;
-    final double estimatedHeaderHeight = safeAreaTop + 140 + (rowCount * 60);
+    // Always position the sheet 15dp below where the 6th week would be
+    final double estimatedHeaderHeight = safeAreaTop + 140 + (6 * 46);
     final double initialSize = ((screenHeight - estimatedHeaderHeight) / screenHeight).clamp(0.1, 0.6);
 
     return Scaffold(
@@ -92,7 +83,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ],
             ),
           ),
-          _buildDraggableSheet(scheduleAsync, selectedDate, initialSize),
+          _buildDraggableSheet(scheduleAsync, selectedDate, initialSize, rowCount),
         ],
       ),
     );
@@ -245,7 +236,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 
                 // If collapsing, shrink other rows
                 final bool isSelectedRow = rowIndex == selectedRowIndex;
-                final double rowHeight = isSelectedRow ? 60.0 : 60.0 * (1.0 - collapseProgress);
+                final double rowHeight = isSelectedRow ? 46.0 : 46.0 * (1.0 - collapseProgress);
                 final double opacity = isSelectedRow ? 1.0 : (1.0 - collapseProgress);
 
                 return Opacity(
@@ -282,32 +273,37 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     return GestureDetector(
       onTap: () => ref.read(selectedDateProvider.notifier).updateDate(day),
-      child: Container(
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: isSelected 
-              ? Border.all(color: Colors.white, width: 2)
-              : null,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(isSelected ? 10 : 12),
-          child: Stack(
-            children: [
-              _buildEventBackground(events),
-              Center(
-                child: Text(
-                  DateFormat('dd').format(day),
-                  style: TextStyle(
-                    color: isOtherMonth 
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.white,
-                    fontSize: 16,
-                    fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: 1.0,
+          child: Container(
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: isSelected 
+                  ? Border.all(color: Colors.white, width: 2)
+                  : null,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(isSelected ? 10 : 12),
+              child: Stack(
+                children: [
+                  _buildEventBackground(events),
+                  Center(
+                    child: Text(
+                      DateFormat('dd').format(day),
+                      style: TextStyle(
+                        color: isOtherMonth 
+                            ? Colors.white.withValues(alpha: 0.2)
+                            : Colors.white,
+                        fontSize: 16,
+                        fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -370,24 +366,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return Container(color: Colors.white.withValues(alpha: 0.1));
   }
 
-  Widget _buildDraggableSheet(AsyncValue<List<ScheduledEvent>> scheduleAsync, DateTime selectedDate, double initialSize) {
-    return DraggableScrollableSheet(
-      controller: _sheetController,
-      initialChildSize: initialSize,
-      minChildSize: initialSize,
-      maxChildSize: 0.9,
+  Widget _buildDraggableSheet(AsyncValue<List<ScheduledEvent>> scheduleAsync, DateTime selectedDate, double initialSize, int rowCount) {
+    return NotificationListener<DraggableScrollableNotification>(
+      onNotification: (notification) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _sheetExtent.value = notification.extent;
+        });
+        return false;
+      },
+      child: DraggableScrollableSheet(
+        key: ValueKey('sheet_$rowCount'),
+        initialChildSize: initialSize,
+        minChildSize: initialSize,
+        maxChildSize: 0.9,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1A1D21).withValues(alpha: 0.9),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
-              ),
-            ],
           ),
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -440,6 +436,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
         );
       },
+    ),
     );
   }
 
