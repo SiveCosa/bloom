@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/media/image_loader_helper.dart';
 
 import '../../domain/auth/auth_providers.dart';
 import '../../domain/navigation/navigation_providers.dart';
@@ -210,20 +211,9 @@ class _MainShellState extends ConsumerState<MainShell> {
                         : null,
                   ),
                   child: Center(
-                    child: CircleAvatar(
-                      radius: 12.5, // 25dp diameter
-                      backgroundColor: const Color(0xFF1A1D24),
-                      backgroundImage:
-                          (profileUrl != null && profileUrl.isNotEmpty)
-                          ? NetworkImage(profileUrl)
-                          : null,
-                      child: (profileUrl == null || profileUrl.isEmpty)
-                          ? const Icon(
-                              Icons.person,
-                              size: 16,
-                              color: Colors.white54,
-                            )
-                          : null,
+                    child: buildAvatarImage(
+                      source: profileUrl,
+                      radius: 12.5,
                     ),
                   ),
                 ),

@@ -345,8 +345,13 @@ class AuthController extends AsyncNotifier<void> {
         'otp': otp,
       });
 
-      final token = result.data['token'];
-      final isNewUser = result.data['isNewUser'] as bool;
+      final data = Map<String, dynamic>.from(result.data as Map);
+      final token = data['token'] as String?;
+      final isNewUser = data['isNewUser'] == true;
+
+      if (token == null) {
+        throw Exception("Authentication failed: No token received from server");
+      }
 
       await FirebaseAuth.instance.signInWithCustomToken(token);
 

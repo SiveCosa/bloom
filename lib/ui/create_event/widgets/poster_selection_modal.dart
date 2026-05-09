@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../../../core/media/image_compression_helper.dart';
 import '../../../domain/event/create_event_state.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 
 class PosterSelectionModal extends ConsumerStatefulWidget {
   const PosterSelectionModal({super.key});
@@ -150,37 +151,12 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
           // Header Search
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SizedBox(
-              height: 50,
-              child: TextField(
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Find an image',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 14,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.white.withValues(alpha: 0.6),
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: const BorderSide(color: Colors.white),
-                  ),
-                ),
+            child: RoundedTextField(
+              hintText: 'Find an image',
+              prefixIcon: Icon(
+                Icons.search,
+                color: Colors.white.withValues(alpha: 0.6),
+                size: 20,
               ),
             ),
           ),
@@ -203,10 +179,10 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(20),
+                      color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(15),
                       border: Border.all(
-                        color: isSelected ? Colors.white24 : Colors.white10,
+                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Text(
@@ -265,7 +241,7 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
                   backgroundColor: const Color(0xFF6C8EEF),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   elevation: 0,
                 ),
@@ -302,7 +278,7 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
           onTap: () => _selectPoster(_mockPosters[index]),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(15),
               image: DecorationImage(
                 image: NetworkImage(_mockPosters[index]),
                 fit: BoxFit.cover,

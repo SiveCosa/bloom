@@ -79,8 +79,8 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
             height: 240,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.03),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              color: Colors.white.withValues(alpha: 0.15),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
             child: Stack(
               alignment: Alignment.center,

@@ -11,9 +11,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/media/avatar_image_helper.dart';
 import '../../domain/auth/auth_providers.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/media/image_loader_helper.dart';
 import '../../core/media/image_compression_helper.dart';
+import '../../core/media/image_loader_helper.dart';
+import '../../ui/shared/widgets/gradient_top_bar.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -100,7 +100,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Hero(
                   tag: 'avatar_preview',
                   child: Image(
-                    image: getAvatarImageProvider(imageUrl),
+                    image: getAvatarImageProvider(imageUrl)!,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -171,22 +171,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: Stack(
         children: [
           // Layer 0: Background Gradient
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: gradientHeight,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
+          GradientTopBar(
+            height: gradientHeight,
+            showDarkOverlay: false, // Profile has its own content overlay logic
           ),
 
           // Layer 1: Foreground Content
@@ -270,27 +257,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: Column(
                           children: [
                             // Avatar
-                            GestureDetector(
-                              onTap: () => _showImagePreview(imageUrl),
-                              child: Hero(
-                                tag: 'avatar_preview',
-                                child: CircleAvatar(
-                                  radius: 58, // Avatar size
-                                  backgroundColor: Colors.grey[900],
-                                  backgroundImage: imageUrl != null
-                                      ? getAvatarImageProvider(imageUrl)
-                                      : null,
-                                  child:
-                                      imageUrl ==
-                                          null // Show placeholder icon if no image
-                                      ? const Icon(
-                                          Icons.person,
-                                          size: 58,
-                                          color: Colors.white24,
-                                        )
-                                      : null,
+                            Stack(
+                              children: [
+                                GestureDetector(
+                                  onTap: imageUrl != null ? () => _showImagePreview(imageUrl) : null,
+                                  child: Hero(
+                                    tag: 'avatar_preview',
+                                    child: buildAvatarImage(
+                                      source: imageUrl,
+                                      radius: 58,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                if (_uploading)
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.black45,
+                                      ),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                Positioned(
+                                  right: 0,
+                                  bottom: 0,
+                                  child: GestureDetector(
+                                    onTap: _uploading ? null : _onChangePhoto,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF0086D8),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
 
                             // Real Name

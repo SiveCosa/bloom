@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 import 'dart:ui' as ui;
 
 class PreferencesEditorScreen extends ConsumerStatefulWidget {
@@ -138,48 +139,14 @@ class _PreferencesEditorScreenState
                               ),
                             ),
                             const SizedBox(height: 24),
-                            SizedBox(
-                              height: 50,
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: (_) => setState(() {}),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                                decoration: InputDecoration(
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                    size: 20,
-                                  ),
-                                  hintText: 'Search an interest',
-                                  hintStyle: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.4),
-                                    fontSize: 14,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white.withValues(
-                                    alpha: 0.05,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(25),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(25),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(25),
-                                    borderSide: const BorderSide(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                            RoundedTextField(
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              hintText: 'Search an interest',
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                size: 20,
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -200,13 +167,9 @@ class _PreferencesEditorScreenState
                                     ),
                                     decoration: BoxDecoration(
                                       color: isActive
-                                          ? Colors.white.withValues(alpha: 0.10)
-                                          : Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                      borderRadius: BorderRadius.circular(
-                                        _kRadius,
-                                      ),
+                                          ? Colors.white.withValues(alpha: 0.15)
+                                          : Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(_kRadius),
                                       border: Border.all(
                                         color: isActive
                                             ? Colors.white54

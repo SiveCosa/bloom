@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/bloom_button.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
@@ -61,36 +61,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 100,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            showDarkOverlay: true,
           ),
           SafeArea(
             child: Padding(
@@ -143,27 +115,29 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                             onChanged: (val) => _onChanged(val, i),
-                            decoration: InputDecoration(
-                              counterText: "",
-                              contentPadding: EdgeInsets.zero,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              decoration: InputDecoration(
+                                counterText: "",
+                                contentPadding: EdgeInsets.zero,
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.15),
+                                border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide(
                                   color: Colors.white.withValues(alpha: 0.25),
                                   width: 1.5,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(15),
                                 borderSide: BorderSide(
                                   color: Colors.white.withValues(alpha: 0.25),
                                   width: 1.5,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(15),
                                 borderSide: const BorderSide(
-                                  color: Color(0xFFC151FD),
+                                  color: Colors.white,
                                   width: 1.5,
                                 ),
                               ),
@@ -232,45 +206,32 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     ),
                   ),
                   const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: (_isOtpFilled && !isLoading)
-                          ? () async {
-                              try {
-                                final isNewUser = await ref
-                                    .read(authControllerProvider.notifier)
-                                    .verifyOtp(email, _otpCode);
-                                if (context.mounted) {
-                                  if (isNewUser) {
-                                    context.go('/auth/signup/details');
-                                  } else {
-                                    context.go('/auth/login/confirm');
-                                  }
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  setState(() {
-                                    _errorMessage =
-                                        "Incorrect OTP. Please check your email and try again";
-                                  });
+                  BloomButton(
+                    text: 'Verify',
+                    isLoading: isLoading,
+                    onPressed: _isOtpFilled
+                        ? () async {
+                            try {
+                              final isNewUser = await ref
+                                  .read(authControllerProvider.notifier)
+                                  .verifyOtp(email, _otpCode);
+                              if (context.mounted) {
+                                if (isNewUser) {
+                                  context.go('/auth/signup/details');
+                                } else {
+                                  context.go('/auth/login/confirm');
                                 }
                               }
+                            } catch (e) {
+                              if (context.mounted) {
+                                setState(() {
+                                  _errorMessage =
+                                      "Incorrect OTP. Please check your email and try again";
+                                });
+                              }
                             }
-                          : null,
-
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Verify'),
-                    ),
+                          }
+                        : null,
                   ),
                   const SizedBox(height: 15),
                 ],

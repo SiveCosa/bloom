@@ -1,14 +1,15 @@
-import 'dart:io';
+
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
 import '../../../core/media/avatar_image_helper.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/bloom_button.dart';
+import '../../../core/media/image_loader_helper.dart';
 
 class AvatarScreen extends ConsumerStatefulWidget {
   const AvatarScreen({super.key});
@@ -53,36 +54,8 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
       ),
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 100,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            showDarkOverlay: true,
           ),
           SafeArea(
             child: Padding(
@@ -117,21 +90,9 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              CircleAvatar(
+                              buildAvatarImage(
+                                source: _localImagePath,
                                 radius: 80,
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.15,
-                                ),
-                                backgroundImage: _hasAvatar
-                                    ? FileImage(File(_localImagePath!))
-                                    : null,
-                                child: _hasAvatar
-                                    ? null
-                                    : const Icon(
-                                        Icons.person_outline,
-                                        size: 80,
-                                        color: Colors.white54,
-                                      ),
                               ),
                               if (_busy)
                                 const Positioned.fill(
@@ -158,21 +119,16 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                     ),
                   ),
                   const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (!_hasAvatar) {
-                          ref
-                              .read(signUpFormProvider.notifier)
-                              .updateAvatar('');
-                        }
-                        context.go('/auth/signup/interests');
-                      },
-
-                      child: const Text('Continue'),
-                    ),
+                  BloomButton(
+                    text: 'Continue',
+                    onPressed: () {
+                      if (!_hasAvatar) {
+                        ref
+                            .read(signUpFormProvider.notifier)
+                            .updateAvatar('');
+                      }
+                      context.go('/auth/signup/interests');
+                    },
                   ),
                   const SizedBox(height: 24),
                 ],

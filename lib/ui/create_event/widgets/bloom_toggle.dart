@@ -21,12 +21,12 @@ class BloomToggle extends StatelessWidget {
         decoration: BoxDecoration(
           color: value 
               ? Colors.white 
-              : Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+              : Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(
             color: value 
                 ? Colors.white 
-                : Colors.white.withValues(alpha: 0.1),
+                : Colors.white.withValues(alpha: 0.15),
           ),
         ),
         padding: const EdgeInsets.all(2),

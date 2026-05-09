@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_button.dart';
 
 class InterestsScreen extends ConsumerStatefulWidget {
   const InterestsScreen({super.key});
@@ -40,36 +41,8 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
       ),
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 100,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            showDarkOverlay: true,
           ),
           SafeArea(
             child: Padding(
@@ -125,55 +98,14 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              TextField(
+                              RoundedTextField(
                                 controller: _searchController,
-                                onChanged: (_) => setState(() {}),
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(
-                                    Icons.search,
-                                    color: Colors.white54,
-                                  ),
-                                  hintText: 'Search an interest',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.white54,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white.withValues(
-                                    alpha: 0.05,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 0,
-                                    horizontal: 20,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      _kRadius,
-                                    ),
-                                    borderSide: BorderSide(
-                                      color: _kBorderColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      _kRadius,
-                                    ),
-                                    borderSide: BorderSide(
-                                      color: _kBorderColor,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      _kRadius,
-                                    ),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFC151FD),
-                                      width: 1.5,
-                                    ),
-                                  ),
+                                hintText: 'Search an interest',
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  color: Colors.white54,
                                 ),
+                                onChanged: (_) => setState(() {}),
                               ),
                               const SizedBox(height: 16),
                               Wrap(
@@ -243,15 +175,10 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              context.go('/auth/signup/permissions'),
-
-                          child: const Text('Continue'),
-                        ),
+                      BloomButton(
+                        text: 'Continue',
+                        onPressed: () =>
+                            context.go('/auth/signup/permissions'),
                       ),
                       const SizedBox(height: 10),
                     ],

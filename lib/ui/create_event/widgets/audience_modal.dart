@@ -62,7 +62,10 @@ class AudienceModal extends ConsumerWidget {
                               if (selected) notifier.updateVisibility(v);
                             },
                             selectedColor: Colors.white,
-                            backgroundColor: Colors.white10,
+                            backgroundColor: Colors.white.withValues(alpha: 0.15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
                             labelStyle: TextStyle(
                               color: isSelected ? Colors.black : Colors.white,
                               fontSize: 12,
@@ -142,7 +145,7 @@ class AudienceModal extends ConsumerWidget {
                   backgroundColor: const Color(0xFF6C8EEF),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   elevation: 0,
                 ),

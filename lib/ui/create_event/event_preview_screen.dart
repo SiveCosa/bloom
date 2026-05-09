@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/media/image_loader_helper.dart';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/event/event_visibility.dart';
 import '../../domain/event/event_extra.dart';
@@ -613,11 +614,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircleAvatar(
+                  buildAvatarImage(
+                    source: avatarUrl,
                     radius: 14,
-                    backgroundColor: Colors.grey[800],
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl == null ? const Icon(Icons.person, size: 16, color: Colors.white24) : null,
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -832,10 +831,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 65,
+          height: state.audience.requireApproval ? 50 : 65,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(32.5),
+            borderRadius: BorderRadius.circular(state.audience.requireApproval ? 25 : 32.5),
             border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
             boxShadow: [
               BoxShadow(
@@ -846,17 +845,37 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              _buildRSVPButton(Icons.check_circle_outline, 'Going'),
-              if (allowMaybe) ...[
-                _buildRSVPDivider(),
-                _buildRSVPButton(Icons.help_outline, 'Maybe'),
-              ],
-              _buildRSVPDivider(),
-              _buildRSVPButton(Icons.highlight_off, 'Decline'),
-            ],
-          ),
+          child: state.audience.requireApproval
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Get on the list',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    _buildRSVPButton(Icons.check_circle_outline, 'Going'),
+                    if (allowMaybe) ...[
+                      _buildRSVPDivider(),
+                      _buildRSVPButton(Icons.help_outline, 'Maybe'),
+                    ],
+                    _buildRSVPDivider(),
+                    _buildRSVPButton(Icons.highlight_off, 'Decline'),
+                  ],
+                ),
         ),
       ),
     );

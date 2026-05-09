@@ -26,7 +26,7 @@ class PosterModule extends ConsumerWidget {
       children: [
         Center(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(15),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: AnimatedContainer(
@@ -35,9 +35,9 @@ class PosterModule extends ConsumerWidget {
             width: targetWidth,
             height: targetHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white.withValues(alpha: 0.1),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              borderRadius: BorderRadius.circular(15),
+              color: Colors.white.withValues(alpha: 0.15),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               image: (posterUrl != null || state.defaultPosterUrl != null)
                   ? DecorationImage(
                       image: NetworkImage(posterUrl ?? state.defaultPosterUrl!),
@@ -54,7 +54,7 @@ class PosterModule extends ConsumerWidget {
                   if (state.customPosterBytes != null)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(15),
                         child: Image.memory(
                           state.customPosterBytes!,
                           key: ValueKey(state.customPosterBytes),
@@ -72,7 +72,7 @@ class PosterModule extends ConsumerWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(15),
                         ),
                         child: const Center(
                           child: CircularProgressIndicator(color: Colors.white),

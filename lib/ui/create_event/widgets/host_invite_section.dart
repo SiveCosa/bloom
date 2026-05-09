@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'event_section_card.dart';
+import '../../../core/media/image_loader_helper.dart';
 
 class HostInviteSection extends StatelessWidget {
   final Map<String, dynamic>? userProfile;
@@ -148,16 +149,16 @@ class _PreviewBaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(15),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -286,13 +287,9 @@ Widget _buildAvatar({String? imageUrl, required bool isHost}) {
             width: 1,
           ),
         ),
-        child: CircleAvatar(
+        child: buildAvatarImage(
+          source: imageUrl,
           radius: 30,
-          backgroundColor: Colors.grey[800],
-          backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-          child: imageUrl == null
-              ? const Icon(Icons.person, color: Colors.white24, size: 30)
-              : null,
         ),
       ),
       Positioned(

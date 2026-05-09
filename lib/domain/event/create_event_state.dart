@@ -134,16 +134,21 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       ).timeout(const Duration(seconds: 5));
 
       final colors = <Color>[];
-      if (paletteGenerator.vibrantColor != null)
+      if (paletteGenerator.vibrantColor != null) {
         colors.add(paletteGenerator.vibrantColor!.color);
-      if (paletteGenerator.lightVibrantColor != null)
+      }
+      if (paletteGenerator.lightVibrantColor != null) {
         colors.add(paletteGenerator.lightVibrantColor!.color);
-      if (paletteGenerator.darkVibrantColor != null)
+      }
+      if (paletteGenerator.darkVibrantColor != null) {
         colors.add(paletteGenerator.darkVibrantColor!.color);
-      if (paletteGenerator.mutedColor != null)
+      }
+      if (paletteGenerator.mutedColor != null) {
         colors.add(paletteGenerator.mutedColor!.color);
-      if (paletteGenerator.dominantColor != null)
+      }
+      if (paletteGenerator.dominantColor != null) {
         colors.add(paletteGenerator.dominantColor!.color);
+      }
 
       if (colors.isNotEmpty) {
         updatePosterWithColors(url, colors);
@@ -397,6 +402,7 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       // 4. Save to repository
       await repo.createEvent(event);
       debugPrint('Event published successfully with ID: $eventId');
+      reset(); // Reset state to default after successful creation
       return true;
     } catch (e) {
       debugPrint('Error publishing event: $e');

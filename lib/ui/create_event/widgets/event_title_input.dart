@@ -41,7 +41,7 @@ class _EventTitleInputState extends State<EventTitleInput> {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(15),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: SizedBox(
@@ -68,19 +68,19 @@ class _EventTitleInputState extends State<EventTitleInput> {
                 fontWeight: FontWeight.w400,
               ),
               filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.1),
+              fillColor: Colors.white.withValues(alpha: 0.15),
               contentPadding: EdgeInsets.zero,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
               ),
             ),
           ),

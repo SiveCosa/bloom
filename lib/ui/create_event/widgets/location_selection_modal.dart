@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dart_geohash/dart_geohash.dart';
 
 import '../../../domain/event/event_location.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 
 enum LocationModalState { search, details }
 
@@ -325,53 +326,24 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
         // Search Input
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: SizedBox(
-            height: 50,
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: InputDecoration(
-                hintText: 'Place name or address',
-                hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 14,
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: Colors.white.withValues(alpha: 0.6),
-                  size: 20,
-                ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          color: Colors.white54,
-                          size: 16,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.1),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: const BorderSide(color: Colors.white),
-                ),
-              ),
-            ),
+          child: RoundedTextField(
+            controller: _searchController,
+            hintText: 'Place name or address',
+            onChanged: _onSearchChanged,
+            prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white54,
+                      size: 16,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchChanged('');
+                    },
+                  )
+                : null,
           ),
         ),
         const SizedBox(height: 24),
@@ -527,10 +499,10 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(15),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withValues(alpha: 0.15),
               ),
             ),
             child: Row(
@@ -605,36 +577,9 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        SquareTextField(
           controller: controller,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 14,
-            ),
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.white,
-              ),
-            ),
-          ),
+          hintText: hint,
         ),
       ],
     );

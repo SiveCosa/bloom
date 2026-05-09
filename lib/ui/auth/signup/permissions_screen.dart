@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/bloom_button.dart';
 
 class PermissionsScreen extends ConsumerWidget {
   const PermissionsScreen({super.key});
@@ -22,36 +23,8 @@ class PermissionsScreen extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 100,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            showDarkOverlay: true,
           ),
           SafeArea(
             child: Padding(
@@ -128,48 +101,33 @@ class PermissionsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              try {
-                                final formData = ref.read(signUpFormProvider);
-                                // This triggers your Firestore document creation!
-                                await ref
-                                    .read(authControllerProvider.notifier)
-                                    .createUserProfile(formData);
+                  BloomButton(
+                    text: 'Create Account',
+                    isLoading: isLoading,
+                    onPressed: () async {
+                      try {
+                        final formData = ref.read(signUpFormProvider);
+                        // This triggers your Firestore document creation!
+                        await ref
+                            .read(authControllerProvider.notifier)
+                            .createUserProfile(formData);
 
-                                if (context.mounted) {
-                                  // After database creation, route to the home shell
-                                  context.go('/');
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Profile creation failed: $e",
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                        if (context.mounted) {
+                          // After database creation, route to the home shell
+                          context.go('/');
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Profile creation failed: $e",
                               ),
-                            )
-                          : const Text('Create Account'),
-                    ),
+                            ),
+                          );
+                        }
+                      }
+                    },
                   ),
                   const SizedBox(height: 15),
                   Align(

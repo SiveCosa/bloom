@@ -81,9 +81,7 @@ class EventsHostedScreen extends ConsumerWidget {
                         itemBuilder: (context, index) {
                           return HostedEventCard(
                             event: events[index],
-                            onTap: () {
-                              // TODO: Navigate to event details
-                            },
+                            onTap: () {},
                           );
                         },
                       );

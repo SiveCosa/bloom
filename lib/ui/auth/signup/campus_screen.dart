@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_button.dart';
 
 class CampusScreen extends ConsumerStatefulWidget {
   const CampusScreen({super.key});
@@ -14,8 +15,6 @@ class CampusScreen extends ConsumerStatefulWidget {
 }
 
 class _CampusScreenState extends ConsumerState<CampusScreen> {
-  static const double _kRadius = 100;
-  static const double _kStandardHeight = 48.0;
 
   static final Color _kBorderColor = Colors.white.withValues(alpha: 0.50);
 
@@ -34,36 +33,8 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
       ),
       body: Stack(
         children: [
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 120,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: Container(
-              height: 265,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            showDarkOverlay: true,
           ),
           SafeArea(
             child: Padding(
@@ -225,77 +196,21 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                                       focusNode,
                                       onFieldSubmitted,
                                     ) {
-                                      return SizedBox(
-                                        height: _kStandardHeight,
-                                        child: TextField(
-                                          controller: controller,
-                                          focusNode: focusNode,
-                                          onChanged: (val) {
-                                            if (val != _selectedCampus) {
-                                              setState(
-                                                () => _selectedCampus = '',
-                                              );
-                                            }
-                                          },
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                          ),
-                                          textAlignVertical:
-                                              TextAlignVertical.center,
-                                          decoration: InputDecoration(
-                                            hintText:
-                                                'Enter College or University name',
-                                            hintStyle: const TextStyle(
-                                              color: Colors.white54,
-                                              fontSize: 14,
-                                            ),
-                                            filled: true,
-                                            fillColor: Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            isDense: true,
-                                            errorText: _hasError
-                                                ? 'Enter a valid Campus name'
-                                                : null,
-                                            // FIXED: Vertical padding 14 centers text in 48dp height
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 14,
-                                                ),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    _kRadius,
-                                                  ),
-                                              borderSide: BorderSide(
-                                                color: _kBorderColor,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    _kRadius,
-                                                  ),
-                                              borderSide: BorderSide(
-                                                color: _kBorderColor,
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                    _kRadius,
-                                                  ),
-                                              borderSide: const BorderSide(
-                                                color: Color(0xFFC151FD),
-                                                width: 1.5,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                      return RoundedTextField(
+                                        controller: controller,
+                                        focusNode: focusNode,
+                                        hintText:
+                                            'Enter College or University name',
+                                        errorMessage: _hasError
+                                            ? 'Enter a valid Campus name'
+                                            : null,
+                                        onChanged: (val) {
+                                          if (val != _selectedCampus) {
+                                            setState(
+                                              () => _selectedCampus = '',
+                                            );
+                                          }
+                                        },
                                       );
                                     },
                               ),
@@ -304,32 +219,18 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (!campuses.contains(_selectedCampus)) {
-                                setState(() => _hasError = true);
-                              } else {
-                                ref
-                                    .read(signUpFormProvider.notifier)
-                                    .updateCampus(_selectedCampus);
-                                context.go('/auth/signup/avatar');
-                              }
-                            },
-
-                            child: const Text(
-                              'Continue',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
+                      BloomButton(
+                        text: 'Continue',
+                        onPressed: () {
+                          if (!campuses.contains(_selectedCampus)) {
+                            setState(() => _hasError = true);
+                          } else {
+                            ref
+                                .read(signUpFormProvider.notifier)
+                                .updateCampus(_selectedCampus);
+                            context.go('/auth/signup/avatar');
+                          }
+                        },
                       ),
                     ],
                   );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/event/event_extra.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 
 class ExtraFieldModal extends StatefulWidget {
   final ExtraType initialType;
@@ -149,36 +150,14 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
               ),
               const SizedBox(height: 20),
 
-              // Display Text Field
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (_displayFocus?.hasFocus ?? false) ? Colors.white : Colors.transparent,
-                    width: 1.5,
-                  ),
-                ),
-                child: TextField(
-                  controller: _displayController,
-                  focusNode: _displayFocus,
-                  maxLength: 100,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(_currentType.icon, color: Colors.white.withValues(alpha: 0.6)),
-                    hintText: _currentType.displayHint,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    counterText: "",
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
+              SquareTextField(
+                controller: _displayController,
+                focusNode: _displayFocus,
+                maxLength: 50,
+                hintText: _currentType.displayHint,
+                prefixIcon: Icon(
+                  _currentType.icon,
+                  color: Colors.white.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 8),
@@ -214,10 +193,10 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(15),
                             border: Border.all(
-                              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
+                              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
                               width: 1,
                             ),
                           ),
@@ -248,52 +227,15 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
               ),
               const SizedBox(height: 8),
 
-              // Link Text Field
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _errorText != null 
-                        ? Colors.redAccent 
-                        : ((_linkFocus?.hasFocus ?? false) ? Colors.white : Colors.transparent),
-                    width: 1.5,
-                  ),
-                ),
-                child: TextField(
-                  controller: _linkController,
-                  focusNode: _linkFocus,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                  ],
-                  decoration: InputDecoration(
-                    hintText: 'https://',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
+              SquareTextField(
+                controller: _linkController,
+                focusNode: _linkFocus,
+                hintText: 'https://',
+                inputFormatters: [
+                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                ],
+                errorMessage: _errorText,
               ),
-              if (_errorText != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      _errorText!,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
-                    ),
-                  ),
-                ),
-
               const SizedBox(height: 20),
             ],
           ),
