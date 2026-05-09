@@ -50,7 +50,7 @@ class FormatTextController extends TextEditingController {
           text: matchText.substring(1, matchText.length - 1),
           style: style?.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 24.0,
+            fontSize: 16.0,
             color: Colors.white,
           ),
         ));

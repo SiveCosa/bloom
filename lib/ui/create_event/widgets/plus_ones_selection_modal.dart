@@ -7,7 +7,7 @@ class PlusOnesSelectionModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final maxPlusOnes = ref.watch(createEventProvider).maxPlusOnes;
+    final maxPlusOnes = ref.watch(createEventProvider).audience.maxPlusOnes;
     final options = [0, 1, 2, 3, 4, 5];
 
     return Container(
@@ -92,7 +92,7 @@ class _PlusOnesOptionRow extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Center(

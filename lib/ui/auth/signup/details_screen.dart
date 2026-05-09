@@ -4,10 +4,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui' as ui;
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_button.dart';
 
 class DetailsScreen extends ConsumerStatefulWidget {
   const DetailsScreen({super.key});
@@ -93,33 +94,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       _birthdayMonth != 'MMM' &&
       _birthdayDay != 'DD';
 
-  InputDecoration _fieldDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(
-        color: Colors.white54,
-        fontSize: _kFieldFontSize,
-      ),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.05),
-      // isDense false + vertical 0 + tight container height = true centering
-      isDense: false,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_kRadius),
-        borderSide: BorderSide(color: _kBorderColor, width: 1.5),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_kRadius),
-        borderSide: BorderSide(color: _kBorderColor, width: 1.5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(_kRadius),
-        borderSide: const BorderSide(color: Color(0xFFC151FD), width: 1.5),
-      ),
-    );
-  }
-
   String? _yearValue() => _birthdayYear == 'YYYY' ? null : _birthdayYear;
   String? _monthValue() => _birthdayMonth == 'MMM' ? null : _birthdayMonth;
   String? _dayValue() => _birthdayDay == 'DD' ? null : _birthdayDay;
@@ -135,7 +109,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         height: _kStandardHeight, // MATCHES TEXT FIELD HEIGHT
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(_kRadius),
           border: Border.all(color: _kBorderColor, width: 1.5),
         ),
@@ -227,22 +201,8 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       body: Stack(
         children: [
           // Dynamic Blur Background
-          Align(
-            alignment: Alignment.topCenter,
-            child: ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-              child: Container(
-                height: 120,
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: AppTheme.coreGradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-            ),
+          const GradientTopBar(
+            height: 120,
           ),
           SafeArea(
             child: Padding(
@@ -301,43 +261,22 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          SizedBox(
-                            height: _kStandardHeight,
-                            child: TextField(
-                              controller: _usernameController,
-                              style: _kFieldTextStyle,
-                              maxLength: 30,
-                              inputFormatters: [
-                                LowerCaseTextFormatter(),
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[a-z0-9._]'),
-                                ),
-                              ],
-                              textAlignVertical: TextAlignVertical.center,
-                              decoration: _fieldDecoration(
-                                'Username',
-                              ).copyWith(counterText: ''),
-                              onChanged: (_) {
-                                if (_errorMessage != null) {
-                                  setState(() => _errorMessage = null);
-                                }
-                              },
-                            ),
+                          RoundedTextField(
+                            controller: _usernameController,
+                            hintText: 'Username',
+                            inputFormatters: [
+                              LowerCaseTextFormatter(),
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-z0-9._]'),
+                              ),
+                            ],
+                            errorMessage: _errorMessage,
+                            onChanged: (_) {
+                              if (_errorMessage != null) {
+                                setState(() => _errorMessage = null);
+                              }
+                            },
                           ),
-                          if (_errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 4.0,
-                                left: 16.0,
-                              ),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
                           const SizedBox(height: 16),
 
                           // Name Field
@@ -349,15 +288,10 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          SizedBox(
-                            height: _kStandardHeight,
-                            child: TextField(
-                              controller: _nameController,
-                              style: _kFieldTextStyle,
-                              textAlignVertical: TextAlignVertical.center,
-                              decoration: _fieldDecoration('Your name'),
-                              onChanged: (_) => setState(() {}),
-                            ),
+                          RoundedTextField(
+                            controller: _nameController,
+                            hintText: 'Your name',
+                            onChanged: (_) => setState(() {}),
                           ),
 
                           const SizedBox(height: 16),
@@ -452,79 +386,57 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                   ),
 
                   // Primary Action Button
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 52, // Slightly larger for the main action
-                      child: ElevatedButton(
-                        onPressed: _isFormValid && !_isSubmitting
-                            ? () async {
-                                setState(() {
-                                  _isSubmitting = true;
-                                  _errorMessage = null;
-                                });
-                                try {
-                                  await ref
-                                      .read(authControllerProvider.notifier)
-                                      .validateUsername(
-                                        _usernameController.text,
-                                      );
+                  BloomButton(
+                    text: 'Continue',
+                    isLoading: _isSubmitting,
+                    onPressed: _isFormValid && !_isSubmitting
+                        ? () async {
+                            setState(() {
+                              _isSubmitting = true;
+                              _errorMessage = null;
+                            });
+                            try {
+                              await ref
+                                  .read(authControllerProvider.notifier)
+                                  .validateUsername(
+                                    _usernameController.text,
+                                  );
 
-                                  if (!context.mounted) return;
-                                  ref
-                                      .read(signUpFormProvider.notifier)
-                                      .updateDetails(
-                                        username: _usernameController.text,
-                                        name: _nameController.text,
-                                        birthday:
-                                            '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
-                                        gender:
-                                            _genderValue ?? 'Prefer not to say',
-                                      );
-                                  setState(() => _isSubmitting = false);
-                                  context.go('/auth/signup/campus');
-                                } on FirebaseFunctionsException catch (e) {
-                                  if (!context.mounted) return;
-                                  setState(() {
-                                    _isSubmitting = false;
-                                    if (e.code == 'already-exists') {
-                                      _errorMessage =
-                                          "This username is already taken";
-                                    } else {
-                                      _errorMessage =
-                                          e.message ??
-                                          "Error validating username.";
-                                    }
-                                  });
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  setState(() {
-                                    _isSubmitting = false;
-                                    _errorMessage = e.toString();
-                                  });
+                              if (!context.mounted) return;
+                              ref
+                                  .read(signUpFormProvider.notifier)
+                                  .updateDetails(
+                                    username: _usernameController.text,
+                                    name: _nameController.text,
+                                    birthday:
+                                        '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
+                                    gender:
+                                        _genderValue ?? 'Prefer not to say',
+                                  );
+                              setState(() => _isSubmitting = false);
+                              context.go('/auth/signup/campus');
+                            } on FirebaseFunctionsException catch (e) {
+                              if (!context.mounted) return;
+                              setState(() {
+                                _isSubmitting = false;
+                                if (e.code == 'already-exists') {
+                                  _errorMessage =
+                                      "This username is already taken";
+                                } else {
+                                  _errorMessage =
+                                      e.message ??
+                                      "Error validating username.";
                                 }
-                              }
-                            : null,
-
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Continue',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                    ),
+                              });
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              setState(() {
+                                _isSubmitting = false;
+                                _errorMessage = e.toString();
+                              });
+                            }
+                          }
+                        : null,
                   ),
                 ],
               ),

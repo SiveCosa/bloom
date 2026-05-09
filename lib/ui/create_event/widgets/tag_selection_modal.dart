@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../../../domain/event/create_event_state.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 
 class TagSelectionModal extends ConsumerStatefulWidget {
   const TagSelectionModal({super.key});
@@ -118,40 +119,11 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
               ),
               const SizedBox(height: 24),
 
-              SizedBox(
-                height: 50,
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (_) => setState(() {}),
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: Colors.white.withValues(alpha: 0.6),
-                      size: 20,
-                    ),
-                    hintText: 'Search tags...',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.1),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      borderSide: const BorderSide(color: Colors.white),
-                    ),
-                  ),
-                ),
+              RoundedTextField(
+                controller: _searchController,
+                hintText: 'Search tags...',
+                onChanged: (_) => setState(() {}),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
               ),
               const SizedBox(height: 20),
               Expanded(
@@ -187,15 +159,11 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
                                   horizontal: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Colors.white.withValues(alpha: 0.10)
-                                      : Colors.white.withValues(alpha: 0.05),
+                                  color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
                                   borderRadius: BorderRadius.circular(100),
                                   border: Border.all(
-                                    color: isSelected
-                                        ? Colors.white54
-                                        : Colors.white.withValues(alpha: 0.25),
-                                    width: 1.0,
+                                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                                    width: 1,
                                   ),
                                 ),
                                 child: Row(

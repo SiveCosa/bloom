@@ -30,10 +30,10 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
     super.initState();
     final state = ref.read(createEventProvider);
     final now = DateTime.now();
-    _startDate = state.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
-    _startTimeTbd = state.startTimeTbd;
-    _endDate = state.endDate;
-    _endTimeTbd = state.endTimeTbd;
+    _startDate = state.timing.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
+    _startTimeTbd = state.timing.startTimeTbd;
+    _endDate = state.timing.endDate;
+    _endTimeTbd = state.timing.endTimeTbd;
 
     _updateClockFromState();
   }
@@ -176,9 +176,9 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.07),
+                                color: Colors.white.withValues(alpha: 0.15),
                               ),
                             ),
                             child: Stack(
@@ -195,9 +195,9 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                                     child: Container(
                                       decoration: BoxDecoration(
                                         color: Colors.white.withValues(
-                                          alpha: 0.10,
+                                          alpha: 0.15,
                                         ),
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(15),
                                       ),
                                     ),
                                   ),
@@ -443,7 +443,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                 ),
                               ),
                               Padding(
@@ -460,7 +460,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                 ),
                               ),
                             ],
@@ -515,7 +515,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
         height: 30,
         width: 120,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Stack(
@@ -579,7 +579,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
       height: pickerItemHeight,
       width: width,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withValues(alpha: 0.15),
         border: Border(
           top: BorderSide(
             color: Colors.white.withValues(alpha: 0.5),

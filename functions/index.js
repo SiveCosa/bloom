@@ -4,6 +4,7 @@ const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
+const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
 
 // Initialize the Firebase Admin SDK
 admin.initializeApp();
@@ -151,6 +152,97 @@ exports.verifyOtp = onCall(
       token: customToken,
       isNewUser: isNewUser
     };
+  }
+);
+
+// 7. Weather Proxy Function
+exports.weatherProxy = onCall(
+  {
+    region: "africa-south1",
+    enforceAppCheck: true,
+    secrets: [WEATHER_API_KEY]
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const { lat, lon, timestamp } = request.data;
+    if (lat === undefined || lon === undefined || timestamp === undefined) {
+      throw new HttpsError("invalid-argument", "lat, lon, and timestamp are required.");
+    }
+
+    const apiKey = WEATHER_API_KEY.value();
+    
+    // Using OpenWeatherMap One Call API 3.0 (provides 8 days of daily forecast)
+    // If you don't have One Call 3.0, you can use the 5-day forecast API:
+    // https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric
+    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&appid=${apiKey}&units=metric`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        // Fallback to 5-day forecast if One Call 3.0 fails (e.g., if not subscribed)
+        const fallbackUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+        const fallbackResponse = await fetch(fallbackUrl);
+        const data = await fallbackResponse.json();
+        
+        if (!fallbackResponse.ok) {
+           throw new Error(data.message || "Failed to fetch weather data");
+        }
+
+        // Process 5-day forecast data
+        const eventDate = new Date(timestamp * 1000);
+        const forecastList = data.list;
+        
+        // Find forecast closest to the timestamp
+        const closest = forecastList.reduce((prev, curr) => {
+          return (Math.abs(curr.dt - timestamp) < Math.abs(prev.dt - timestamp) ? curr : prev);
+        });
+
+        const diffDays = Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 5) {
+          return { is_distant_future: true };
+        }
+
+        return {
+          averageTemp: Math.round(closest.main.temp),
+          highTemp: Math.round(closest.main.temp_max),
+          lowTemp: Math.round(closest.main.temp_min),
+          conditionText: closest.weather[0].main,
+          conditionCode: closest.weather[0].icon,
+          is_distant_future: false
+        };
+      }
+
+      const data = await response.json();
+      const eventDate = new Date(timestamp * 1000);
+      const today = new Date();
+      
+      // Calculate day difference
+      const diffTime = eventDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // One Call 3.0 daily array has 8 days (index 0 to 7)
+      if (diffDays < 0 || diffDays >= data.daily.length) {
+        return { is_distant_future: true };
+      }
+
+      const forecast = data.daily[diffDays];
+      
+      return {
+        averageTemp: Math.round(forecast.temp.day),
+        highTemp: Math.round(forecast.temp.max),
+        lowTemp: Math.round(forecast.temp.min),
+        conditionText: forecast.weather[0].main,
+        conditionCode: forecast.weather[0].icon,
+        is_distant_future: false
+      };
+
+    } catch (error) {
+      console.error("Weather API Proxy Error:", error);
+      throw new HttpsError("internal", "Failed to fetch data from Weather API.");
+    }
   }
 );
 

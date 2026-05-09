@@ -3,10 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:ui' as ui;
-import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../widgets/auth_app_bar.dart';
+import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/bloom_button.dart';
+import '../../../core/media/image_loader_helper.dart';
 
 class ConfirmScreen extends ConsumerWidget {
   const ConfirmScreen({super.key});
@@ -61,36 +62,8 @@ class ConfirmScreen extends ConsumerWidget {
 
           return Stack(
             children: [
-              Align(
-                alignment: Alignment.topCenter,
-                child: ImageFiltered(
-                  imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-                  child: Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: AppTheme.coreGradientColors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.topRight,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  height: 265,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                ),
+              const GradientTopBar(
+                showDarkOverlay: true,
               ),
               SafeArea(
                 child: Padding(
@@ -128,20 +101,9 @@ class ConfirmScreen extends ConsumerWidget {
                       Center(
                         child: Column(
                           children: [
-                            CircleAvatar(
+                            buildAvatarImage(
+                              source: profileUrl,
                               radius: 80,
-                              backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                              backgroundImage:
-                                  profileUrl != null && profileUrl.isNotEmpty
-                                  ? NetworkImage(profileUrl)
-                                  : null,
-                              child: profileUrl == null || profileUrl.isEmpty
-                                  ? const Icon(
-                                      Icons.person,
-                                      size: 80,
-                                      color: Colors.white54,
-                                    )
-                                  : null,
                             ),
                             const SizedBox(height: 24),
                             Text(
@@ -163,30 +125,13 @@ class ConfirmScreen extends ConsumerWidget {
                         ),
                       ),
                       const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          // Disable button while loading
-                          onPressed:
-                              snapshot.connectionState ==
-                                  ConnectionState.waiting
-                              ? null
-                              : () {
-                                  context.go('/');
-                                },
-                          child:
-                              snapshot.connectionState ==
-                                  ConnectionState.waiting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text('Login'),
-                        ),
+                      BloomButton(
+                        text: 'Login',
+                        isLoading: snapshot.connectionState ==
+                            ConnectionState.waiting,
+                        onPressed: () {
+                          context.go('/');
+                        },
                       ),
                       const SizedBox(height: 15),
                     ],

@@ -42,7 +42,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
+        fillColor: Colors.white.withValues(alpha: 0.15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -70,7 +70,7 @@ class AppTheme {
           }),
           foregroundColor: WidgetStateProperty.all(Colors.white),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           ),
           padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
           textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -103,7 +103,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
+        fillColor: Colors.white.withValues(alpha: 0.15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -129,7 +129,7 @@ class AppTheme {
           }),
           foregroundColor: WidgetStateProperty.all(Colors.white),
           shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           ),
           padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
           textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

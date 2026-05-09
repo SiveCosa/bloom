@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import 'dart:ui' as ui;
-import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'dart:io';
+import '../../shared/widgets/bloom_button.dart';
 import '../../../core/media/image_loader_helper.dart';
+import '../../../core/media/avatar_image_helper.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
@@ -90,37 +90,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 70,
+    await showAvatarSourceSheet(
+      context,
+      onChosen: (source) async {
+        final path = await pickAndCropSquareAvatar(source);
+        if (!mounted) return;
+        if (path != null) {
+          setState(() {
+            _localImagePath = path;
+          });
+        }
+      },
     );
-
-    if (pickedFile != null) {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: pickedFile.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop Profile Picture',
-            toolbarColor: AppTheme.primaryButton,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.square,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(
-            title: 'Crop Profile Picture',
-            aspectRatioLockEnabled: true,
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        setState(() {
-          _localImagePath = croppedFile.path;
-        });
-      }
-    }
   }
 
   Future<void> _save() async {
@@ -275,7 +256,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 20),
-                        _buildProfilePictureSection(),
+                        _buildProfilePictureSection(false),
                         const SizedBox(height: 30),
                         Form(
                           key: _formKey,
@@ -392,8 +373,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(50),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(15),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -426,53 +407,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     );
   }
 
-  Widget _buildProfilePictureSection() {
+  Widget _buildProfilePictureSection(bool isLocked) {
     return Center(
       child: Stack(
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              image: _localImagePath != null
-                  ? DecorationImage(
-                      image: FileImage(File(_localImagePath!)),
-                      fit: BoxFit.cover,
-                    )
-                  : (_currentImageUrl != null && _currentImageUrl!.isNotEmpty)
-                  ? DecorationImage(
-                      image: getAvatarImageProvider(_currentImageUrl),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child:
-                (_localImagePath == null &&
-                    (_currentImageUrl == null || _currentImageUrl!.isEmpty))
-                ? const Icon(Icons.person, size: 60, color: Colors.white54)
-                : null,
+          buildAvatarImage(
+            source: _localImagePath ?? _currentImageUrl,
+            radius: 60,
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryButton,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.camera_alt,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
+          if (!isLocked)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: _buildEditIconButton(),
             ),
-          ),
         ],
       ),
     );
@@ -484,7 +432,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(16),
           ),
           child: ListTile(
@@ -542,7 +490,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     String? prefixText,
     int maxLines = 1,
     int? maxLength,
-    double borderRadius = 50,
+    double borderRadius = 15,
     String? Function(String?)? validator,
   }) {
     return Column(
@@ -614,7 +562,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               minHeight: 0,
             ),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.05),
+            fillColor: Colors.white.withValues(alpha: 0.15),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -626,7 +574,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
               borderSide: BorderSide(
-                color: Colors.white.withValues(alpha: 0.05),
+              color: Colors.white.withValues(alpha: 0.15),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -644,26 +592,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton(
-        // Disable button while loading or if it was locked. Wait, `_isLoading` controls interactivity.
-        onPressed: _isLoading ? null : _save,
+    return BloomButton(
+      text: 'Save Changes',
+      isLoading: _isLoading,
+      onPressed: _save,
+    );
+  }
 
-        child: _isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : const Text(
-                'Save Changes',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
+  Widget _buildEditIconButton() {
+    return GestureDetector(
+      onTap: _pickImage,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(
+          color: Color(0xFF0086D8), // Using the blue from ProfileScreen
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.camera_alt,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
     );
   }

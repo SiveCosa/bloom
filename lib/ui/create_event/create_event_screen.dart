@@ -24,6 +24,8 @@ import 'widgets/extra_field_modal.dart';
 import 'widgets/location_selection_modal.dart';
 import 'widgets/rsvp_deadline_modal.dart';
 import 'widgets/rsvp_option_preview.dart';
+import 'widgets/aurora_background.dart';
+import 'widgets/host_invite_section.dart';
 import '../../domain/event/event_location.dart';
 
 
@@ -162,7 +164,7 @@ class CreateEventScreen extends ConsumerWidget {
           child: Stack(
             children: [
               // The Full Background Stack
-              const Positioned.fill(child: _AuroraBackground()),
+              const Positioned.fill(child: AuroraBackground()),
 
               SafeArea(
                 child: Column(
@@ -310,10 +312,10 @@ class CreateEventScreen extends ConsumerWidget {
                                 vertical: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(15),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                 ),
                               ),
                               child: Row(
@@ -388,103 +390,10 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Hosted by Section
-                          EventSectionCard(
-                            headerIcon: Icons.workspace_premium,
-                            title: 'Hosted by',
-                            body: Row(
-                              children: [
-                                Column(
-                                  children: [
-                                    Stack(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 25,
-                                          backgroundImage:
-                                              userProfile?['profile_image_url'] !=
-                                                  null
-                                              ? NetworkImage(
-                                                  userProfile!['profile_image_url'],
-                                                )
-                                              : null,
-                                          backgroundColor: Colors.white10,
-                                          child:
-                                              userProfile?['profile_image_url'] ==
-                                                  null
-                                              ? const Icon(
-                                                  Icons.person,
-                                                  color: Colors.white54,
-                                                )
-                                              : null,
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(2),
-                                            decoration: const BoxDecoration(
-                                              color: Color(0xFFE91E63),
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.workspace_premium,
-                                              color: Colors.white,
-                                              size: 10,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      userProfile?['username'] ?? 'username',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 16),
-                                InkWell(
-                                  onTap: () =>
-                                      _showSkeletonModal(context, 'Add Cohost'),
-                                  child: Column(
-                                    children: [
-                                      Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.15,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.1,
-                                            ),
-                                            width: 1,
-                                          ),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.add,
-                                          color: Colors.white,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Add Cohost',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                          HostInviteSection(
+                            showInviteFriends: false,
+                            userProfile: userProfile,
+                            onAddCoHost: () => _showSkeletonModal(context, 'Add Cohost'),
                           ),
 
                           const SizedBox(height: 10),
@@ -497,8 +406,8 @@ class CreateEventScreen extends ConsumerWidget {
                               children: [
                                 _buildTappableRow(
                                   context: context,
-                                  icon: state.visibility.outlinedIcon,
-                                  title: state.visibility.title,
+                                  icon: state.audience.visibility.outlinedIcon,
+                                  title: state.audience.visibility.title,
                                   trailing: 'Set Visibility',
                                   onTap: () =>
                                       _showVisibilitySelection(context),
@@ -507,8 +416,8 @@ class CreateEventScreen extends ConsumerWidget {
                                 _buildTappableRow(
                                   context: context,
                                   icon: Icons.person_add_outlined,
-                                  title: state.maxPlusOnes > 0
-                                      ? '+${state.maxPlusOnes} allowed'
+                                  title: state.audience.maxPlusOnes > 0
+                                      ? '+${state.audience.maxPlusOnes} allowed'
                                       : 'No plus ones',
                                   trailing: 'Plus ones',
                                   onTap: () => _showPlusOnesSelection(context),
@@ -689,7 +598,7 @@ class CreateEventScreen extends ConsumerWidget {
                                               alpha: 0.05,
                                             ),
                                             borderRadius: BorderRadius.circular(
-                                              20,
+                                              100,
                                             ),
                                             border: Border.all(
                                               color: Colors.white.withValues(
@@ -756,21 +665,22 @@ class CreateEventScreen extends ConsumerWidget {
                               children: [
                                 // RSVP Preview Pill
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
+                                  height: state.audience.requireApproval ? 50 : null,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: state.audience.requireApproval ? 0 : 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(50),
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
                                       color: Colors.white.withValues(
-                                        alpha: 0.1,
+                                        alpha: 0.15,
                                       ),
                                     ),
                                   ),
                                   child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 300),
-                                    child: state.requireApproval
+                                    child: state.audience.requireApproval
                                         ? Row(
                                             key: const ValueKey('approval'),
                                             mainAxisAlignment:
@@ -804,7 +714,7 @@ class CreateEventScreen extends ConsumerWidget {
                                                 label: 'Going',
                                               ),
                                               _buildVerticalDivider(),
-                                              if (state.allowMaybe) ...[
+                                              if (state.audience.allowMaybe) ...[
                                                 const RsvpOptionPreview(
                                                   icon: Icons.help_outline,
                                                   label: 'Maybe',
@@ -822,17 +732,17 @@ class CreateEventScreen extends ConsumerWidget {
                                 const SizedBox(height: 16),
                                 _buildToggleRow(
                                   'Require guest approval',
-                                  state.requireApproval,
+                                  state.audience.requireApproval,
                                   (val) {
                                     ref
                                         .read(createEventProvider.notifier)
                                         .setRequireApproval(val);
                                   },
                                 ),
-                                if (!state.requireApproval)
+                                if (!state.audience.requireApproval)
                                   _buildToggleRow(
                                     "Guest can RSVP 'Maybe'",
-                                    state.allowMaybe,
+                                    state.audience.allowMaybe,
                                     (val) {
                                       ref
                                           .read(createEventProvider.notifier)
@@ -843,8 +753,8 @@ class CreateEventScreen extends ConsumerWidget {
                                   context: context,
                                   icon: Icons.access_time,
                                   title: 'RSVP Deadline',
-                                  trailing: state.rsvpDeadline != null
-                                      ? DateFormat('d MMM yyyy').format(state.rsvpDeadline!)
+                                  trailing: state.audience.rsvpDeadline != null
+                                      ? DateFormat('d MMM yyyy').format(state.audience.rsvpDeadline!)
                                       : 'Optional',
                                   onTap: () => _showRSVPDeadlineSelection(context),
                                 ),
@@ -874,19 +784,19 @@ class CreateEventScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(15),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -934,18 +844,18 @@ class CreateEventScreen extends ConsumerWidget {
     ExtraType type,
   ) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(100),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: InkWell(
             onTap: () => _showExtraFieldModal(context, ref, type),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(100),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
@@ -980,19 +890,19 @@ class CreateEventScreen extends ConsumerWidget {
     ValueChanged<bool> onChanged,
   ) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(15),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: InkWell(
             onTap: () => onChanged(!value),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -1075,7 +985,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
     super.initState();
     final state = ref.read(createEventProvider);
     _controller = TextEditingController(
-      text: state.availableSpots?.toString() ?? '',
+      text: state.audience.capacity?.toString() ?? '',
     );
     _focusNode = FocusNode();
   }
@@ -1098,7 +1008,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
   Widget build(BuildContext context) {
     final state = ref.watch(createEventProvider);
     final isEditing = state.isEditingSpots;
-    final availableSpots = state.availableSpots;
+    final availableSpots = state.audience.capacity;
 
     // Trigger focus if entering editing state
     if (isEditing && !_focusNode.hasFocus) {
@@ -1147,7 +1057,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
             Text('Waitlist', style: mutedStyle),
             const SizedBox(width: 8),
             BloomToggle(
-              value: state.isWaitlistEnabled,
+              value: state.audience.waitlistEnabled,
               onChanged: (val) => ref
                   .read(createEventProvider.notifier)
                   .setWaitlistEnabled(val),
@@ -1173,7 +1083,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
             Text('Waitlist', style: mutedStyle),
             const SizedBox(width: 8),
             BloomToggle(
-              value: state.isWaitlistEnabled,
+              value: state.audience.waitlistEnabled,
               onChanged: (val) => ref
                   .read(createEventProvider.notifier)
                   .setWaitlistEnabled(val),
@@ -1213,19 +1123,19 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
     required bool isEditing,
   }) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(15),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: isEditing ? 0.15 : 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
             child: Padding(
@@ -1239,115 +1149,6 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
   }
 }
 
-class _AuroraBackground extends ConsumerWidget {
-  const _AuroraBackground();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auroraColors = ref.watch(
-      createEventProvider.select((state) => state.auroraColors),
-    );
-
-    return Stack(
-      children: [
-        // Base + Blurred Blobs (Cached via RepaintBoundary for extreme performance)
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: Stack(
-              children: [
-                // Layer 1: Solid Base (Darkened for contrast)
-                Container(color: const Color(0xFF0B0E12)),
-                // Layer 2: Top Left Blob
-                Positioned(
-                  top: -200,
-                  left: -200,
-                  child: Container(
-                    width: 1000,
-                    height: 1000,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          auroraColors[0].withValues(alpha: 0.6),
-                          auroraColors[0].withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Layer 3: Top Right Blob
-                Positioned(
-                  top: -200,
-                  right: -200,
-                  child: Container(
-                    width: 1000,
-                    height: 1000,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          auroraColors[1].withValues(alpha: 0.6),
-                          auroraColors[1].withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Layer 4: Bottom Left Blob
-                Positioned(
-                  bottom: -200,
-                  left: -200,
-                  child: Container(
-                    width: 1000,
-                    height: 1000,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          auroraColors[2].withValues(alpha: 0.6),
-                          auroraColors[2].withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Layer 5: Bottom Right Blob
-                Positioned(
-                  bottom: -200,
-                  right: -200,
-                  child: Container(
-                    width: 1000,
-                    height: 1000,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          auroraColors[3].withValues(alpha: 0.6),
-                          auroraColors[3].withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // The Premium Blur Filter
-                Positioned.fill(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 60.0, sigmaY: 60.0),
-                    child: Container(color: Colors.transparent),
-                  ),
-                ),
-                // Midnight Tint ("Sunglasses" for the bright mesh)
-                Positioned.fill(
-                  child: Container(color: Colors.black.withValues(alpha: 0.15)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _ExtraItemTile extends StatefulWidget {
   final EventExtra extra;
