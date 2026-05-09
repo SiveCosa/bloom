@@ -1,10 +1,9 @@
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/media/image_loader_helper.dart';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/event/event_visibility.dart';
 import '../../domain/event/event_extra.dart';
@@ -22,8 +21,9 @@ class EventPreviewScreen extends ConsumerStatefulWidget {
 
 class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
   bool _isPublishing = false;
+  bool _isDescriptionExpanded = false;
   final DraggableScrollableController _sheetController = DraggableScrollableController();
-  final ValueNotifier<double> _sheetSize = ValueNotifier(0.64);
+  final ValueNotifier<double> _sheetSize = ValueNotifier(0.55);
 
   @override
   void initState() {
@@ -80,9 +80,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             builder: (context, size, child) {
               final double screenHeight = MediaQuery.of(context).size.height;
               final double topBarHeight = MediaQuery.of(context).padding.top + 56;
-              final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
               final double maxSheetSize = 0.9 - (10 / screenHeight);
-              final double expandedProgress = ((size - 0.64) / (maxSheetSize - 0.64)).clamp(0.0, 1.0);
+              final double expandedProgress = ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
               final double posterOpacity = (1.0 - expandedProgress).clamp(0.0, 1.0);
               
               final double actualPosterHeight = MediaQuery.of(context).size.width / (state.visuals.aspectRatio > 0 ? state.visuals.aspectRatio : 1.0);
@@ -94,7 +94,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                 ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
                 : topBarHeight;
 
-              final double posterTop = lerpDouble(0, targetTop, minimizedProgress) ?? 0;
+              final double posterTop = ui.lerpDouble(0, targetTop, minimizedProgress) ?? 0;
 
               return Positioned(
                 top: posterTop,
@@ -156,11 +156,11 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           // 2. Draggable Scrollable Sheet
           DraggableScrollableSheet(
             controller: _sheetController,
-            initialChildSize: 0.64,
+            initialChildSize: 0.55,
             minChildSize: 0.35,
             maxChildSize: 0.9 - (10 / MediaQuery.of(context).size.height),
             snap: true,
-            snapSizes: [0.35, 0.64, 0.9 - (10 / MediaQuery.of(context).size.height)],
+            snapSizes: [0.35, 0.55, 0.9 - (10 / MediaQuery.of(context).size.height)],
             builder: (context, scrollController) {
               final double screenHeight = MediaQuery.of(context).size.height;
               
@@ -168,7 +168,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                 onTap: () {
                   if (_sheetSize.value < 0.45) {
                     _sheetController.animateTo(
-                      0.64,
+                      0.55,
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeInOutCubic,
                     );
@@ -187,7 +187,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                       ValueListenableBuilder<double>(
                         valueListenable: _sheetSize,
                         builder: (context, size, child) {
-                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
                           return Positioned(
                             top: -(MediaQuery.of(context).size.height * (1.0 - size)),
                             left: 0,
@@ -204,7 +204,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                       ValueListenableBuilder<double>(
                         valueListenable: _sheetSize,
                         builder: (context, size, child) {
-                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
                           return Positioned.fill(
                             child: Opacity(
                               opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
@@ -219,9 +219,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                       ValueListenableBuilder<double>(
                         valueListenable: _sheetSize,
                         builder: (context, size, child) {
-                          final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                          final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
                           final double maxSheetSize = 0.9 - (10 / screenHeight);
-                          final double expandedProgress = ((size - 0.64) / (maxSheetSize - 0.64)).clamp(0.0, 1.0);
+                          final double expandedProgress = ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
                           
                           return Positioned(
                             top: 10,
@@ -232,8 +232,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Transform.rotate(
-                                    angle: (lerpDouble(0, -0.5, minimizedProgress) ?? 0) + 
-                                           (lerpDouble(0, 0.5, expandedProgress) ?? 0),
+                                    angle: (ui.lerpDouble(0, -0.5, minimizedProgress) ?? 0) + 
+                                           (ui.lerpDouble(0, 0.5, expandedProgress) ?? 0),
                                     child: Container(
                                       width: 20,
                                       height: 4,
@@ -244,8 +244,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     ),
                                   ),
                                   Transform.rotate(
-                                    angle: (lerpDouble(0, 0.5, minimizedProgress) ?? 0) + 
-                                           (lerpDouble(0, -0.5, expandedProgress) ?? 0),
+                                    angle: (ui.lerpDouble(0, 0.5, minimizedProgress) ?? 0) + 
+                                           (ui.lerpDouble(0, -0.5, expandedProgress) ?? 0),
                                     child: Container(
                                       width: 20,
                                       height: 4,
@@ -269,8 +269,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                             ValueListenableBuilder<double>(
                               valueListenable: _sheetSize,
                               builder: (context, size, child) {
-                                final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
-                                return SizedBox(height: lerpDouble(29, 79, minimizedProgress) ?? 29);
+                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
+                                return SizedBox(height: ui.lerpDouble(29, 79, minimizedProgress) ?? 29);
                               },
                             ),
                             
@@ -305,21 +305,14 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
                             if (state.location != null) ...[
                               _buildLocationRow(state),
-                              const SizedBox(height: 10),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: EventWeatherCard(
-                                  location: state.location,
-                                  startDate: state.timing.startDate,
-                                ),
-                              ),
+                              const SizedBox(height: 20),
                             ],
 
                             // Non-essential content (Reactive)
                             ValueListenableBuilder<double>(
                               valueListenable: _sheetSize,
                               builder: (context, size, child) {
-                                final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
                                 return AnimatedOpacity(
                                   duration: const Duration(milliseconds: 200),
                                   opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
@@ -328,12 +321,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     child: Column(
                                       children: [
                                         if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
-                                          const SizedBox(height: 16),
-                                          _buildDescriptionCard(
-                                            state,
-                                            userProfile?['username'] ?? 'Host',
-                                            userProfile?['profile_image_url'],
-                                          ),
+                                          _buildDescriptionCard(state),
                                           const SizedBox(height: 16),
                                         ],
                                         HostInviteSection(
@@ -341,8 +329,12 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                           userProfile: userProfile,
                                           onAddCoHost: () {},
                                         ),
-                                        const SizedBox(height: 16),
                                         if (state.location != null) ...[
+                                          EventWeatherCard(
+                                            location: state.location,
+                                            startDate: state.timing.startDate,
+                                          ),
+                                          const SizedBox(height: 16),
                                           _buildMapCard(state),
                                           const SizedBox(height: 16),
                                         ],
@@ -365,40 +357,50 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           // 3. Top App Bar
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chevron_left, color: Colors.black),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _isPublishing ? null : _handlePublish,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: const Text(
-                        'Post event',
-                        style: TextStyle(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: SizedBox(
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_left,
                           color: Colors.black,
-                          fontWeight: FontWeight.bold,
+                          size: 24,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    GestureDetector(
+                      onTap: _isPublishing ? null : _handlePublish,
+                      child: Container(
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Post event',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -418,7 +420,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           ValueListenableBuilder<double>(
             valueListenable: _sheetSize,
             builder: (context, size, child) {
-              final double minimizedProgress = ((0.64 - size) / (0.64 - 0.35)).clamp(0.0, 1.0);
+              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
               return Positioned(
                 bottom: 0,
                 left: 0,
@@ -531,53 +533,18 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     );
   }
 
-  bool _isTagsExpanded = false;
 
   Widget _buildTagsSection(CreateEventState state) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final tags = state.tags;
-        if (tags.isEmpty) return const SizedBox.shrink();
+    final tags = state.tags;
+    if (tags.isEmpty) return const SizedBox.shrink();
 
-        if (_isTagsExpanded) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: tags.map((tag) => _buildTagChip(tag)).toList(),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => setState(() => _isTagsExpanded = false),
-                child: Text(
-                  'Show less',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-
-        // Logic for single line with "+x more"
-        // This is a simplified approach: we try to fit as many as possible
-        // A more robust way would involve measuring each tag text
-        return Row(
-          children: [
-            Expanded(
-              child: _SingleLineTags(
-                tags: tags,
-                onExpand: () => setState(() => _isTagsExpanded = true),
-              ),
-            ),
-          ],
-        );
-      },
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: tags.map((tag) => _buildTagChip(tag)).toList(),
+      ),
     );
   }
 
@@ -585,18 +552,38 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Text(
         tag,
-        style: const TextStyle(color: Colors.white70, fontSize: 12),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 
-  Widget _buildDescriptionCard(CreateEventState state, String hostName, String? avatarUrl) {
+  Widget _buildSeparator() {
+    return Container(
+      height: 1,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.0),
+            Colors.white.withValues(alpha: 0.15),
+            Colors.white.withValues(alpha: 0.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionCard(CreateEventState state) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -607,51 +594,22 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  buildAvatarImage(
-                    source: avatarUrl,
-                    radius: 14,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    hostName.toLowerCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              if (state.tags.isNotEmpty) _buildTagsSection(state),
               if (state.description.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildFormattedDescription(state.description),
-              ],
-              if (state.tags.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildTagsSection(state),
+                if (state.tags.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _buildSeparator(),
+                  const SizedBox(height: 16),
+                ],
+                _buildExpandableDescription(state),
               ],
               if (state.extras.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  height: 1,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.white.withValues(alpha: 0.0),
-                        Colors.white.withValues(alpha: 0.15),
-                        Colors.white.withValues(alpha: 0.0),
-                      ],
-                    ),
-                  ),
-                ),
+                if (state.tags.isNotEmpty || state.description.isNotEmpty) const SizedBox(height: 16),
+                _buildSeparator(),
                 const SizedBox(height: 16),
                 ...(() {
                   final sortedExtras = [...state.extras]..sort((a, b) {
@@ -717,7 +675,72 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
 
 
-  Widget _buildFormattedDescription(String text) {
+  Widget _buildExpandableDescription(CreateEventState state) {
+    final String text = state.description;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textSpan = _getFormattedDescriptionSpan(text);
+        final tp = TextPainter(
+          text: textSpan,
+          textDirection: ui.TextDirection.ltr,
+        );
+        tp.layout(maxWidth: constraints.maxWidth);
+
+        // Check if height exceeds 200dp
+        final bool canExpand = tp.height > 200;
+
+        return GestureDetector(
+          onTap: canExpand ? () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded) : null,
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (canExpand && !_isDescriptionExpanded)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black, Colors.transparent],
+                        stops: [0.8, 1.0],
+                      ).createShader(Rect.fromLTRB(0, 0, rect.width, rect.height));
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: Text.rich(
+                      textSpan,
+                      overflow: TextOverflow.clip,
+                    ),
+                  ),
+                )
+              else
+                Text.rich(textSpan),
+              
+              if (canExpand) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    _isDescriptionExpanded ? 'Read less' : 'Read more',
+                    style: TextStyle(
+                      color: Colors.white.withValues(
+                        alpha: _isDescriptionExpanded ? 0.5 : 0.75,
+                      ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  TextSpan _getFormattedDescriptionSpan(String text) {
     final pattern = RegExp(
       r'(\*[^\s\*](?:.*?[^\s\*])?\*)|(![^\s!](?:.*?[^\s!])?!)',
       multiLine: true,
@@ -725,14 +748,13 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
     final List<TextSpan> children = [];
     int lastMatchEnd = 0;
-    final baseStyle = TextStyle(
+    const baseStyle = TextStyle(
       color: Colors.white,
       fontSize: 14,
       height: 1.5,
     );
 
     for (final match in pattern.allMatches(text)) {
-      // Add text before the match
       if (match.start > lastMatchEnd) {
         children.add(TextSpan(
           text: text.substring(lastMatchEnd, match.start),
@@ -743,7 +765,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       final matchText = match.group(0)!;
 
       if (match.group(1) != null) {
-        // Bold: *text* (hide symbols)
         children.add(TextSpan(
           text: matchText.substring(1, matchText.length - 1),
           style: baseStyle.copyWith(
@@ -752,12 +773,11 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           ),
         ));
       } else if (match.group(2) != null) {
-        // Heading: !Heading! (hide symbols)
         children.add(TextSpan(
           text: matchText.substring(1, matchText.length - 1),
           style: baseStyle.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 22.0,
+            fontSize: 16.0,
             color: Colors.white,
           ),
         ));
@@ -766,7 +786,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       lastMatchEnd = match.end;
     }
 
-    // Add remaining text
     if (lastMatchEnd < text.length) {
       children.add(TextSpan(
         text: text.substring(lastMatchEnd),
@@ -774,10 +793,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       ));
     }
 
-    return Text.rich(
-      TextSpan(children: children),
-    );
+    return TextSpan(children: children);
   }
+
 
 
 
@@ -829,7 +847,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(32.5),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           height: state.audience.requireApproval ? 50 : 65,
           decoration: BoxDecoration(
@@ -971,82 +989,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
     return best;
   }
-}
-
-class _SingleLineTags extends StatelessWidget {
-  final List<String> tags;
-  final VoidCallback onExpand;
-
-  const _SingleLineTags({
-    required this.tags,
-    required this.onExpand,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double currentWidth = 0;
-        const double spacing = 8;
-        const double chipPadding = 24; // horizontal padding 12*2
-        final List<Widget> visibleTags = [];
-        int hiddenCount = 0;
-
-        for (int i = 0; i < tags.length; i++) {
-          final String tag = tags[i];
-          // Approximate width calculation: character count * avg char width + padding
-          final double tagWidth = (tag.length * 7.5) + chipPadding;
-
-          if (currentWidth + tagWidth + spacing < constraints.maxWidth - 60) {
-            visibleTags.add(_buildTagChip(tag));
-            currentWidth += tagWidth + spacing;
-          } else {
-            hiddenCount = tags.length - i;
-            break;
-          }
-        }
-
-        return Row(
-          children: [
-            ...visibleTags.expand((w) => [w, const SizedBox(width: spacing)]).toList()
-              ..removeLast(),
-            if (hiddenCount > 0) ...[
-              const SizedBox(width: spacing),
-              GestureDetector(
-                onTap: onExpand,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                  ),
-                  child: Text(
-                    '+$hiddenCount more',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTagChip(String tag) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Text(
-        tag,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-      ),
-    );
-  }
 
 }
+

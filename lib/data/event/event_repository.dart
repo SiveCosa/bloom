@@ -65,6 +65,15 @@ class EventRepository {
       return events;
     });
   }
+
+  Stream<List<Map<String, dynamic>>> getScheduleStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('schedule')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
+  }
 }
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {
