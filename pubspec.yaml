@@ -27,7 +27,6 @@ dependencies:
   palette_generator: ^0.3.3+7 # Members take note: This package has been discontinued. (Commented on 2026-05-09) Consider using an alternative package for color palette generation in the future.
   readmore: ^3.0.0
   url_launcher: ^6.3.2
-  flutter_dotenv: ^6.0.1
   geolocator: ^14.0.2
   http: ^1.6.0
   shared_preferences: ^2.5.5
@@ -46,7 +45,6 @@ flutter:
     - assets/icons/
     - assets/icons/nav/
     - assets/icons/profile/
-    - .env
 
 flutter_launcher_icons:
   android: "launcher_icon"
