@@ -130,19 +130,19 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           width: MediaQuery.of(context).size.width,
                           child: AspectRatio(
                             aspectRatio: state.visuals.aspectRatio,
-                            child: (state.visuals.posterUrl != null || state.defaultPosterUrl != null)
-                                ? Image.network(
-                                    state.visuals.posterUrl ?? state.defaultPosterUrl!,
-                                    key: ValueKey(state.visuals.posterUrl ?? state.defaultPosterUrl),
+                            child: state.customPosterBytes != null
+                                ? Image.memory(
+                                    state.customPosterBytes!,
+                                    key: ValueKey(state.customPosterBytes),
                                     fit: BoxFit.cover,
                                   )
-                                : (state.customPosterBytes != null
-                                    ? Image.memory(
-                                        state.customPosterBytes!,
-                                        key: ValueKey(state.customPosterBytes),
+                                : (state.visuals.posterUrl != null || state.defaultPosterUrl != null)
+                                    ? Image.network(
+                                        state.visuals.posterUrl ?? state.defaultPosterUrl!,
+                                        key: ValueKey(state.visuals.posterUrl ?? state.defaultPosterUrl),
                                         fit: BoxFit.cover,
                                       )
-                                    : Container(color: Colors.grey[900])),
+                                    : Container(color: Colors.grey[900]),
                           ),
                         ),
                       ),

@@ -38,7 +38,7 @@ class PosterModule extends ConsumerWidget {
               borderRadius: BorderRadius.circular(15),
               color: Colors.white.withValues(alpha: 0.15),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              image: (posterUrl != null || state.defaultPosterUrl != null)
+              image: (state.customPosterBytes == null && (posterUrl != null || state.defaultPosterUrl != null))
                   ? DecorationImage(
                       image: NetworkImage(posterUrl ?? state.defaultPosterUrl!),
                       fit: BoxFit.cover,
