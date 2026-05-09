@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:palette_generator/palette_generator.dart';
 import '../../data/event/event_repository.dart';
 import '../auth/auth_providers.dart';
 import 'event.dart';
@@ -27,6 +28,9 @@ class CreateEventState {
   final List<Color> auroraColors; // For UI rendering
   final String? defaultPosterUrl;
 
+  static const String fallbackPosterUrl =
+      'https://firebasestorage.googleapis.com/v0/b/bloom-e98c2.firebasestorage.app/o/posters%2Fdefault%2Fdefault_poster.webp?alt=media&token=56f3fc10-9054-4467-a1b9-a98240939a99';
+
   static const List<Color> defaultAuroraColors = [
     Color(0xFFFFB965),
     Color(0xFFF04A9F),
@@ -39,10 +43,7 @@ class CreateEventState {
     this.title = '',
     this.description = '',
     this.tags = const [],
-    this.visuals = const EventVisuals(
-      aspectRatio: 1.0,
-      auroraColors: [],
-    ),
+    this.visuals = const EventVisuals(aspectRatio: 1.0, auroraColors: []),
     this.timing = const EventTiming(),
     this.location,
     this.audience = const EventAudience(visibility: EventVisibility.public),
@@ -52,7 +53,7 @@ class CreateEventState {
     this.isGeneratingPoster = false,
     this.isEditingSpots = false,
     this.auroraColors = defaultAuroraColors,
-    this.defaultPosterUrl,
+    this.defaultPosterUrl = fallbackPosterUrl,
   });
 
   CreateEventState copyWith({
@@ -77,7 +78,9 @@ class CreateEventState {
       tags: tags ?? this.tags,
       visuals: visuals ?? this.visuals,
       timing: timing ?? this.timing,
-      location: location == _undefined ? this.location : (location as EventLocation?),
+      location: location == _undefined
+          ? this.location
+          : (location as EventLocation?),
       audience: audience ?? this.audience,
       extras: extras ?? this.extras,
       rsvpReminders: rsvpReminders ?? this.rsvpReminders,
@@ -87,7 +90,9 @@ class CreateEventState {
       isGeneratingPoster: isGeneratingPoster ?? this.isGeneratingPoster,
       isEditingSpots: isEditingSpots ?? this.isEditingSpots,
       auroraColors: auroraColors ?? this.auroraColors,
-      defaultPosterUrl: defaultPosterUrl == _undefined ? this.defaultPosterUrl : (defaultPosterUrl as String?),
+      defaultPosterUrl: defaultPosterUrl == _undefined
+          ? this.defaultPosterUrl
+          : (defaultPosterUrl as String?),
     );
   }
 
@@ -104,21 +109,53 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   }
 
   Future<void> _fetchDefaultPoster() async {
+    String? url;
     try {
-      final snap = await FirebaseFirestore.instance.collection('posters').doc('default').get();
+      final snap = await FirebaseFirestore.instance
+          .collection('posters')
+          .doc('default')
+          .get();
       if (snap.exists) {
-        final url = snap.data()?['url'] as String?;
-        if (url != null) {
-          state = state.copyWith(defaultPosterUrl: url);
-        }
+        url = snap.data()?['url'] as String?;
       }
     } catch (e) {
       debugPrint('Error fetching default poster: $e');
+    }
+
+    url ??= CreateEventState.fallbackPosterUrl;
+
+    state = state.copyWith(defaultPosterUrl: url);
+
+    // Extract colors for the default poster to set the initial aurora background
+    try {
+      final imageProvider = NetworkImage(url);
+      final paletteGenerator = await PaletteGenerator.fromImageProvider(
+        imageProvider,
+      ).timeout(const Duration(seconds: 5));
+
+      final colors = <Color>[];
+      if (paletteGenerator.vibrantColor != null)
+        colors.add(paletteGenerator.vibrantColor!.color);
+      if (paletteGenerator.lightVibrantColor != null)
+        colors.add(paletteGenerator.lightVibrantColor!.color);
+      if (paletteGenerator.darkVibrantColor != null)
+        colors.add(paletteGenerator.darkVibrantColor!.color);
+      if (paletteGenerator.mutedColor != null)
+        colors.add(paletteGenerator.mutedColor!.color);
+      if (paletteGenerator.dominantColor != null)
+        colors.add(paletteGenerator.dominantColor!.color);
+
+      if (colors.isNotEmpty) {
+        updatePosterWithColors(url, colors);
+      }
+    } catch (e) {
+      debugPrint('Error extracting colors for default poster: $e');
     }
   }
 
   void reset() {
     state = CreateEventState();
+    _fetchDefaultPoster();
   }
 
   void updateTitle(String title) => state = state.copyWith(title: title);
@@ -128,13 +165,18 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   void updatePosterWithColors(String url, List<Color> colors) {
     final boostedColors = colors.map((c) => _boostColor(c)).toList();
     while (boostedColors.length < 5) {
-      boostedColors.add(CreateEventState.defaultAuroraColors[boostedColors.length]);
+      boostedColors.add(
+        CreateEventState.defaultAuroraColors[boostedColors.length],
+      );
     }
 
     state = state.copyWith(
       visuals: state.visuals.copyWith(
         posterUrl: url,
-        auroraColors: boostedColors.take(5).map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}').toList(),
+        auroraColors: boostedColors
+            .take(5)
+            .map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}')
+            .toList(),
       ),
       customPosterBytes: null,
       auroraColors: boostedColors.take(5).toList(),
@@ -144,13 +186,18 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   void updateCustomPoster(Uint8List bytes, List<Color> colors) {
     final boostedColors = colors.map((c) => _boostColor(c)).toList();
     while (boostedColors.length < 5) {
-      boostedColors.add(CreateEventState.defaultAuroraColors[boostedColors.length]);
+      boostedColors.add(
+        CreateEventState.defaultAuroraColors[boostedColors.length],
+      );
     }
 
     state = state.copyWith(
       visuals: state.visuals.copyWith(
         posterUrl: null,
-        auroraColors: boostedColors.take(5).map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}').toList(),
+        auroraColors: boostedColors
+            .take(5)
+            .map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}')
+            .toList(),
       ),
       customPosterBytes: bytes,
       auroraColors: boostedColors.take(5).toList(),
@@ -166,7 +213,13 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   }
 
   void updateDominantColor(Color color) {
-    updatePosterWithColors(state.visuals.posterUrl ?? '', [color, color, color, color, color]);
+    updatePosterWithColors(state.visuals.posterUrl ?? '', [
+      color,
+      color,
+      color,
+      color,
+      color,
+    ]);
   }
 
   void toggleAspectRatio() {
@@ -223,20 +276,27 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     state = state.copyWith(audience: state.audience.copyWith(capacity: spots));
   }
 
-  void setEditingSpots(bool editing) => state = state.copyWith(isEditingSpots: editing);
+  void setEditingSpots(bool editing) =>
+      state = state.copyWith(isEditingSpots: editing);
 
   void setWaitlistEnabled(bool enabled) {
-    state = state.copyWith(audience: state.audience.copyWith(waitlistEnabled: enabled));
+    state = state.copyWith(
+      audience: state.audience.copyWith(waitlistEnabled: enabled),
+    );
   }
 
   void setMaxPlusOnes(int val) {
     // Clamped between 0 and 5 as per requirement
     final clampedVal = val.clamp(0, 5);
-    state = state.copyWith(audience: state.audience.copyWith(maxPlusOnes: clampedVal));
+    state = state.copyWith(
+      audience: state.audience.copyWith(maxPlusOnes: clampedVal),
+    );
   }
 
   void setRequireApproval(bool val) {
-    state = state.copyWith(audience: state.audience.copyWith(requireApproval: val));
+    state = state.copyWith(
+      audience: state.audience.copyWith(requireApproval: val),
+    );
   }
 
   void setAllowMaybe(bool val) {
@@ -244,7 +304,9 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   }
 
   void updateRSVPDeadline(DateTime? date) {
-    state = state.copyWith(audience: state.audience.copyWith(rsvpDeadline: date));
+    state = state.copyWith(
+      audience: state.audience.copyWith(rsvpDeadline: date),
+    );
   }
 
   void updateLocation(EventLocation? loc) {
@@ -300,12 +362,16 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     try {
       // 1. Generate ID early for image path consistency
       final eventId = FirebaseFirestore.instance.collection('events').doc().id;
-      
-      String? finalPosterUrl = state.visuals.posterUrl ?? state.defaultPosterUrl;
-      
+
+      String? finalPosterUrl =
+          state.visuals.posterUrl ?? state.defaultPosterUrl;
+
       // 2. Upload custom poster if present
       if (state.customPosterBytes != null) {
-        finalPosterUrl = await repo.uploadPoster(eventId, state.customPosterBytes!);
+        finalPosterUrl = await repo.uploadPoster(
+          eventId,
+          state.customPosterBytes!,
+        );
       }
 
       // 3. Compile final event data
@@ -341,5 +407,5 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
 final createEventProvider =
     NotifierProvider<CreateEventNotifier, CreateEventState>(() {
-  return CreateEventNotifier();
-});
+      return CreateEventNotifier();
+    });

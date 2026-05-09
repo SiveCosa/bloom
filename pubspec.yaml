@@ -7,12 +7,14 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  cloud_firestore: ^6.2.0
-  cloud_functions: ^6.1.0
-  firebase_app_check: ^0.4.2
-  firebase_auth: ^6.3.0
-  firebase_core: ^4.6.0
-  firebase_storage: ^13.2.0
+  # --- FIREBASE PACKAGES ---
+  cloud_firestore: ^6.3.0
+  cloud_functions: ^6.2.0
+  firebase_app_check: ^0.4.3
+  firebase_auth: ^6.4.0
+  firebase_core: ^4.7.0
+  firebase_storage: ^13.3.0
+  # ---------------------------------
   flutter:
     sdk: flutter
   flutter_image_compress: ^2.4.0
@@ -22,7 +24,7 @@ dependencies:
   intl: ^0.19.0
   image_cropper: ^12.2.0
   image_picker: ^1.2.1
-  palette_generator: ^0.3.3+7
+  palette_generator: ^0.3.3+7 # Members take note: This package has been discontinued. (Commented on 2026-05-09) Consider using an alternative package for color palette generation in the future.
   readmore: ^3.0.0
   url_launcher: ^6.3.2
   flutter_dotenv: ^6.0.1
