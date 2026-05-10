@@ -8,6 +8,7 @@ import '../shared/widgets/gradient_top_bar.dart';
 import '../../core/theme/app_theme.dart';
 import './widgets/month_year_picker_modal.dart';
 import '../shared/widgets/bloom_icon_button.dart';
+import '../../domain/navigation/navigation_providers.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -34,8 +35,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     super.dispose();
   }
 
+  void _resetToToday() {
+    final now = DateTime.now();
+    setState(() {
+      _displayedMonth = DateTime(now.year, now.month, 1);
+    });
+
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(10000);
+    }
+
+    // Also reset the selected date to today
+    ref.read(selectedDateProvider.notifier).updateDate(now);
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen for tab changes to reset the calendar when returning
+    ref.listen<int>(mainShellIndexProvider, (previous, next) {
+      if (next == 2 && previous != 2) {
+        _resetToToday();
+      }
+    });
+
     final selectedDate = ref.watch(selectedDateProvider);
     final scheduleAsync = ref.watch(scheduleStreamProvider);
 
@@ -226,8 +248,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: Center(
               child: _buildToggleItem(
-                iconPath: 'assets/icons/nav/calendar_line.svg',
+                icon: Icons.calendar_month,
                 isActive: true,
+                size: 25,
               ),
             ),
           ),
@@ -248,6 +271,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     IconData? icon,
     String? iconPath,
     required bool isActive,
+    double size = 28,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -255,8 +279,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         if (iconPath != null)
           SvgPicture.asset(
             iconPath,
-            width: 28,
-            height: 28,
+            width: size,
+            height: size,
             colorFilter: ColorFilter.mode(
               isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
               BlendMode.srcIn,
@@ -266,7 +290,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Icon(
             icon,
             color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
-            size: 28,
+            size: size,
           ),
         if (isActive) ...[
           const SizedBox(height: 8),
