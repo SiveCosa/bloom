@@ -115,4 +115,21 @@ extension EventVisibilityExtension on EventVisibility {
         return Icons.lock_outline;
     }
   }
+
+  IconData get filledIconData {
+    switch (this) {
+      case EventVisibility.public:
+        return Icons.public;
+      case EventVisibility.friendsOfFriends:
+        return Icons.favorite;
+      case EventVisibility.friendsOnly:
+        return Icons.favorite;
+      case EventVisibility.maleOnly:
+        return Icons.celebration;
+      case EventVisibility.femaleOnly:
+        return Icons.local_florist;
+      case EventVisibility.private:
+        return Icons.lock;
+    }
+  }
 }

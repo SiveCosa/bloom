@@ -27,6 +27,7 @@ import 'widgets/rsvp_option_preview.dart';
 import 'widgets/aurora_background.dart';
 import 'widgets/host_invite_section.dart';
 import '../../domain/event/event_location.dart';
+import '../../domain/navigation/navigation_providers.dart';
 
 
 class CreateEventScreen extends ConsumerWidget {
@@ -183,9 +184,8 @@ class CreateEventScreen extends ConsumerWidget {
                               child: GestureDetector(
                                 onTap: () {
                                   FocusManager.instance.primaryFocus?.unfocus();
-                                  ref
-                                      .read(createEventProvider.notifier)
-                                      .reset();
+                                  ref.read(createEventProvider.notifier).reset();
+                                  ref.read(mainShellIndexProvider.notifier).setIndex(0);
                                   context.pop();
                                 },
                                 child: Container(
@@ -406,7 +406,7 @@ class CreateEventScreen extends ConsumerWidget {
                               children: [
                                 _buildTappableRow(
                                   context: context,
-                                  icon: state.audience.visibility.outlinedIcon,
+                                  icon: state.audience.visibility.filledIconData,
                                   title: state.audience.visibility.title,
                                   trailing: 'Set Visibility',
                                   onTap: () =>
@@ -415,7 +415,7 @@ class CreateEventScreen extends ConsumerWidget {
                                 const _AvailableSpotsRow(),
                                 _buildTappableRow(
                                   context: context,
-                                  icon: Icons.person_add_outlined,
+                                  icon: Icons.person_add,
                                   title: state.audience.maxPlusOnes > 0
                                       ? '+${state.audience.maxPlusOnes} allowed'
                                       : 'No plus ones',
@@ -1034,7 +1034,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
         isEditing: true,
         child: Row(
           children: [
-            const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+            const Icon(Icons.groups, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Text('# ', style: visibilityStyle),
             Expanded(
@@ -1076,7 +1076,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
         },
         child: Row(
           children: [
-            const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+            const Icon(Icons.groups, color: Colors.white, size: 20),
             const SizedBox(width: 12),
             Text('$availableSpots spots', style: visibilityStyle),
             const Spacer(),
@@ -1101,7 +1101,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
       },
       child: Row(
         children: [
-          const Icon(Icons.groups_outlined, color: Colors.white, size: 20),
+          const Icon(Icons.groups, color: Colors.white, size: 20),
           const SizedBox(width: 12),
           Text('Unlimited', style: visibilityStyle),
           const Spacer(),

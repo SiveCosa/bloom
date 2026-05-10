@@ -1,10 +1,13 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import '../../domain/calendar/calendar_providers.dart';
 import '../../domain/calendar/scheduled_event.dart';
 import '../shared/widgets/gradient_top_bar.dart';
+import '../../core/theme/app_theme.dart';
+import './widgets/month_year_picker_modal.dart';
+import '../shared/widgets/bloom_icon_button.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -42,10 +45,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
     final safeAreaTop = mediaQuery.padding.top;
-    // Always position the sheet 15dp below where the 6th week would be
-    final double estimatedHeaderHeight = safeAreaTop + 140 + (6 * 46);
+    // Always position the sheet 20dp below where the 6th week would be
+    final double estimatedHeaderHeight = safeAreaTop + 147 + (6 * 46) + 20;
     final double initialSize =
         ((screenHeight - estimatedHeaderHeight) / screenHeight).clamp(0.1, 0.6);
+
+    // Height of one week view (approx: AppBar 50 + Spacer 15 + Toggle 50 + Spacer 10 + Weekdays 25 + Spacer 16 + Week 46 + Margin 12)
+    final double estimatedWeekViewHeight = safeAreaTop + 150 + 46 + 12;
+    final double maxChildSize =
+        ((screenHeight - estimatedWeekViewHeight) / screenHeight).clamp(0.4, 0.95);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -60,27 +68,35 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             child: Column(
               children: [
                 _buildAppBar(),
+                const SizedBox(height: 15),
                 _buildNavigationToggle(),
+                const SizedBox(height: 10),
                 _buildWeekdayHeaders(),
                 Expanded(
                   child: ValueListenableBuilder<double>(
                     valueListenable: _sheetExtent,
                     builder: (context, extent, child) {
-                      // Normalize extent from the dynamic min size to initialSize + 0.15
-                      final collapseProgress = ((extent - initialSize) / 0.15)
-                          .clamp(0.0, 1.0);
+                      // Normalize extent from initialSize to maxChildSize
+                      final collapseProgress =
+                          ((extent - initialSize) / (maxChildSize - initialSize))
+                              .clamp(0.0, 1.0);
                       return PageView.builder(
                         controller: _pageController,
                         onPageChanged: (index) {
                           final diff = index - 10000;
                           final now = DateTime.now();
+                          final newMonth = DateTime(
+                            now.year,
+                            now.month + diff,
+                            1,
+                          );
                           setState(() {
-                            _displayedMonth = DateTime(
-                              now.year,
-                              now.month + diff,
-                              1,
-                            );
+                            _displayedMonth = newMonth;
                           });
+                          // Automatically set the 1st of the new month as the active/selected day
+                          ref
+                              .read(selectedDateProvider.notifier)
+                              .updateDate(newMonth);
                         },
                         itemBuilder: (context, index) {
                           final diff = index - 10000;
@@ -106,6 +122,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             scheduleAsync,
             selectedDate,
             initialSize,
+            maxChildSize,
             rowCount,
           ),
         ],
@@ -113,8 +130,41 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  void _showMonthYearPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MonthYearPickerModal(
+        initialDate: _displayedMonth,
+        onDateSelected: (selectedDate) {
+          final now = DateTime.now();
+          
+          // If it's today, also set it as the active/selected day
+          if (_isSameDay(selectedDate, now)) {
+            ref.read(selectedDateProvider.notifier).updateDate(now);
+          }
+
+          final monthDiff = (selectedDate.year - now.year) * 12 +
+              (selectedDate.month - now.month);
+          final targetPage = 10000 + monthDiff;
+
+          _pageController.animateToPage(
+            targetPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildAppBar() {
-    final monthName = DateFormat('MMMM').format(_displayedMonth);
+    final now = DateTime.now();
+    final isCurrentYear = _displayedMonth.year == now.year;
+    final monthName = isCurrentYear
+        ? DateFormat('MMMM').format(_displayedMonth)
+        : DateFormat('MMM yyyy').format(_displayedMonth);
 
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 0),
@@ -123,7 +173,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         children: [
           GestureDetector(
             onTap: () {
-              // Future implementation: Month picker
+              // Implementation: Month picker
+              _showMonthYearPicker();
             },
             child: Row(
               children: [
@@ -146,9 +197,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           ),
           Row(
             children: [
-              _buildIconButton(Icons.search),
+              BloomIconButton(
+                icon: Icons.search,
+                onTap: () {
+                  // Handle search
+                },
+              ),
               const SizedBox(width: 12),
-              _buildIconButton(Icons.tune),
+              BloomIconButton(
+                icon: Icons.tune,
+                onTap: () {
+                  // Handle filter
+                },
+              ),
             ],
           ),
         ],
@@ -156,44 +217,61 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildIconButton(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.white, size: 20),
-    );
-  }
 
   Widget _buildNavigationToggle() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5, bottom: 20),
+    return SizedBox(
+      height: 50,
       child: Row(
         children: [
           Expanded(
-            child: Center(child: _buildToggleItem(Icons.calendar_today, true)),
+            child: Center(
+              child: _buildToggleItem(
+                iconPath: 'assets/icons/nav/calendar_line.svg',
+                isActive: true,
+              ),
+            ),
           ),
-          Expanded(child: Center(child: _buildToggleItem(Icons.list, false))),
+          Expanded(
+            child: Center(
+              child: _buildToggleItem(
+                icon: Icons.list,
+                isActive: false,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildToggleItem(IconData icon, bool isActive) {
+  Widget _buildToggleItem({
+    IconData? icon,
+    String? iconPath,
+    required bool isActive,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
-          size: 28,
-        ),
+        if (iconPath != null)
+          SvgPicture.asset(
+            iconPath,
+            width: 28,
+            height: 28,
+            colorFilter: ColorFilter.mode(
+              isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+              BlendMode.srcIn,
+            ),
+          )
+        else
+          Icon(
+            icon,
+            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+            size: 28,
+          ),
         if (isActive) ...[
           const SizedBox(height: 8),
           Container(
-            width: 32,
+            width: 50,
             height: 2,
             decoration: BoxDecoration(
               color: Colors.white,
@@ -252,45 +330,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         children: [
           const SizedBox(height: 16),
           // Calendar rows
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: rowCount,
-              itemBuilder: (context, rowIndex) {
-                final rowDays = days.sublist(rowIndex * 7, (rowIndex + 1) * 7);
+          // Calendar rows
+          Column(
+            children: List.generate(rowCount, (rowIndex) {
+              final rowDays = days.sublist(rowIndex * 7, (rowIndex + 1) * 7);
 
-                // If collapsing, shrink other rows
-                final bool isSelectedRow = rowIndex == selectedRowIndex;
-                final double rowHeight = isSelectedRow
-                    ? 46.0
-                    : 46.0 * (1.0 - collapseProgress);
-                final double opacity = isSelectedRow
-                    ? 1.0
-                    : (1.0 - collapseProgress);
+              // Find if this is the row containing the selected date
+              final bool isSelectedRow = rowIndex == selectedRowIndex;
 
-                return Opacity(
-                  opacity: opacity,
-                  child: SizedBox(
-                    height: rowHeight,
-                    child: Row(
-                      children: rowDays
-                          .map(
-                            (day) => Expanded(
-                              child: _buildCalendarDay(
-                                day,
-                                monthDate,
-                                isSelectedRow,
-                                collapseProgress,
-                              ),
+              // Use a curve for smoother transition
+              final curvedProgress = Curves.easeInOut.transform(collapseProgress);
+
+              // Fade out faster than we shrink
+              final double opacity = isSelectedRow
+                  ? 1.0
+                  : (1.0 - curvedProgress * 1.5).clamp(0.0, 1.0);
+
+              final double rowHeight = isSelectedRow
+                  ? 46.0
+                  : 46.0 * (1.0 - curvedProgress);
+
+              return Opacity(
+                opacity: opacity,
+                child: SizedBox(
+                  height: rowHeight,
+                  child: Row(
+                    children: rowDays
+                        .map(
+                          (day) => Expanded(
+                            child: _buildCalendarDay(
+                              day,
+                              monthDate,
+                              isSelectedRow,
+                              collapseProgress,
                             ),
-                          )
-                          .toList(),
-                    ),
+                          ),
+                        )
+                        .toList(),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            }),
           ),
         ],
       ),
@@ -315,6 +395,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       error: (err, stack) => <ScheduledEvent>[],
     );
 
+    if (isOtherMonth) {
+      return const SizedBox.shrink();
+    }
+
     return GestureDetector(
       onTap: () => ref.read(selectedDateProvider.notifier).updateDate(day),
       child: Center(
@@ -333,13 +417,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Stack(
                 children: [
                   _buildEventBackground(events),
+                  if (isToday)
+                    Center(
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryButton,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
                   Center(
                     child: Text(
                       DateFormat('dd').format(day),
                       style: TextStyle(
-                        color: isOtherMonth
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : Colors.white,
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 16,
                         fontWeight: isSelected || isToday
                             ? FontWeight.bold
@@ -417,6 +510,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     AsyncValue<List<ScheduledEvent>> scheduleAsync,
     DateTime selectedDate,
     double initialSize,
+    double maxChildSize,
     int rowCount,
   ) {
     return NotificationListener<DraggableScrollableNotification>(
@@ -427,76 +521,105 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         return false;
       },
       child: DraggableScrollableSheet(
-        key: ValueKey('sheet_$rowCount'),
         initialChildSize: initialSize,
         minChildSize: initialSize,
-        maxChildSize: 0.9,
+        maxChildSize: maxChildSize,
+        snap: true,
+        snapSizes: [initialSize, maxChildSize],
         builder: (context, scrollController) {
           return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1D21).withValues(alpha: 0.9),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(32),
+            decoration: const BoxDecoration(
+              color: Color(0xFF25282D),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
               ),
             ),
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(32),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(32),
+                topRight: Radius.circular(32),
               ),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _formatSelectedDate(selectedDate),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: scheduleAsync.when(
-                        data: (events) {
-                          final filteredEvents = events
-                              .where(
-                                (e) => _isSameDay(e.startTime, selectedDate),
-                              )
-                              .toList();
-                          if (filteredEvents.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                'No events scheduled',
-                                style: TextStyle(color: Colors.white54),
+              child: CustomScrollView(
+                controller: scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverAppBar(
+                    pinned: true,
+                    automaticallyImplyLeading: false,
+                    backgroundColor: const Color(0xFF25282D),
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    toolbarHeight: 30,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                            );
-                          }
-                          return ListView.builder(
-                            controller: scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: filteredEvents.length,
-                            itemBuilder: (context, index) =>
-                                _buildEventCard(filteredEvents[index]),
-                          );
-                        },
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Error: $e')),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            _formatSelectedDate(selectedDate),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  scheduleAsync.when(
+                    data: (events) {
+                      final filteredEvents = events
+                          .where(
+                            (e) => _isSameDay(e.startTime, selectedDate),
+                          )
+                          .toList();
+                      if (filteredEvents.isEmpty) {
+                        return const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Text(
+                              'No events scheduled',
+                              style: TextStyle(color: Colors.white54),
+                            ),
+                          ),
+                        );
+                      }
+                      return SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) =>
+                                _buildEventCard(filteredEvents[index]),
+                            childCount: filteredEvents.length,
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, _) => SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: Text('Error: $e')),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 40),
+                  ),
+                ],
               ),
             ),
           );
@@ -560,7 +683,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Row(
                   children: [
                     const Icon(
-                      Icons.calendar_today,
+                      Icons.calendar_month,
                       size: 14,
                       color: Colors.white70,
                     ),
