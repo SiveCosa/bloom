@@ -29,7 +29,27 @@ class EventRepository {
     
     // Use a transaction or batch to ensure both happen or neither
     final batch = _firestore.batch();
+    
+    // Operation 1: Main Event
     batch.set(docRef, eventWithId.toMap());
+    
+    // Operation 2: Host Schedule (Denormalized)
+    final scheduleRef = _firestore
+        .collection('users')
+        .doc(event.metadata.hostId)
+        .collection('schedule')
+        .doc(docRef.id);
+        
+    final scheduleData = <String, dynamic>{
+      'eventId': docRef.id,
+      'title': event.title,
+      if (event.timing.startDate != null) 'startTime': Timestamp.fromDate(event.timing.startDate!),
+      if (event.timing.endDate != null) 'endTime': Timestamp.fromDate(event.timing.endDate!),
+      if (event.visuals.posterUrl != null) 'posterUrl': event.visuals.posterUrl,
+      'auroraColors': event.visuals.auroraColors,
+      if (event.location != null) 'locationName': event.location!.displayName,
+    };
+    batch.set(scheduleRef, scheduleData);
     
     // Increment hosted count for the user
     final userRef = _firestore.collection('users').doc(event.metadata.hostId);

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -453,14 +454,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                     ),
                   Center(
-                    child: Text(
-                      DateFormat('dd').format(day),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 16,
-                        fontWeight: isSelected || isToday
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: events.isNotEmpty
+                          ? BoxDecoration(
+                              color: _getEventColor(events[0]),
+                              shape: BoxShape.circle,
+                            )
+                          : null,
+                      child: Text(
+                        DateFormat('dd').format(day),
+                        style: TextStyle(
+                          color: events.isNotEmpty
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.8),
+                          fontSize: 16,
+                          fontWeight: isSelected || isToday || events.isNotEmpty
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
                       ),
                     ),
                   ),
@@ -473,36 +485,93 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
+  Color _getEventColor(ScheduledEvent event) {
+    if (event.auroraColors.isEmpty) {
+      return const Color(0xFFC151FD); // Fallback to brand purple
+    }
+    
+    // Pick the most suitable color from the palette.
+    // Index 0 or 2 are usually good candidates for dominant/vibrant colors.
+    return _parseHexColor(event.auroraColors[0]);
+  }
+
+  Color _parseHexColor(String hex) {
+    String hexStr = hex.replaceFirst('#', '');
+    if (hexStr.length == 6) {
+      hexStr = 'FF$hexStr';
+    } else if (hexStr.length == 8 && hexStr.startsWith('0x')) {
+      hexStr = hexStr.substring(2);
+    }
+    try {
+      return Color(int.parse(hexStr, radix: 16));
+    } catch (e) {
+      return const Color(0xFFC151FD); // Fallback
+    }
+  }
+
   Widget _buildEventBackground(List<ScheduledEvent> events) {
     if (events.isEmpty) return Container();
 
     if (events.length == 1) {
-      return Positioned.fill(
-        child: Stack(
-          children: [
-            if (events[0].posterUrl != null)
-              Image.network(
-                events[0].posterUrl!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildFallbackFill(),
-              )
-            else
-              _buildFallbackFill(),
-            Container(color: Colors.black.withValues(alpha: 0.3)),
-          ],
+      return Positioned(
+        top: 3,
+        left: 3,
+        right: 3,
+        bottom: 3,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            children: [
+              if (events[0].posterUrl != null)
+                Image.network(
+                  events[0].posterUrl!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildFallbackFill(),
+                )
+              else
+                _buildFallbackFill(),
+              Container(color: Colors.black.withValues(alpha: 0.3)),
+            ],
+          ),
         ),
       );
     }
 
     // 2+ events
     return Positioned.fill(
-      child: Row(
+      child: Stack(
         children: [
-          Expanded(child: _buildMiniPoster(events[0])),
-          Expanded(child: _buildMiniPoster(events[1])),
+          Align(
+            alignment: const Alignment(-0.7, -0.7),
+            child: FractionallySizedBox(
+              widthFactor: 0.6,
+              heightFactor: 0.6,
+              child: Transform.rotate(
+                angle: -10 * math.pi / 180,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: _buildMiniPoster(events[1]),
+                ),
+              ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(0.7, 0.7),
+            child: FractionallySizedBox(
+              widthFactor: 0.6,
+              heightFactor: 0.6,
+              child: Transform.rotate(
+                angle: 10 * math.pi / 180,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: _buildMiniPoster(events[0]),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

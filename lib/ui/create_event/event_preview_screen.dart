@@ -45,20 +45,18 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
   Future<void> _handlePublish() async {
     setState(() => _isPublishing = true);
     try {
-      final success = await ref.read(createEventProvider.notifier).compileAndPublishEvent();
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Event posted successfully!')),
-          );
-          context.go('/');
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to post event. Please try again.')),
-          );
-        }
+      await ref.read(createEventProvider.notifier).compileAndPublishEvent();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Event posted successfully!')),
+        );
+        context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
       }
     } finally {
       if (mounted) setState(() => _isPublishing = false);

@@ -359,9 +359,14 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     );
   }
 
-  Future<bool> compileAndPublishEvent() async {
-    final userProfile = ref.read(currentUserProfileProvider).value;
-    final hostId = userProfile?['uid'] as String? ?? 'anonymous';
+  Future<void> compileAndPublishEvent() async {
+    final user = ref.read(firebaseAuthProvider).currentUser;
+    final hostId = user?.uid;
+    
+    if (hostId == null) {
+      throw 'You must be signed in to post an event.';
+    }
+    
     final repo = ref.read(eventRepositoryProvider);
 
     try {
@@ -403,10 +408,9 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       await repo.createEvent(event);
       debugPrint('Event published successfully with ID: $eventId');
       reset(); // Reset state to default after successful creation
-      return true;
     } catch (e) {
       debugPrint('Error publishing event: $e');
-      return false;
+      throw 'Failed to post event. Please try again.';
     }
   }
 }
