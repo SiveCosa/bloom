@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import '../../domain/auth/auth_providers.dart';
 import '../../domain/calendar/calendar_providers.dart';
 import '../../domain/calendar/scheduled_event.dart';
 import '../shared/widgets/gradient_top_bar.dart';
@@ -10,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import './widgets/month_year_picker_modal.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/navigation/navigation_providers.dart';
+import '../widgets/scheduled_event_card.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -20,6 +22,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   final ValueNotifier<double> _sheetExtent = ValueNotifier(0.35);
+  bool _isListView = false;
   late final PageController _pageController = PageController(
     initialPage: 10000,
   );
@@ -93,61 +96,67 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 _buildAppBar(),
                 const SizedBox(height: 15),
                 _buildNavigationToggle(),
-                const SizedBox(height: 10),
-                _buildWeekdayHeaders(),
-                Expanded(
-                  child: ValueListenableBuilder<double>(
-                    valueListenable: _sheetExtent,
-                    builder: (context, extent, child) {
-                      // Normalize extent from initialSize to maxChildSize
-                      final collapseProgress =
-                          ((extent - initialSize) / (maxChildSize - initialSize))
-                              .clamp(0.0, 1.0);
-                      return PageView.builder(
-                        controller: _pageController,
-                        onPageChanged: (index) {
-                          final diff = index - 10000;
-                          final now = DateTime.now();
-                          final newMonth = DateTime(
-                            now.year,
-                            now.month + diff,
-                            1,
-                          );
-                          setState(() {
-                            _displayedMonth = newMonth;
-                          });
-                          // Automatically set the 1st of the new month as the active/selected day
-                          ref
-                              .read(selectedDateProvider.notifier)
-                              .updateDate(newMonth);
-                        },
-                        itemBuilder: (context, index) {
-                          final diff = index - 10000;
-                          final now = DateTime.now();
-                          final monthDate = DateTime(
-                            now.year,
-                            now.month + diff,
-                            1,
-                          );
-                          return _buildCalendarGrid(
-                            monthDate,
-                            collapseProgress,
-                          );
-                        },
-                      );
-                    },
+                if (!_isListView) ...[
+                  const SizedBox(height: 10),
+                  _buildWeekdayHeaders(),
+                  Expanded(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: _sheetExtent,
+                      builder: (context, extent, child) {
+                        // Normalize extent from initialSize to maxChildSize
+                        final collapseProgress =
+                            ((extent - initialSize) / (maxChildSize - initialSize))
+                                .clamp(0.0, 1.0);
+                        return PageView.builder(
+                          controller: _pageController,
+                          onPageChanged: (index) {
+                            final diff = index - 10000;
+                            final now = DateTime.now();
+                            final newMonth = DateTime(
+                              now.year,
+                              now.month + diff,
+                              1,
+                            );
+                            setState(() {
+                              _displayedMonth = newMonth;
+                            });
+                            // Automatically set the 1st of the new month as the active/selected day
+                            ref
+                                .read(selectedDateProvider.notifier)
+                                .updateDate(newMonth);
+                          },
+                          itemBuilder: (context, index) {
+                            final diff = index - 10000;
+                            final now = DateTime.now();
+                            final monthDate = DateTime(
+                              now.year,
+                              now.month + diff,
+                              1,
+                            );
+                            return _buildCalendarGrid(
+                              monthDate,
+                              collapseProgress,
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
+                ] else
+                  Expanded(
+                    child: _buildListView(scheduleAsync),
+                  ),
               ],
             ),
           ),
-          _buildDraggableSheet(
-            scheduleAsync,
-            selectedDate,
-            initialSize,
-            maxChildSize,
-            rowCount,
-          ),
+          if (!_isListView)
+            _buildDraggableSheet(
+              scheduleAsync,
+              selectedDate,
+              initialSize,
+              maxChildSize,
+              rowCount,
+            ),
         ],
       ),
     );
@@ -247,19 +256,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Center(
-              child: _buildToggleItem(
-                icon: Icons.calendar_month,
-                isActive: true,
-                size: 25,
+            child: InkWell(
+              onTap: () => setState(() => _isListView = false),
+              child: Center(
+                child: _buildToggleItem(
+                  icon: Icons.calendar_month,
+                  isActive: !_isListView,
+                  size: 25,
+                ),
               ),
             ),
           ),
           Expanded(
-            child: Center(
-              child: _buildToggleItem(
-                icon: Icons.list,
-                isActive: false,
+            child: InkWell(
+              onTap: () => setState(() => _isListView = true),
+              child: Center(
+                child: _buildToggleItem(
+                  icon: Icons.list,
+                  isActive: _isListView,
+                ),
               ),
             ),
           ),
@@ -689,12 +704,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         );
                       }
+                      final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
                       return SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
-                            (context, index) =>
-                                _buildEventCard(filteredEvents[index]),
+                            (context, index) {
+                                final event = filteredEvents[index];
+                                final isHost = currentUserId != null && currentUserId == event.hostId;
+                                return ScheduledEventCard(
+                                  event: event,
+                                  isHost: isHost,
+                                  onTap: () {
+                                    debugPrint('View Event Details: ${event.id}');
+                                  },
+                                );
+                            },
                             childCount: filteredEvents.length,
                           ),
                         ),
@@ -710,108 +735,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   const SliverToBoxAdapter(
-                    child: SizedBox(height: 40),
+                    child: SizedBox(height: 10),
                   ),
                 ],
               ),
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildEventCard(ScheduledEvent event) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: event.posterUrl != null
-                  ? DecorationImage(
-                      image: NetworkImage(event.posterUrl!),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-              color: Colors.white.withValues(alpha: 0.1),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(
-                      Icons.more_horiz,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_month,
-                      size: 14,
-                      color: Colors.white70,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Today • ${DateFormat('h a').format(event.startTime).toLowerCase()} - ${DateFormat('h a').format(event.endTime).toLowerCase()}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.alternate_email,
-                      size: 14,
-                      color: Colors.white70,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      event.locationName,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -826,6 +756,158 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
+
+  Widget _buildListView(AsyncValue<List<ScheduledEvent>> scheduleAsync) {
+    return scheduleAsync.when(
+          data: (events) {
+            final now = DateTime.now();
+            final upcoming = events.where((e) => e.startTime.isAfter(now) || _isSameDay(e.startTime, now)).toList();
+            final past = events.where((e) => e.startTime.isBefore(now) && !_isSameDay(e.startTime, now)).toList();
+
+            // Task 1: Sorting
+            upcoming.sort((a, b) => a.startTime.compareTo(b.startTime));
+            past.sort((a, b) => b.startTime.compareTo(a.startTime));
+
+            // Task 1: Grouping
+            final upcomingGrouped = _groupEventsByDay(upcoming);
+            final pastGrouped = _groupEventsByDay(past);
+
+            final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                const SliverToBoxAdapter(child: SizedBox(height: 10)),
+                
+                // Upcoming Section
+                ..._buildEventList(upcomingGrouped, currentUserId, "Upcoming"),
+
+                // Task 3: Past Events Divider
+                if (past.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                      child: Row(
+                        children: [
+                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              "Past events",
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // Past Events List
+                ..._buildEventList(pastGrouped, currentUserId, "Past"),
+                
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+        );
+  }
+
+  List<Widget> _buildEventList(Map<DateTime, List<ScheduledEvent>> groupedEvents, String? currentUserId, String type) {
+    final List<Widget> slivers = [];
+    final sortedDates = groupedEvents.keys.toList();
+    
+    // Dates are already sorted implicitly by the list sorting before grouping, 
+    // but let's be explicit based on type
+    if (type == "Upcoming") {
+      sortedDates.sort((a, b) => a.compareTo(b));
+    } else {
+      sortedDates.sort((a, b) => b.compareTo(a));
+    }
+
+    for (var date in sortedDates) {
+      final events = groupedEvents[date]!;
+      
+      // Task 2: Date Header
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 12),
+            child: _buildGroupHeader(date),
+          ),
+        ),
+      );
+
+      // Task 2: Event Cards
+      slivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final event = events[index];
+                final isHost = currentUserId != null && currentUserId == event.hostId;
+                return ScheduledEventCard(
+                  event: event,
+                  isHost: isHost,
+                  onTap: () => debugPrint('View Event: ${event.id}'),
+                );
+              },
+              childCount: events.length,
+            ),
+          ),
+        ),
+      );
+    }
+    return slivers;
+  }
+
+  Widget _buildGroupHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    final dayLabel = (date == today) ? "Today" : DateFormat('EEEE').format(date);
+    final dateLabel = " • ${DateFormat('d MMMM').format(date)}";
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: dayLabel,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600, // Semi-bold
+            ),
+          ),
+          TextSpan(
+            text: dateLabel,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<DateTime, List<ScheduledEvent>> _groupEventsByDay(List<ScheduledEvent> events) {
+    final Map<DateTime, List<ScheduledEvent>> grouped = {};
+    for (var event in events) {
+      final date = DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
+      if (grouped[date] == null) grouped[date] = [];
+      grouped[date]!.add(event);
+    }
+    return grouped;
+  }
+
 
   List<DateTime> _generateMonthDays(DateTime month) {
     final firstDayOfMonth = DateTime(month.year, month.month, 1);

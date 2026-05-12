@@ -43,6 +43,8 @@ class EventRepository {
     final scheduleData = <String, dynamic>{
       'eventId': docRef.id,
       'title': event.title,
+      'hostId': event.metadata.hostId,
+      'hostName': 'Me', // Placeholder, ideally fetch from user doc
       if (event.timing.startDate != null) 'startTime': Timestamp.fromDate(event.timing.startDate!),
       if (event.timing.endDate != null) 'endTime': Timestamp.fromDate(event.timing.endDate!),
       if (event.visuals.posterUrl != null) 'posterUrl': event.visuals.posterUrl,
