@@ -29,12 +29,12 @@ class LocationService {
     final user = _auth.currentUser;
 
     if (user != null) {
-      await _firestore.collection('users').doc(user.uid).update({
+      await _firestore.collection('users').doc(user.uid).set({
         'location': {
           'latitude': position.latitude,
           'longitude': position.longitude,
         },
-      });
+      }, SetOptions(merge: true));
     }
   }
 }
