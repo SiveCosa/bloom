@@ -31,6 +31,7 @@ import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
 import '../../ui/profile/sub_screens/edit_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
+import '../../ui/event/event_invitation_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -194,6 +195,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create-event/preview',
         builder: (context, state) => const EventPreviewScreen(),
+      ),
+      GoRoute(
+        path: '/event/:eventId',
+        pageBuilder: (context, state) {
+          final eventId = state.pathParameters['eventId']!;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: EventInvitationScreen(eventId: eventId),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return child;
+            },
+          );
+        },
       ),
     ],
   );

@@ -396,6 +396,8 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
         audience: state.audience,
         extras: state.extras,
         rsvpReminders: state.rsvpReminders,
+        liveCounts: const EventLiveCounts(),
+        previewGuests: const [],
         metadata: EventMetadata(
           hostId: hostId,
           createdAt: DateTime.now(),

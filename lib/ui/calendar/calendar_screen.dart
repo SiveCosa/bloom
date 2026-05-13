@@ -11,6 +11,7 @@ import '../../core/theme/app_theme.dart';
 import './widgets/month_year_picker_modal.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/navigation/navigation_providers.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/scheduled_event_card.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -716,7 +717,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                                   event: event,
                                   isHost: isHost,
                                   onTap: () {
-                                    debugPrint('View Event Details: ${event.id}');
+                                    context.push('/event/${event.id}');
                                   },
                                 );
                             },
@@ -855,7 +856,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 return ScheduledEventCard(
                   event: event,
                   isHost: isHost,
-                  onTap: () => debugPrint('View Event: ${event.id}'),
+                  onTap: () {
+                    context.push('/event/${event.id}');
+                  },
                 );
               },
               childCount: events.length,

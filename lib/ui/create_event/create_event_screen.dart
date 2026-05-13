@@ -392,6 +392,7 @@ class CreateEventScreen extends ConsumerWidget {
 
                           HostInviteSection(
                             showInviteFriends: false,
+                            isFormMode: true,
                             userProfile: userProfile,
                             onAddCoHost: () => _showSkeletonModal(context, 'Add Cohost'),
                           ),

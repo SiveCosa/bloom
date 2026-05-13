@@ -96,6 +96,35 @@ class EventRepository {
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
   }
+
+  Stream<Event?> getEventStream(String id) {
+    return _firestore.collection('events').doc(id).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return Event.fromMap(doc.data()!, doc.id);
+    });
+  }
+
+  Future<void> updateRSVP(String eventId, String userId, String status) async {
+    await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('guests')
+        .doc(userId)
+        .set({
+      'status': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<String?> getUserRSVPStream(String eventId, String userId) {
+    return _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('guests')
+        .doc(userId)
+        .snapshots()
+        .map((doc) => doc.data()?['status'] as String?);
+  }
 }
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {

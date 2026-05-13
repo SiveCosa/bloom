@@ -21,6 +21,8 @@ class Event {
   final EventAudience audience;
   final List<EventExtra> extras;
   final List<String> rsvpReminders;
+  final EventLiveCounts liveCounts;
+  final List<String> previewGuests;
   final EventMetadata metadata;
 
   const Event({
@@ -34,6 +36,8 @@ class Event {
     required this.audience,
     required this.extras,
     required this.rsvpReminders,
+    required this.liveCounts,
+    required this.previewGuests,
     required this.metadata,
   });
 
@@ -46,6 +50,8 @@ class Event {
     EventTiming? timing,
     EventLocation? location,
     EventAudience? audience,
+    EventLiveCounts? liveCounts,
+    List<String>? previewGuests,
     List<EventExtra>? extras,
     List<String>? rsvpReminders,
     EventMetadata? metadata,
@@ -59,6 +65,8 @@ class Event {
       timing: timing ?? this.timing,
       location: location ?? this.location,
       audience: audience ?? this.audience,
+      liveCounts: liveCounts ?? this.liveCounts,
+      previewGuests: previewGuests ?? this.previewGuests,
       extras: extras ?? this.extras,
       rsvpReminders: rsvpReminders ?? this.rsvpReminders,
       metadata: metadata ?? this.metadata,
@@ -74,6 +82,8 @@ class Event {
       'timing': timing.toMap(),
       'location': location?.toMap(),
       'audience': audience.toMap(),
+      'live_counts': liveCounts.toMap(),
+      'preview_guests': previewGuests,
       'extras': extras.map((e) => e.toMap()).toList(),
       'rsvpReminders': rsvpReminders,
       'metadata': metadata.toMap(),
@@ -90,9 +100,39 @@ class Event {
       timing: EventTiming.fromMap(map['timing'] ?? {}),
       location: map['location'] != null ? EventLocation.fromMap(map['location']) : null,
       audience: EventAudience.fromMap(map['audience'] ?? {}),
+      liveCounts: EventLiveCounts.fromMap(map['live_counts'] ?? {}),
+      previewGuests: List<String>.from(map['preview_guests'] ?? []),
       extras: (map['extras'] as List? ?? []).map((e) => EventExtra.fromMap(e)).toList(),
       rsvpReminders: List<String>.from(map['rsvpReminders'] ?? []),
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
+    );
+  }
+}
+
+class EventLiveCounts {
+  final int going;
+  final int maybe;
+  final int interested;
+
+  const EventLiveCounts({
+    this.going = 0,
+    this.maybe = 0,
+    this.interested = 0,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'going': going,
+      'maybe': maybe,
+      'interested': interested,
+    };
+  }
+
+  factory EventLiveCounts.fromMap(Map<String, dynamic> map) {
+    return EventLiveCounts(
+      going: map['going'] as int? ?? 0,
+      maybe: map['maybe'] as int? ?? 0,
+      interested: map['interested'] as int? ?? 0,
     );
   }
 }

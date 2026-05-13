@@ -34,6 +34,12 @@ final currentUserProfileProvider = StreamProvider<Map<String, dynamic>?>((ref) {
   );
 });
 
+/// Fetch any user's profile by UID
+final userProfileFutureProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
+  final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  return snap.data();
+});
+
 /// Firestore `institutions/{id}.allowed_domains` (lowercased) for client-side validation.
 const String kDefaultInstitutionDocId = 'eduvos_01';
 

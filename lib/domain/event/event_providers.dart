@@ -9,3 +9,13 @@ final hostedEventsProvider = StreamProvider<List<Event>>((ref) {
   
   return ref.watch(eventRepositoryProvider).getHostedEventsStream(user.uid);
 });
+
+final eventStreamProvider = StreamProvider.family<Event?, String>((ref, eventId) {
+  return ref.watch(eventRepositoryProvider).getEventStream(eventId);
+});
+
+final userEventRsvpProvider = StreamProvider.family<String?, String>((ref, eventId) {
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  if (user == null) return Stream.value(null);
+  return ref.watch(eventRepositoryProvider).getUserRSVPStream(eventId, user.uid);
+});

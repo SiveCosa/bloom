@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'event_section_card.dart';
 import '../../../core/media/image_loader_helper.dart';
 
 class HostInviteSection extends StatelessWidget {
@@ -8,6 +7,7 @@ class HostInviteSection extends StatelessWidget {
   final List<Map<String, dynamic>> coHosts;
   final VoidCallback onAddCoHost;
   final bool showInviteFriends;
+  final bool isFormMode;
 
   const HostInviteSection({
     super.key,
@@ -15,21 +15,25 @@ class HostInviteSection extends StatelessWidget {
     this.coHosts = const [],
     required this.onAddCoHost,
     this.showInviteFriends = true,
+    this.isFormMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isFormMode) {
+      // Form Mode: Just show the hosted by card with form styling
+      return _HostedByCardPreview(
+        userProfile: userProfile, 
+        coHosts: coHosts,
+        isFormMode: true,
+      );
+    }
+
     if (!showInviteFriends) {
-      return EventSectionCard(
-        headerIcon: Icons.workspace_premium,
-        title: 'Hosted by',
-        body: Row(
-          children: [
-            _CreationHostAvatar(userProfile: userProfile),
-            const SizedBox(width: 20),
-            _CreationAddCohostButton(onTap: onAddCoHost),
-          ],
-        ),
+      return _HostedByCardPreview(
+        userProfile: userProfile, 
+        coHosts: coHosts,
+        isFormMode: false,
       );
     }
 
@@ -38,7 +42,11 @@ class HostInviteSection extends StatelessWidget {
       children: [
         _InviteFriendsCardPreview(),
         const SizedBox(height: 16),
-        _HostedByCardPreview(userProfile: userProfile, coHosts: coHosts),
+        _HostedByCardPreview(
+          userProfile: userProfile, 
+          coHosts: coHosts,
+          isFormMode: false,
+        ),
       ],
     );
   }
@@ -47,13 +55,19 @@ class HostInviteSection extends StatelessWidget {
 class _HostedByCardPreview extends StatelessWidget {
   final Map<String, dynamic>? userProfile;
   final List<Map<String, dynamic>> coHosts;
+  final bool isFormMode;
 
-  const _HostedByCardPreview({this.userProfile, this.coHosts = const []});
+  const _HostedByCardPreview({
+    this.userProfile, 
+    this.coHosts = const [],
+    this.isFormMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return _PreviewBaseCard(
       title: 'Hosted by',
+      isFormMode: isFormMode,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -143,22 +157,27 @@ class _InviteFriendsCardPreview extends StatelessWidget {
 class _PreviewBaseCard extends StatelessWidget {
   final String title;
   final Widget child;
+  final bool isFormMode;
 
-  const _PreviewBaseCard({required this.title, required this.child});
+  const _PreviewBaseCard({
+    required this.title, 
+    required this.child,
+    this.isFormMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
+            borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
+            border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -208,67 +227,6 @@ class _AvatarWithLabel extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CreationHostAvatar extends StatelessWidget {
-  final Map<String, dynamic>? userProfile;
-
-  const _CreationHostAvatar({this.userProfile});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildAvatar(imageUrl: userProfile?['profile_image_url'], isHost: true),
-        const SizedBox(height: 8),
-        Text(
-          userProfile?['username'] ?? 'username',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CreationAddCohostButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _CreationAddCohostButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.15),
-            ),
-            child: const Icon(Icons.add, color: Colors.white, size: 30),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add Cohost',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
