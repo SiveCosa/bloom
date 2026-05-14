@@ -173,7 +173,7 @@ class _PreviewBaseCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
             borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
@@ -186,11 +186,11 @@ class _PreviewBaseCard extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               child,
             ],
           ),

@@ -19,3 +19,7 @@ final userEventRsvpProvider = StreamProvider.family<String?, String>((ref, event
   if (user == null) return Stream.value(null);
   return ref.watch(eventRepositoryProvider).getUserRSVPStream(eventId, user.uid);
 });
+
+final eventGuestsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, eventId) {
+  return ref.watch(eventRepositoryProvider).getEventGuestsStream(eventId);
+});

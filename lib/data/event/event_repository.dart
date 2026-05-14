@@ -125,6 +125,15 @@ class EventRepository {
         .snapshots()
         .map((doc) => doc.data()?['status'] as String?);
   }
+
+  Stream<List<Map<String, dynamic>>> getEventGuestsStream(String eventId) {
+    return _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('guests')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'uid': doc.id}).toList());
+  }
 }
 
 final eventRepositoryProvider = Provider<EventRepository>((ref) {

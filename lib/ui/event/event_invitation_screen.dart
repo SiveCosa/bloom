@@ -14,6 +14,8 @@ import 'package:bloom/domain/event/event_visibility.dart';
 import 'package:bloom/domain/event/event_extra.dart';
 import 'widgets/event_rsvp_bar.dart';
 import 'widgets/guest_list_card.dart';
+import 'widgets/host_control_bar.dart';
+import 'host_guestlist_screen.dart';
 import '../create_event/widgets/host_invite_section.dart';
 
 class EventInvitationScreen extends ConsumerStatefulWidget {
@@ -89,13 +91,13 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 builder: (context, size, child) {
                   final double screenHeight = MediaQuery.of(context).size.height;
                   final double topBarHeight = MediaQuery.of(context).padding.top + 56;
-                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-                  final double expandedProgress = ((size - 0.55) / (0.9 - 0.55)).clamp(0.0, 1.0);
+                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                  final double expandedProgress = ((size - 0.55) / (0.88 - 0.55)).clamp(0.0, 1.0);
                   final double posterOpacity = (1.0 - expandedProgress).clamp(0.0, 1.0);
                   
                   final double actualPosterHeight = MediaQuery.of(context).size.width / (event.visuals.aspectRatio > 0 ? event.visuals.aspectRatio : 1.0);
                   final bool isSquare = (event.visuals.aspectRatio - 1.0).abs() < 0.1;
-                  final double sheetTopMinimized = screenHeight * (1.0 - 0.25);
+                  final double sheetTopMinimized = screenHeight * (1.0 - 0.28);
                   final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
                   
                   final double targetTop = isSquare 
@@ -113,7 +115,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       onTap: () {
                         if (_sheetController.isAttached) {
                           _sheetController.animateTo(
-                            0.25,
+                            0.28,
                             duration: const Duration(milliseconds: 400),
                             curve: Curves.easeInOutCubic,
                           );
@@ -160,10 +162,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               DraggableScrollableSheet(
                 controller: _sheetController,
                 initialChildSize: 0.55,
-                minChildSize: 0.25,
-                maxChildSize: 0.9,
+                minChildSize: 0.28,
+                maxChildSize: 0.88,
                 snap: true,
-                snapSizes: const [0.25, 0.55, 0.9],
+                snapSizes: const [0.28, 0.55, 0.88],
                 builder: (context, scrollController) {
                   return GestureDetector(
                     onTap: () {
@@ -181,182 +183,169 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                       ),
                       child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                      child: Stack(
-                        children: [
-                          // Sheet's Aurora Background (Reactive)
-                          ValueListenableBuilder<double>(
-                            valueListenable: _sheetSize,
-                            builder: (context, size, child) {
-                              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-                              return Positioned(
-                                top: -(MediaQuery.of(context).size.height * (1.0 - size)),
-                                left: 0,
-                                right: 0,
-                                height: MediaQuery.of(context).size.height,
-                                child: Opacity(
-                                  opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                  child: AuroraBackground(
-                                    colors: event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList(),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          // Subtle Glass Overlay (Reactive)
-                          ValueListenableBuilder<double>(
-                            valueListenable: _sheetSize,
-                            builder: (context, size, child) {
-                              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-                              return Positioned.fill(
-                                child: Opacity(
-                                  opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                  child: Container(
-                                    color: Colors.white.withValues(alpha: 0.08),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          // Sticky Gripper (Reactive)
-                          ValueListenableBuilder<double>(
-                            valueListenable: _sheetSize,
-                            builder: (context, size, child) {
-                              final double screenHeight = MediaQuery.of(context).size.height;
-                              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-                              final double maxSheetSize = 0.9 - (10 / screenHeight);
-                              final double expandedProgress = ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
-                              
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                        child: Stack(
+                          children: [
+                            // 1. Aurora Background (Reactive)
+                            ValueListenableBuilder<double>(
+                              valueListenable: _sheetSize,
+                              builder: (context, size, child) {
+                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
                                 return Positioned(
-                                  top: 8,
-                                left: 0,
-                                right: 0,
-                                child: Center(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Transform.rotate(
-                                        angle: (ui.lerpDouble(0, -0.5, minimizedProgress) ?? 0) + 
-                                               (ui.lerpDouble(0, 0.5, expandedProgress) ?? 0),
-                                        child: Container(
-                                          width: 20,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(2)),
-                                          ),
-                                        ),
-                                      ),
-                                      Transform.rotate(
-                                        angle: (ui.lerpDouble(0, 0.5, minimizedProgress) ?? 0) + 
-                                               (ui.lerpDouble(0, -0.5, expandedProgress) ?? 0),
-                                        child: Container(
-                                          width: 20,
-                                          height: 4,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.3),
-                                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          ListView(
-                            controller: scrollController,
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 150),
-                            children: [
-                              // Dynamic gap (Reactive)
-                              ValueListenableBuilder<double>(
-                                valueListenable: _sheetSize,
-                                builder: (context, size, child) {
-                                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-                                  return SizedBox(height: ui.lerpDouble(32, 72, minimizedProgress) ?? 32);
-                                },
-                              ),
-                              _buildVisibilityPill(event),
-                              const SizedBox(height: 12),
-                              // Event Title
-                              ShaderMask(
-                                shaderCallback: (bounds) => ui.Gradient.linear(
-                                  Offset.zero,
-                                  Offset(bounds.width, 0),
-                                  [Colors.white, Colors.white.withValues(alpha: 0.7)],
-                                ),
-                                child: Text(
-                                  event.title,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1.1,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              
-                              // Date & Location Rows (Fading)
-                              ValueListenableBuilder<double>(
-                                valueListenable: _sheetSize,
-                                builder: (context, size, child) {
-                                  // Fully opaque at 0.45, fully transparent at 0.3
-                                  final opacity = ((size - 0.25) / 0.15).clamp(0.0, 1.0);
-                                  if (opacity == 0) return const SizedBox.shrink();
-                                  
-                                  return Opacity(
-                                    opacity: opacity,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                      _buildDateRow(event),
-                                        const SizedBox(height: 16),
-                                        _buildLocationRow(event),
-                                        const SizedBox(height: 15),
-                                      ],
+                                  top: -(MediaQuery.of(context).size.height * (1.0 - size)),
+                                  left: 0,
+                                  right: 0,
+                                  height: MediaQuery.of(context).size.height,
+                                  child: Opacity(
+                                    opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                    child: AuroraBackground(
+                                      colors: event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList(),
                                     ),
-                                  );
-                                },
-                              ),
-
-                              // Essential content (Visibility check based on size for performance)
-                              ValueListenableBuilder<double>(
-                                valueListenable: _sheetSize,
-                                builder: (context, size, child) {
-                                  if (size < 0.4) return const SizedBox.shrink();
-                                  
-                                  return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _buildWeatherCard(event),
-                                      const SizedBox(height: 15),
-                                      _buildDescriptionCard(event),
-                                      const SizedBox(height: 32),
-                                      _buildGuestList(event),
-                                      const SizedBox(height: 16),
-                                      Consumer(
-                                        builder: (context, ref, child) {
-                                          final hostProfile = ref.watch(userProfileFutureProvider(event.metadata.hostId)).value;
-                                          return HostInviteSection(
-                                            userProfile: hostProfile, 
-                                            onAddCoHost: () {},
-                                            showInviteFriends: false,
-                                          );
-                                        },
+                                  ),
+                                );
+                              },
+                            ),
+                            // 2. Subtle Glass Overlay (Reactive)
+                            ValueListenableBuilder<double>(
+                              valueListenable: _sheetSize,
+                              builder: (context, size, child) {
+                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                                return Positioned.fill(
+                                  child: Opacity(
+                                    opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                    child: Container(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            
+                            Column(
+                              children: [
+                                // Fixed Transparent Header with Gripper
+                                SizedBox(
+                                  height: 25,
+                                  width: double.infinity,
+                                  child: Center(
+                                    child: Container(
+                                      width: 40,
+                                      height: 4,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(2),
                                       ),
-                                      const SizedBox(height: 32),
-                                      _buildMapCard(event),
-                                      const SizedBox(height: 120),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: CustomScrollView(
+                                    controller: scrollController,
+                                    physics: const BouncingScrollPhysics(),
+                                    slivers: [
+                                      SliverToBoxAdapter(
+                                        child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                                          child: Column(
+                                            children: [
+                                              // Dynamic gap (Reactive)
+                                              ValueListenableBuilder<double>(
+                                                valueListenable: _sheetSize,
+                                                builder: (context, size, child) {
+                                                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                                                  return SizedBox(height: ui.lerpDouble(12, 40, minimizedProgress) ?? 12);
+                                                },
+                                              ),
+                                              _buildVisibilityPill(event),
+                                              const SizedBox(height: 12),
+                                              // Event Title
+                                              ShaderMask(
+                                                shaderCallback: (bounds) => ui.Gradient.linear(
+                                                  Offset.zero,
+                                                  Offset(bounds.width, 0),
+                                                  [Colors.white, Colors.white.withValues(alpha: 0.7)],
+                                                ),
+                                                child: Text(
+                                                  event.title,
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 32,
+                                                    fontWeight: FontWeight.w900,
+                                                    height: 1.1,
+                                                    letterSpacing: -0.5,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 25),
+                                              
+                                              // Date & Location Rows (Fading)
+                                              ValueListenableBuilder<double>(
+                                                valueListenable: _sheetSize,
+                                                builder: (context, size, child) {
+                                                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                                                  return Column(
+                                                    children: [
+                                                      _buildDateRow(event),
+                                                      const SizedBox(height: 10),
+                                                      Opacity(
+                                                        opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                                        child: _buildLocationRow(event),
+                                                      ),
+                                                      const SizedBox(height: 25),
+                                                    ],
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      SliverToBoxAdapter(
+                                        child: ValueListenableBuilder<double>(
+                                          valueListenable: _sheetSize,
+                                          builder: (context, size, child) {
+                                            if (size < 0.4) return const SizedBox.shrink();
+                                            
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  if (event.description.isNotEmpty || event.tags.isNotEmpty || event.extras.isNotEmpty) ...[
+                                                    _buildDescriptionCard(event),
+                                                    const SizedBox(height: 16),
+                                                  ],
+                                                  _buildGuestList(event),
+                                                  const SizedBox(height: 16),
+                                                  Consumer(
+                                                    builder: (context, ref, child) {
+                                                      final hostProfile = ref.watch(userProfileFutureProvider(event.metadata.hostId)).value;
+                                                      return HostInviteSection(
+                                                        userProfile: hostProfile, 
+                                                        onAddCoHost: () {},
+                                                        showInviteFriends: false,
+                                                      );
+                                                    },
+                                                  ),
+                                                  if (event.location != null) ...[
+                                                    const SizedBox(height: 16),
+                                                    _buildWeatherCard(event),
+                                                    const SizedBox(height: 16),
+                                                    _buildMapCard(event),
+                                                  ],
+                                                  const SizedBox(height: 120),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     ],
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -372,7 +361,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               ValueListenableBuilder<double>(
                 valueListenable: _sheetSize,
                 builder: (context, size, child) {
-                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.35)).clamp(0.0, 1.0);
+                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
                   return Positioned(
                     bottom: 0,
                     left: 0,
@@ -399,14 +388,46 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 },
               ),
 
-              // 7. Fixed RSVP Action Bar
-              if (!isHost)
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 30,
-                  child: EventRsvpBar(eventId: widget.eventId),
+              // 7. Fixed Action Bar (RSVP or Host Controls)
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 30,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _sheetSize,
+                  builder: (context, size, child) {
+                    // Calculate opacity: fade out as it approaches min size (0.35)
+                    // For hosts, hide when minimized. For guests, we keep it visible for now unless specified.
+                    final double opacity = isHost ? ((size - 0.28) / (0.45 - 0.28)).clamp(0.0, 1.0) : 1.0;
+                    
+                    if (opacity <= 0 && isHost) return const SizedBox.shrink();
+
+                    return Opacity(
+                      opacity: opacity,
+                      child: IgnorePointer(
+                        ignoring: opacity < 0.5,
+                        child: isHost 
+                          ? HostControlBar(
+                              event: event,
+                              onGoingPressed: () {
+                                final palette = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => HostGuestlistScreen(
+                                      eventId: event.id,
+                                      palette: palette,
+                                    ),
+                                  ),
+                                );
+                              },
+                              onRemindersPressed: () => _showRemindersModal(context, event),
+                            )
+                          : EventRsvpBar(eventId: widget.eventId),
+                      ),
+                    );
+                  },
                 ),
+              ),
             ],
           ),
         );
@@ -479,26 +500,41 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTopButton(Icons.chevron_left, () => context.pop()),
+              _buildTopButton(
+                const Icon(Icons.close, color: Colors.black, size: 22),
+                () => context.pop(),
+              ),
               Row(
                 children: [
-                  _buildTopButton(Icons.ios_share_rounded, () {
-                    // Share logic
-                  }),
-                  const SizedBox(width: 10),
-                  _buildTopButton(Icons.more_horiz, () {
-                    // Options
-                  }),
                   if (isHost) ...[
+                    _buildTopButton(
+                      const Icon(Icons.mode_edit_outline, color: Colors.black, size: 22),
+                      () {
+                        // Edit logic
+                      },
+                    ),
                     const SizedBox(width: 10),
-                    _buildTopButton(Icons.edit, () {
-                      // Edit
-                    }),
                   ],
+                  _buildTopButton(
+                    Transform.flip(
+                      flipX: true,
+                      child: const Icon(Icons.reply_rounded, color: Colors.black, size: 22),
+                    ),
+                    () {
+                      // Share logic
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  _buildTopButton(
+                    const Icon(Icons.more_vert_rounded, color: Colors.black, size: 22),
+                    () {
+                      // Options logic
+                    },
+                  ),
                 ],
               ),
             ],
@@ -508,21 +544,17 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     );
   }
 
-  Widget _buildTopButton(IconData icon, VoidCallback onTap) {
+  Widget _buildTopButton(Widget child, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 40,
+        height: 40,
         decoration: const BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: Colors.black,
-          size: 20,
-        ),
+        child: Center(child: child),
       ),
     );
   }
@@ -537,8 +569,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     return ValueListenableBuilder<double>(
       valueListenable: _sheetSize,
       builder: (context, size, child) {
-        final double minimizedProgress = ((0.55 - size) / (0.55 - 0.25)).clamp(0.0, 1.0);
-        
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -568,17 +598,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (minimizedProgress > 0.5) ...[
-                    const SizedBox(width: 4),
-                    Opacity(
-                      opacity: ((minimizedProgress - 0.5) / 0.5).clamp(0.0, 1.0),
-                      child: const Icon(
-                        Icons.keyboard_arrow_up,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -622,14 +641,14 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.calendar_today, color: Colors.white70, size: 18),
+        const Icon(Icons.calendar_today, color: Colors.white, size: 20),
         const SizedBox(width: 10),
         Text(
           display,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -642,15 +661,15 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.location_on, color: Colors.white70, size: 20),
+        const Icon(Icons.location_on, color: Colors.white, size: 22),
         const SizedBox(width: 10),
         Flexible(
           child: Text(
             event.location!.displayName,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -667,7 +686,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
@@ -677,96 +695,101 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (hasTags) ...[
-                Align(
-                  alignment: Alignment.center,
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: event.tags.map((tag) => _buildTagChip(tag)).toList(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasTags) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: event.tags.map((tag) => _buildTagChip(tag)).toList(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (hasTags) ...[
-                _buildSeparator(),
-                const SizedBox(height: 16),
-              ],
-              if (hasDesc) ...[
-                _buildExpandableDescription(event.description),
-                const SizedBox(height: 16),
-              ],
-              if (hasDesc) ...[
-                _buildSeparator(),
-                const SizedBox(height: 16),
-              ],
-              _buildAudienceInfo(event),
-              if (hasExtras) ...[
-                const SizedBox(height: 16),
-                _buildSeparator(),
-                const SizedBox(height: 16),
-                ...(() {
-                  final auroraColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-                  final sortedExtras = [...event.extras]..sort((a, b) {
-                    final aIsLink = a.url != null && a.url!.isNotEmpty;
-                    final bIsLink = b.url != null && b.url!.isNotEmpty;
-                    if (aIsLink && !bIsLink) return -1;
-                    if (!aIsLink && bIsLink) return 1;
-                    return 0;
-                  });
-                  return sortedExtras.map((extra) {
-                    final bool isLink = extra.url != null && extra.url!.isNotEmpty;
-                    final Color textColor = isLink ? _getBestExtraColor(auroraColors) : Colors.white;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GestureDetector(
-                        onTap: isLink ? () async {
-                          final url = extra.url!.trim();
-                          final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
-                          try {
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.platformDefault);
-                            }
-                          } catch (e) {
-                            debugPrint('Error launching $uri: $e');
-                          }
-                        } : null,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(
-                              isLink ? Icons.link : extra.type.icon,
-                              color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
-                              size: 18,
-                            ),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Text(
-                                extra.displayText,
-                                style: TextStyle(
-                                  color: textColor,
-                                  fontSize: 14,
-                                  fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                  const SizedBox(height: 25),
+                  _buildSeparator(),
+                  const SizedBox(height: 25),
+                ],
+                
+                _buildAudienceInfo(event),
+                
+                if (hasExtras) ...[
+                  const SizedBox(height: 25),
+                  ...(() {
+                    final auroraColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+                    final sortedExtras = [...event.extras]..sort((a, b) {
+                      final aIsLink = a.url != null && a.url!.isNotEmpty;
+                      final bIsLink = b.url != null && b.url!.isNotEmpty;
+                      if (aIsLink && !bIsLink) return -1;
+                      if (!aIsLink && bIsLink) return 1;
+                      return 0;
+                    });
+                    
+                    return List.generate(sortedExtras.length, (index) {
+                      final extra = sortedExtras[index];
+                      final bool isLink = extra.url != null && extra.url!.isNotEmpty;
+                      final Color textColor = isLink ? _getBestExtraColor(auroraColors) : Colors.white;
+                      final bool isLast = index == sortedExtras.length - 1;
+  
+                      return Column(
+                        children: [
+                          GestureDetector(
+                            onTap: isLink ? () async {
+                              final url = extra.url!.trim();
+                              final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+                              try {
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.platformDefault);
+                                }
+                              } catch (e) {
+                                debugPrint('Error launching $uri: $e');
+                              }
+                            } : null,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  isLink ? Icons.link : extra.type.icon,
+                                  color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
+                                  size: 18,
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    extra.displayText,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                      fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (isLink) ...[
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
+                                ],
+                              ],
                             ),
-                            if (isLink) ...[
-                              const SizedBox(width: 4),
-                              Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  });
-                })(),
+                          ),
+                          if (!isLast) const SizedBox(height: 25),
+                        ],
+                      );
+                    });
+                  })(),
+                ],
+
+                if (hasDesc) ...[
+                  const SizedBox(height: 25),
+                  _buildSeparator(),
+                  const SizedBox(height: 25),
+                  _buildExpandableDescription(event.description),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -824,109 +847,87 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 
   Widget _buildExpandableDescription(String text) {
-    bool isLong = text.length > 200;
-    
     return StatefulBuilder(
       builder: (context, setState) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) {
-                if (!isLong || _isDescriptionExpanded) return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
-                return LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.white, Colors.white.withValues(alpha: 0)],
-                  stops: const [0.7, 1.0],
-                ).createShader(bounds);
-              },
-              child: RichText(
-                text: _getFormattedDescriptionSpan(text, _isDescriptionExpanded && isLong ? null : 200),
-              ),
-            ),
-            if (isLong)
-              Center(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      _isDescriptionExpanded ? 'Show less' : 'Read more',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+        return GestureDetector(
+          onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+          behavior: HitTestBehavior.opaque,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: _isDescriptionExpanded ? double.infinity : 200,
+                ),
+                child: ShaderMask(
+                  shaderCallback: (bounds) {
+                    if (_isDescriptionExpanded) {
+                      return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
+                    }
+                    return LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                      stops: const [0.7, 1.0],
+                    ).createShader(bounds);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: Text.rich(
+                    _getFormattedDescriptionSpan(text, null),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      height: 1.5,
                     ),
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: 25),
+              Center(
+                child: Text(
+                  _isDescriptionExpanded ? 'Show less' : 'Read more',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   Widget _buildAudienceInfo(Event event) {
-    final List<Widget> items = [];
-
-    // RSVP Deadline
-    if (event.audience.rsvpDeadline != null) {
-      items.add(
-        _buildAudienceRow(
-          icon: Icons.hourglass_bottom_rounded,
-          text: 'RSVP by ${DateFormat('d MMMM yyyy').format(event.audience.rsvpDeadline!)}',
-        ),
-      );
-    }
-
-    // Capacity / Spots
-    final String spotsText = event.audience.capacity != null
-        ? '${event.audience.capacity! - event.liveCounts.going}/${event.audience.capacity} spots availible'
-        : 'Unlimited spots availible';
-    items.add(
-      _buildAudienceRow(
-        icon: Icons.groups_rounded,
-        text: spotsText,
-      ),
-    );
-
-    // Plus Ones
-    final bool allowsPlusOnes = event.audience.maxPlusOnes > 0;
-    items.add(
-      _buildAudienceRow(
-        customIcon: allowsPlusOnes
-            ? Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '+${event.audience.maxPlusOnes}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              )
-            : null,
-        icon: allowsPlusOnes ? null : Icons.person_off_rounded,
-        text: allowsPlusOnes ? '+${event.audience.maxPlusOnes} Allowed' : 'No plus ones allowed',
-      ),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: items.map((item) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: item,
-      )).toList(),
+      children: [
+        // RSVP Deadline
+        if (event.audience.rsvpDeadline != null) ...[
+          _buildAudienceRow(
+            icon: Icons.hourglass_bottom_rounded,
+            text: 'RSVP by ${DateFormat('d MMMM yyyy').format(event.audience.rsvpDeadline!)}',
+          ),
+          const SizedBox(height: 25),
+        ],
+
+        // Capacity / Spots
+        _buildAudienceRow(
+          icon: Icons.groups_rounded,
+          text: event.audience.capacity != null
+              ? '${event.audience.capacity! - event.liveCounts.going}/${event.audience.capacity} spots available'
+              : 'Unlimited spots available',
+        ),
+        const SizedBox(height: 25),
+
+        // Plus Ones
+        _buildAudienceRow(
+          icon: Icons.person_add_rounded,
+          text: event.audience.maxPlusOnes > 0 ? '+${event.audience.maxPlusOnes} guests allowed' : 'No plus ones allowed',
+        ),
+      ],
     );
   }
 
@@ -943,7 +944,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
             size: 18,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
@@ -963,19 +964,59 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         ? text.substring(0, maxLength)
         : text;
 
-    return TextSpan(
-      children: [
-        TextSpan(
-          text: displayStr,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 15,
-            height: 1.6,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
+    final pattern = RegExp(
+      r'(\*[^*]+?\*)|(![^!]+?!)',
+      multiLine: true,
     );
+
+    final List<TextSpan> children = [];
+    int lastMatchEnd = 0;
+    const baseStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+      height: 1.5,
+    );
+
+    for (final match in pattern.allMatches(displayStr)) {
+      if (match.start > lastMatchEnd) {
+        children.add(TextSpan(
+          text: displayStr.substring(lastMatchEnd, match.start),
+          style: baseStyle,
+        ));
+      }
+
+      final matchText = match.group(0)!;
+
+      if (matchText.startsWith('*')) {
+        // Bold: *text*
+        children.add(TextSpan(
+          text: matchText.substring(1, matchText.length - 1),
+          style: baseStyle.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ));
+      } else if (matchText.startsWith('!')) {
+        // Heading: !text!
+        children.add(TextSpan(
+          text: matchText.substring(1, matchText.length - 1),
+          style: baseStyle.copyWith(
+            fontWeight: FontWeight.w900,
+            fontSize: 16.0,
+          ),
+        ));
+      }
+
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < displayStr.length) {
+      children.add(TextSpan(
+        text: displayStr.substring(lastMatchEnd),
+        style: baseStyle,
+      ));
+    }
+
+    return TextSpan(children: children);
   }
 
   Widget _buildWeatherCard(Event event) {
@@ -1048,6 +1089,78 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               const SizedBox(height: 16),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showRemindersModal(BuildContext context, Event event) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF15191D),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Event Reminders',
+              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Nudge guests who haven\'t RSVP\'d yet or send a broadcast to all "Going" guests.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+            ),
+            const SizedBox(height: 32),
+            _buildReminderOption(Icons.notifications_active, 'Nudge pending guests', () => Navigator.pop(context)),
+            const SizedBox(height: 12),
+            _buildReminderOption(Icons.campaign, 'Broadcast to attendees', () => Navigator.pop(context)),
+            const SizedBox(height: 12),
+            _buildReminderOption(Icons.schedule, 'Schedule auto-reminder', () => Navigator.pop(context)),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderOption(IconData icon, String title, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.2), size: 20),
+          ],
         ),
       ),
     );

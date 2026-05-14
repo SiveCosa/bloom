@@ -43,7 +43,6 @@ final weatherForecastProvider =
     final data = Map<String, dynamic>.from(response.data as Map);
     return WeatherForecast.fromMap(data);
   } catch (e) {
-    debugPrint('Error fetching weather forecast: $e');
-    return null;
+    rethrow;
   }
 });

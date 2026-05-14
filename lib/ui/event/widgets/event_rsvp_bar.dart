@@ -23,11 +23,11 @@ class EventRsvpBar extends ConsumerWidget {
         return rsvpStatusAsync.when(
           data: (status) => _buildBar(context, ref, userId, status, event),
           loading: () => _buildLoadingBar(),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         );
       },
       loading: () => _buildLoadingBar(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
