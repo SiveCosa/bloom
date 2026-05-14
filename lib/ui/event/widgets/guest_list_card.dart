@@ -176,17 +176,30 @@ class GuestListCard extends StatelessWidget {
   }
 
   Widget _buildFooterText() {
-    // Priority to mutual friends if available, otherwise total going count
-    final int count = mutualFriendsCount > 0 ? mutualFriendsCount : event.liveCounts.going;
+    final int capacity = event.audience.capacity ?? 0;
+    final int going = event.liveCounts.going;
+    final int spotsLeft = capacity - going;
+    final int count = mutualFriendsCount > 0 ? mutualFriendsCount : going;
     final String friendLabel = mutualFriendsCount > 0 ? 'mutual friend' : 'friend';
+    
     String text;
     
-    if (count == 0) {
-      text = 'No one here yet? Invite them.';
-    } else if (count == 1) {
-      text = '1 $friendLabel will be joining';
+    if (capacity > 0) {
+      if (spotsLeft <= 0) {
+        text = 'Event is full • $going joining';
+      } else if (spotsLeft <= 5) {
+        text = 'Only $spotsLeft spots left! • $going joining';
+      } else {
+        text = '$going joining • $spotsLeft spots left';
+      }
     } else {
-      text = '$count ${friendLabel}s will be joining';
+      if (count == 0) {
+        text = 'No one here yet? Invite them.';
+      } else if (count == 1) {
+        text = '1 $friendLabel will be joining';
+      } else {
+        text = '$count ${friendLabel}s will be joining';
+      }
     }
 
     return Text(

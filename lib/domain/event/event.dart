@@ -107,6 +107,42 @@ class Event {
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
     );
   }
+
+  EventStatus get computedStatus {
+    if (metadata.status == EventStatus.cancelled) return EventStatus.cancelled;
+    if (metadata.status == EventStatus.draft) return EventStatus.draft;
+    if (timing.isPast) return EventStatus.completed;
+    return metadata.status;
+  }
+
+  String get statusLabel {
+    final status = computedStatus;
+    if (status == EventStatus.active) {
+      if (timing.isOngoing) return 'LIVE NOW';
+      return 'UPCOMING';
+    }
+    return status.name.toUpperCase();
+  }
+
+  // Simplified color helper for UI use
+  int get statusColorValue {
+    final status = computedStatus;
+    switch (status) {
+      case EventStatus.cancelled: return 0xFFFF4D4D; // Red
+      case EventStatus.completed: return 0xFF8E8E93; // Gray
+      case EventStatus.draft: return 0xFFFFD60A; // Yellow
+      case EventStatus.active:
+        if (timing.isOngoing) return 0xFF32D74B; // Green
+        return 0xFFAD83FE; // Brand Purple
+    }
+  }
+
+  bool get isFull {
+    if (audience.capacity == null || audience.capacity == 0) return false;
+    return liveCounts.going >= audience.capacity!;
+  }
+
+  bool get shouldShowWaitlist => isFull && audience.waitlistEnabled;
 }
 
 class EventLiveCounts {
@@ -203,6 +239,17 @@ class EventTiming {
       endTimeTbd: endTimeTbd ?? this.endTimeTbd,
     );
   }
+
+  DateTime? get effectiveEndDate {
+    if (endDate != null) return endDate;
+    if (startDate == null) return null;
+    // Default to end of day if no end date provided
+    return DateTime(startDate!.year, startDate!.month, startDate!.day, 23, 59, 59);
+  }
+
+  bool get isUpcoming => startDate != null && DateTime.now().isBefore(startDate!);
+  bool get isPast => effectiveEndDate != null && DateTime.now().isAfter(effectiveEndDate!);
+  bool get isOngoing => !isUpcoming && !isPast && startDate != null;
 
   Map<String, dynamic> toMap() {
     return {

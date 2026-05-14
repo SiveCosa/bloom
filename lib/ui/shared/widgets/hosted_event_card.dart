@@ -27,25 +27,33 @@ class HostedEventCard extends StatelessWidget {
 
     final trimmedDescription = event.description.trim().replaceAll(RegExp(r'\n\s*\n'), '\n');
 
-    return Container(
-      height: 210, // Fixed height
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1D21),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final status = event.computedStatus;
+    final isCompleted = status == EventStatus.completed;
+    final isCancelled = status == EventStatus.cancelled;
+
+    return Opacity(
+      opacity: (isCompleted || isCancelled) ? 0.5 : 1.0,
+      child: Container(
+        height: 210, // Fixed height
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1D21),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
           // Header Row: Image + Title/Details
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,10 +175,40 @@ class HostedEventCard extends StatelessWidget {
                 _buildAttendeeAvatars(),
               ],
             ),
+              ],
+            ),
+            // Status Badge
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _buildStatusBadge(),
+            ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    final color = Color(event.statusColorValue);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
+      ),
+      child: Text(
+        event.statusLabel,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
 
   Widget _buildAttendeeAvatars() {
     // This would normally come from a separate attendees provider

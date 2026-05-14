@@ -38,6 +38,10 @@ class EventRsvpBar extends ConsumerWidget {
     String? currentStatus,
     Event event,
   ) {
+    final bool isFull = event.isFull;
+    final bool showWaitlist = event.shouldShowWaitlist;
+    final bool isAlreadyGoing = currentStatus == 'going';
+    final bool isAlreadyWaitlisted = currentStatus == 'waitlisted';
     final requireApproval = event.audience.requireApproval;
     final allowMaybe = event.audience.allowMaybe;
 
@@ -65,14 +69,18 @@ class EventRsvpBar extends ConsumerWidget {
           ),
           child: requireApproval
               ? GestureDetector(
-                  onTap: () => _handleRsvp(ref, userId, 'requested'),
+                  onTap: (isFull && !showWaitlist && !isAlreadyGoing && currentStatus != 'requested') 
+                      ? null 
+                      : () => _handleRsvp(ref, userId, 'requested'),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         currentStatus == 'requested'
                             ? Icons.check_circle
-                            : Icons.add_circle_outline,
+                            : (isFull && !showWaitlist && !isAlreadyGoing) 
+                                ? Icons.block 
+                                : Icons.add_circle_outline,
                         color: Colors.white.withValues(alpha: 0.6),
                         size: 24,
                       ),
@@ -80,7 +88,9 @@ class EventRsvpBar extends ConsumerWidget {
                       Text(
                         currentStatus == 'requested'
                             ? 'Requested'
-                            : 'Get on the list',
+                            : (isFull && !isAlreadyGoing)
+                                ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
+                                : 'Get on the list',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -92,15 +102,41 @@ class EventRsvpBar extends ConsumerWidget {
                 )
               : Row(
                   children: [
-                    _RsvpButton(
-                      label: 'Going',
-                      icon: currentStatus == 'going'
-                          ? Icons.check_circle
-                          : Icons.check_circle_outline,
-                      isSelected: currentStatus == 'going',
-                      onPressed: () => _handleRsvp(ref, userId, 'going'),
-                    ),
-                    if (allowMaybe) ...[
+                    if (isAlreadyGoing)
+                      _RsvpButton(
+                        label: 'Going',
+                        icon: Icons.check_circle,
+                        isSelected: true,
+                        onPressed: () => _handleRsvp(ref, userId, 'going'),
+                      )
+                    else if (isAlreadyWaitlisted)
+                      _RsvpButton(
+                        label: 'Waitlisted',
+                        icon: Icons.access_time_filled_rounded,
+                        isSelected: true,
+                        onPressed: () => _handleRsvp(ref, userId, 'waitlisted'),
+                      )
+                    else if (isFull)
+                      _RsvpButton(
+                        label: showWaitlist ? 'Waitlist' : 'Event Full',
+                        icon: showWaitlist ? Icons.access_time_rounded : Icons.block,
+                        isSelected: false,
+                        isDisabled: !showWaitlist,
+                        onPressed: showWaitlist 
+                            ? () => _handleRsvp(ref, userId, 'waitlisted')
+                            : () {},
+                      )
+                    else
+                      _RsvpButton(
+                        label: 'Going',
+                        icon: currentStatus == 'going'
+                            ? Icons.check_circle
+                            : Icons.check_circle_outline,
+                        isSelected: currentStatus == 'going',
+                        onPressed: () => _handleRsvp(ref, userId, 'going'),
+                      ),
+                    
+                    if (allowMaybe && (!isFull || isAlreadyGoing || isAlreadyWaitlisted)) ...[
                       _buildRSVPDivider(),
                       _RsvpButton(
                         label: 'Maybe',
@@ -159,12 +195,14 @@ class _RsvpButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isSelected;
+  final bool isDisabled;
   final VoidCallback onPressed;
 
   const _RsvpButton({
     required this.label,
     required this.icon,
     required this.isSelected,
+    this.isDisabled = false,
     required this.onPressed,
   });
 
@@ -172,7 +210,7 @@ class _RsvpButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: onPressed,
+        onTap: isDisabled ? null : onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -189,18 +227,22 @@ class _RsvpButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 24,
-                color: isSelected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.6),
+                color: isDisabled 
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : isSelected
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.6),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.6),
+                  color: isDisabled 
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : isSelected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),

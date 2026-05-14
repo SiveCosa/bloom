@@ -257,7 +257,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                 },
                                               ),
                                               _buildVisibilityPill(event),
-                                              const SizedBox(height: 12),
+                                              const SizedBox(height: 16),
                                               // Event Title
                                               ShaderMask(
                                                 shaderCallback: (bounds) => ui.Gradient.linear(
@@ -561,10 +561,22 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
   Widget _buildVisibilityPill(Event event) {
     final visibility = event.audience.visibility;
+    final timeStatus = _getTimeStatusText(event);
+    final status = event.computedStatus;
+    final isLive = status == EventStatus.active && event.timing.isOngoing;
+    
     String text = visibility.title;
     if (visibility == EventVisibility.public || visibility == EventVisibility.private) {
       text += ' event';
     }
+    
+    if (timeStatus.isNotEmpty) {
+      text += ' • $timeStatus';
+    }
+
+    final accentColor = Color(event.statusColorValue);
+    final useAccent = timeStatus.isNotEmpty && status != EventStatus.active; // For Cancelled/Ended
+    final isSpecial = isLive || useAccent;
 
     return ValueListenableBuilder<double>(
       valueListenable: _sheetSize,
@@ -573,29 +585,33 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+                border: Border.all(
+                  color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
+                  width: 0.5,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(
-                    width: 18,
-                    height: 18,
+                    width: 16,
+                    height: 16,
                     child: FittedBox(
-                      child: Icon(visibility.outlinedIcon, color: Colors.white, size: 28),
+                      child: Icon(visibility.outlinedIcon, color: isSpecial ? accentColor : Colors.white, size: 28),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     text,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
@@ -604,6 +620,79 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           ],
         );
       },
+    );
+  }
+
+  String _getTimeStatusText(Event event) {
+    if (event.metadata.status == EventStatus.cancelled) return 'Cancelled';
+    if (event.timing.isPast) return 'Ended';
+    
+    final now = DateTime.now();
+    if (event.timing.isOngoing) return 'Live now';
+    
+    final start = event.timing.startDate;
+    if (start != null && event.timing.isUpcoming) {
+      final diff = start.difference(now);
+      if (diff.inHours < 24) {
+        if (diff.inHours >= 1) {
+          return 'Starts in ${diff.inHours}h';
+        } else if (diff.inMinutes >= 1) {
+          return 'Starts in ${diff.inMinutes}m';
+        } else {
+          return 'Starting now';
+        }
+      }
+    }
+    return '';
+  }
+
+  Widget _buildStatusRow(Event event) {
+    final status = event.computedStatus;
+    final color = Color(event.statusColorValue);
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (status == EventStatus.active && event.timing.isOngoing)
+          _buildLiveIndicator(color)
+        else
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+        const SizedBox(width: 8),
+        Text(
+          event.statusLabel,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveIndicator(Color color) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.4),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
     );
   }
 

@@ -14,22 +14,25 @@ class ScheduledEventCard extends StatelessWidget {
     this.onTap,
   });
 
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.only(left: 5, top: 5, bottom: 5, right: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+    return Opacity(
+      opacity: event.isPast ? 0.5 : 1.0,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(left: 5, top: 5, bottom: 5, right: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
             // Poster
             Hero(
               tag: 'event_poster_${event.id}',
@@ -147,7 +150,7 @@ class ScheduledEventCard extends StatelessWidget {
                         color: Colors.white70,
                       ),
                       const SizedBox(width: 6),
-                      _buildDynamicDateTime(event.startTime),
+                      _buildDynamicDateTime(event),
                     ],
                   ),
                   const SizedBox(height: 5), // Preserved 5dp gap
@@ -175,10 +178,24 @@ class ScheduledEventCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildDynamicDateTime(DateTime startTime) {
+  Widget _buildDynamicDateTime(ScheduledEvent event) {
+    if (event.isOngoing) {
+      return const Text(
+        'LIVE NOW',
+        style: TextStyle(
+          color: Color(0xFF32D74B),
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.0,
+        ),
+      );
+    }
+
+    final startTime = event.startTime;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final eventDate = DateTime(startTime.year, startTime.month, startTime.day);

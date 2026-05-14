@@ -42,14 +42,23 @@ class EventRepository {
         
     final scheduleData = <String, dynamic>{
       'eventId': docRef.id,
+      'event_id': docRef.id,
       'title': event.title,
       'hostId': event.metadata.hostId,
-      'hostName': 'Me', // Placeholder, ideally fetch from user doc
+      'host_id': event.metadata.hostId,
+      'hostName': 'Me', 
+      'host_name': 'Me',
       if (event.timing.startDate != null) 'startTime': Timestamp.fromDate(event.timing.startDate!),
+      if (event.timing.startDate != null) 'start_time': Timestamp.fromDate(event.timing.startDate!),
       if (event.timing.endDate != null) 'endTime': Timestamp.fromDate(event.timing.endDate!),
+      if (event.timing.endDate != null) 'end_time': Timestamp.fromDate(event.timing.endDate!),
       if (event.visuals.posterUrl != null) 'posterUrl': event.visuals.posterUrl,
+      if (event.visuals.posterUrl != null) 'poster_url': event.visuals.posterUrl,
       'auroraColors': event.visuals.auroraColors,
+      'aurora_colors': event.visuals.auroraColors,
       if (event.location != null) 'locationName': event.location!.displayName,
+      if (event.location != null) 'location_name': event.location!.displayName,
+      if (event.location != null) 'subtitle_info': event.location!.displayName,
     };
     batch.set(scheduleRef, scheduleData);
     
@@ -93,6 +102,7 @@ class EventRepository {
         .collection('users')
         .doc(userId)
         .collection('schedule')
+        .orderBy('startTime', descending: false)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
   }
