@@ -210,7 +210,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                                       subtitle: _startTimeTbd
                                           ? 'TBD'
                                           : DateFormat(
-                                              'h a',
+                                              'ha',
                                             ).format(_startDate).toLowerCase(),
                                       isActive: _isSelectingStart,
                                       onTap: () => setState(() {
@@ -233,7 +233,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                                           ? 'End Date'
                                           : (_endTimeTbd
                                                 ? 'TBD'
-                                                : DateFormat('h a')
+                                                : DateFormat('ha')
                                                       .format(_endDate!)
                                                       .toLowerCase()),
                                       isActive: !_isSelectingStart,
@@ -451,7 +451,7 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                                   horizontal: 16,
                                 ),
                                 child: Text(
-                                  'Time: ${_isSelectingStart ? (_startTimeTbd ? 'TBD' : DateFormat('h a').format(_startDate).toLowerCase()) : (_endDate == null ? 'TBD' : (_endTimeTbd ? 'TBD' : DateFormat('h a').format(_endDate!).toLowerCase()))}',
+                                  'Time: ${_isSelectingStart ? (_startTimeTbd ? 'TBD' : DateFormat('ha').format(_startDate).toLowerCase()) : (_endDate == null ? 'TBD' : (_endTimeTbd ? 'TBD' : DateFormat('ha').format(_endDate!).toLowerCase()))}',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.6),
                                     fontSize: 14,

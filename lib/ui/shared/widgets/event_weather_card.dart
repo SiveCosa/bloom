@@ -85,7 +85,7 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(15),
               width: double.infinity,
               color: Colors.black.withValues(alpha: 0.2),
               child: Column(
@@ -149,7 +149,7 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(15),
             color: Colors.black.withValues(alpha: 0.2),
             child: Column(
               children: [

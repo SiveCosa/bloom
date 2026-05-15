@@ -523,7 +523,34 @@ class AuthController extends AsyncNotifier<void> {
       rethrow;
     }
   }
+
+  /// Deletes the current Firebase Auth user (ghost account) and clears the form state.
+  /// Used when a user cancels the registration flow midway.
+  Future<void> rollbackRegistration() async {
+    state = const AsyncLoading();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Use the server-side deletion to ensure both Auth and Firestore are cleaned up
+        final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+        final callable = functions.httpsCallable('deleteUserAccount');
+        await callable.call();
+        
+        // Also sign out locally to clear the session
+        await FirebaseAuth.instance.signOut();
+      }
+      ref.read(signUpFormProvider.notifier).clearForm();
+      state = const AsyncData(null);
+    } catch (e, st) {
+      debugPrint("Auth rollback failed: $e");
+      // Fallback: sign out to at least clear the local session
+      await FirebaseAuth.instance.signOut();
+      ref.read(signUpFormProvider.notifier).clearForm();
+      state = const AsyncData(null);
+    }
+  }
 }
+
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
   return AuthController();

@@ -164,16 +164,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentUserProfileProvider);
     final screenHeight = MediaQuery.of(context).size.height;
-    final gradientHeight = screenHeight * (105 / 794);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
           // Layer 0: Background Gradient
-          GradientTopBar(
-            height: gradientHeight,
-            showDarkOverlay: false, // Profile has its own content overlay logic
+          const GradientTopBar(
+            height: 100,
+            showDarkOverlay: false,
           ),
 
           // Layer 1: Foreground Content

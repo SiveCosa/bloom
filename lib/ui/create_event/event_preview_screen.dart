@@ -472,7 +472,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
     String startStr = DateFormat('EEE, d MMM').format(start);
     if (!startTbd) {
-      startStr += ' ${DateFormat('h a').format(start).toLowerCase()}';
+      startStr += ' ${DateFormat('ha').format(start).toLowerCase()}';
     }
 
     String display = startStr;
@@ -481,12 +481,12 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       // If same day, only show time
       if (start.year == end.year && start.month == end.month && start.day == end.day) {
         if (!endTbd) {
-          endStr = DateFormat('h a').format(end).toLowerCase();
+          endStr = DateFormat('ha').format(end).toLowerCase();
         }
       } else {
         endStr = DateFormat('EEE, d MMM').format(end);
         if (!endTbd) {
-          endStr += ' ${DateFormat('h a').format(end).toLowerCase()}';
+          endStr += ' ${DateFormat('ha').format(end).toLowerCase()}';
         }
       }
       if (endStr.isNotEmpty) {

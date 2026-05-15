@@ -9,7 +9,7 @@ class GradientTopBar extends StatelessWidget {
 
   const GradientTopBar({
     super.key,
-    this.height = 100,
+    this.height = 160,
     this.showDarkOverlay = false,
     this.darkOverlayHeight = 265,
   });
@@ -22,14 +22,29 @@ class GradientTopBar extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: ImageFiltered(
             imageFilter: ui.ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-            child: Container(
-              height: height,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: AppTheme.coreGradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.topRight,
+            child: ShaderMask(
+              shaderCallback: (rect) {
+                return const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black, Colors.black, Colors.transparent],
+                  stops: [
+                    0.0,
+                    0.5,
+                    1.0,
+                  ], // Start fading much earlier (at 20%) for a massive falloff
+                ).createShader(rect);
+              },
+              blendMode: BlendMode.dstIn,
+              child: Container(
+                height: height + 0, // Extend beyond the requested height
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: AppTheme.coreGradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.topRight,
+                  ),
                 ),
               ),
             ),
@@ -39,13 +54,21 @@ class GradientTopBar extends StatelessWidget {
           Align(
             alignment: Alignment.topCenter,
             child: Container(
-              height: darkOverlayHeight,
+              height:
+                  darkOverlayHeight + 30, // Extend beyond the requested height
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0x000B0E12), Color(0xFF0B0E12)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                  colors: [
+                    const Color(0x000B0E12),
+                    const Color(0x440B0E12),
+                    const Color(0x990B0E12),
+                    const Color(0xFF0B0E12),
+                    const Color(0xFF0B0E12), // Stays solid until the end
+                  ],
                 ),
               ),
             ),

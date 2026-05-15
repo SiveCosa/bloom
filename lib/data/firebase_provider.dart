@@ -10,14 +10,18 @@ class FirebaseProvider {
   static Future<void> initialize() async {
     await Firebase.initializeApp();
 
-    await FirebaseAppCheck.instance.activate(
+    // Initialize App Check in the background to avoid blocking the main thread
+    unawaited(FirebaseAppCheck.instance.activate(
       // ignore: deprecated_member_use
       androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
       // ignore: deprecated_member_use
       appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
-    );
+    ));
   }
 }
+
+// Helper to avoid lints for unawaited futures
+void unawaited(Future<void> future) {}
 
 final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;

@@ -245,7 +245,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                     slivers: [
                                       SliverToBoxAdapter(
                                         child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
                                           child: Column(
                                             children: [
                                               // Dynamic gap (Reactive)
@@ -308,7 +308,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                             if (size < 0.4) return const SizedBox.shrink();
                                             
                                             return Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                                              padding: const EdgeInsets.symmetric(horizontal: 15),
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
@@ -390,8 +390,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
               // 7. Fixed Action Bar (RSVP or Host Controls)
               Positioned(
-                left: 20,
-                right: 20,
+                left: 15,
+                right: 15,
                 bottom: 30,
                 child: ValueListenableBuilder<double>(
                   valueListenable: _sheetSize,
@@ -500,7 +500,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -706,7 +706,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
     String startStr = DateFormat('EEE, d MMM').format(start);
     if (!startTbd) {
-      startStr += ' ${DateFormat('h a').format(start).toLowerCase()}';
+      startStr += ' ${DateFormat('ha').format(start).toLowerCase()}';
     }
 
     String display = startStr;
@@ -714,12 +714,12 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       String endStr = '';
       if (start.year == end.year && start.month == end.month && start.day == end.day) {
         if (!endTbd) {
-          endStr = DateFormat('h a').format(end).toLowerCase();
+          endStr = DateFormat('ha').format(end).toLowerCase();
         }
       } else {
         endStr = DateFormat('EEE, d MMM').format(end);
         if (!endTbd) {
-          endStr += ' ${DateFormat('h a').format(end).toLowerCase()}';
+          endStr += ' ${DateFormat('ha').format(end).toLowerCase()}';
         }
       }
       if (endStr.isNotEmpty) {
@@ -727,20 +727,28 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       }
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.calendar_today, color: Colors.white, size: 20),
-        const SizedBox(width: 10),
-        Text(
-          display,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                display,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -750,7 +758,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.location_on, color: Colors.white, size: 22),
+        const Icon(Icons.location_on, color: Colors.white, size: 20),
         const SizedBox(width: 10),
         Flexible(
           child: Text(
@@ -758,7 +766,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -785,7 +793,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1151,7 +1159,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(15),
                 child: Column(
                   children: [
                     Text(

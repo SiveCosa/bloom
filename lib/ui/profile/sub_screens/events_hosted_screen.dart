@@ -75,15 +75,71 @@ class EventsHostedScreen extends ConsumerWidget {
                           ),
                         );
                       }
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 32),
-                        itemCount: events.length,
-                        itemBuilder: (context, index) {
-                          return HostedEventCard(
-                            event: events[index],
-                            onTap: () {},
-                          );
-                        },
+
+                      final now = DateTime.now();
+                      // Group events: Upcoming (Future or Ongoing) vs Past
+                      final upcoming = events.where((e) => !e.timing.isPast).toList();
+                      final past = events.where((e) => e.timing.isPast).toList();
+
+                      // Sort: Upcoming (closest first), Past (most recent first)
+                      upcoming.sort((a, b) => (a.timing.startDate ?? now).compareTo(b.timing.startDate ?? now));
+                      past.sort((a, b) => (b.timing.startDate ?? now).compareTo(a.timing.startDate ?? now));
+
+                      return CustomScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        slivers: [
+                          // Upcoming Section
+                          if (upcoming.isNotEmpty)
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => HostedEventCard(
+                                  event: upcoming[index],
+                                  onTap: () => context.push('/event/${upcoming[index].id}'),
+                                ),
+                                childCount: upcoming.length,
+                              ),
+                            ),
+
+                          // Past Events Section Divider
+                          if (past.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                                child: Row(
+                                  children: [
+                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Text(
+                                        "Past events",
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.4),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                          // Past Events List
+                          if (past.isNotEmpty)
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => HostedEventCard(
+                                  event: past[index],
+                                  onTap: () => context.push('/event/${past[index].id}'),
+                                ),
+                                childCount: past.length,
+                              ),
+                            ),
+                            
+                          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                        ],
                       );
                     },
                     loading: () => const Center(

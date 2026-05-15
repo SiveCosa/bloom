@@ -209,7 +209,7 @@ class ScheduledEventCard extends StatelessWidget {
       datePart = DateFormat('EEE, MMM d').format(startTime);
     }
 
-    final timePart = DateFormat('h a').format(startTime).toLowerCase();
+    final timePart = DateFormat('ha').format(startTime).toLowerCase();
 
     return Text(
       '$datePart • $timePart',

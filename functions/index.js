@@ -4,6 +4,7 @@ const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const functions = require("firebase-functions/v1");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
@@ -343,6 +344,50 @@ exports.initializeUserProfile = auth.user().onCreate(async (user) => {
   }
 });
 
+// 5b. Cleanup User Profile (Auth Delete Trigger)
+exports.cleanupUserOnDelete = auth.user().onDelete(async (user) => {
+  if (!user) return;
+  const uid = user.uid;
+  
+  // Delete user document
+  await db.collection("users").doc(uid).delete();
+  
+  // Optional: Delete other subcollections or associated data
+  const scheduleSnap = await db.collection("users").doc(uid).collection("schedule").get();
+  const batch = db.batch();
+  scheduleSnap.docs.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+
+  console.log(`Cleaned up profile and schedule for deleted user: ${uid}`);
+});
+
+// 11. Delete User Account (Explicit Rollback)
+exports.deleteUserAccount = onCall({ region: "africa-south1" }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be signed in to delete account.");
+  }
+
+  const uid = request.auth.uid;
+  const normalizedEmail = request.auth.token.email ? request.auth.token.email.toLowerCase() : "";
+
+  try {
+    // 1. Delete Firestore records
+    await db.collection("users").doc(uid).delete();
+    if (normalizedEmail) {
+      await db.collection("otps").doc(normalizedEmail).delete();
+    }
+
+    // 2. Delete Auth record
+    await admin.auth().deleteUser(uid);
+    
+    console.log(`Successfully rolled back registration for user: ${uid}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    throw new HttpsError("internal", "Failed to delete user account.");
+  }
+});
+
 // 6. Google Maps Proxy Function
 exports.googleMapsProxy = onCall(
   { 
@@ -595,7 +640,7 @@ exports.onEventUpdate = onDocumentWritten(
 exports.cleanupPastEvents = onSchedule(
   {
     schedule: "every 24 hours",
-    region: "europe-west1", // Changed from africa-south1 due to regional Scheduler availability
+    region: "europe-west1", // africa-south1 does not support Cloud Scheduler yet
   },
   async (event) => {
     const thirtyDaysAgo = new Date();

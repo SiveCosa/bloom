@@ -88,8 +88,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         children: [
           const GradientTopBar(
             height: 100,
-            showDarkOverlay: true,
-            darkOverlayHeight: 200,
+            showDarkOverlay: false,
           ),
           SafeArea(
             child: Column(

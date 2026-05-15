@@ -27,12 +27,10 @@ class HostedEventCard extends StatelessWidget {
 
     final trimmedDescription = event.description.trim().replaceAll(RegExp(r'\n\s*\n'), '\n');
 
-    final status = event.computedStatus;
-    final isCompleted = status == EventStatus.completed;
-    final isCancelled = status == EventStatus.cancelled;
 
-    return Opacity(
-      opacity: (isCompleted || isCancelled) ? 0.5 : 1.0,
+
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
         height: 210, // Fixed height
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -49,106 +47,104 @@ class HostedEventCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            // Header Row: Image + Title/Details
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-          // Header Row: Image + Title/Details
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Event Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: 85,
-                  height: 85,
-                  color: Colors.grey[800],
-                  child: event.visuals.posterUrl != null
-                      ? Image.network(
-                          event.visuals.posterUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => 
-                            const Icon(Icons.image_not_supported, color: Colors.white24),
-                        )
-                      : const Icon(Icons.image, color: Colors.white24, size: 30),
+                // Event Image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    width: 85,
+                    height: 85,
+                    color: Colors.grey[800],
+                    child: event.visuals.posterUrl != null
+                        ? Image.network(
+                            event.visuals.posterUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => 
+                              const Icon(Icons.image_not_supported, color: Colors.white24),
+                          )
+                        : const Icon(Icons.image, color: Colors.white24, size: 30),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // Title and basic info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.title.isEmpty ? 'Untitled Event' : event.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    // Timing Row
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          timingText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
+                const SizedBox(width: 12),
+                // Title and basic info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title.isEmpty ? 'Untitled Event' : event.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // Location Row
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            event.location?.displayName ?? 'TBD',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Timing Row
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            timingText,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Location Row
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              event.location?.displayName ?? 'TBD',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          
-          const Spacer(),
-          
-          // Description (Standard non-clickable text)
-          Text(
-            trimmedDescription.isEmpty ? 'No description.' : trimmedDescription,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: trimmedDescription.isEmpty ? 0.6 : 0.9),
-              fontSize: 13,
-              fontStyle: trimmedDescription.isEmpty ? FontStyle.italic : FontStyle.normal,
-              height: 1.4,
+              ],
             ),
-          ),
             
+            const Spacer(),
+            
+            // Description (Standard non-clickable text)
+            Text(
+              trimmedDescription.isEmpty ? 'No description.' : trimmedDescription,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: trimmedDescription.isEmpty ? 0.6 : 0.9),
+                fontSize: 13,
+                fontStyle: trimmedDescription.isEmpty ? FontStyle.italic : FontStyle.normal,
+                height: 1.4,
+              ),
+            ),
+              
             const Spacer(),
             
             // Footer: Interested Button + Attendee Avatars
@@ -175,36 +171,7 @@ class HostedEventCard extends StatelessWidget {
                 _buildAttendeeAvatars(),
               ],
             ),
-              ],
-            ),
-            // Status Badge
-            Positioned(
-              top: 0,
-              right: 0,
-              child: _buildStatusBadge(),
-            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    final color = Color(event.statusColorValue);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
-      ),
-      child: Text(
-        event.statusLabel,
-        style: TextStyle(
-          color: color,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.8,
         ),
       ),
     );

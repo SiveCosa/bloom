@@ -182,21 +182,8 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AuthAppBar(
+      appBar: const AuthAppBar(
         leftAction: AuthAppBarAction.cancel,
-        onCancel: () async {
-          setState(() => _isSubmitting = true);
-          try {
-            await FirebaseAuth.instance.currentUser?.delete();
-          } catch (_) {
-            await FirebaseAuth.instance.signOut();
-          }
-          if (context.mounted) {
-            ref.invalidate(authControllerProvider);
-            ref.read(signUpFormProvider.notifier).clearForm();
-            context.go('/auth/signup');
-          }
-        },
       ),
       body: Stack(
         children: [
