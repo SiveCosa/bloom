@@ -53,12 +53,8 @@ class AuroraBackground extends ConsumerWidget {
                 child: _AuroraBlob(color: displayColors[3 % displayColors.length]),
               ),
               
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80.0, sigmaY: 80.0),
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
+              // Removed BackdropFilter for performance. 
+              // The smooth RadialGradients in _AuroraBlob provide the soft look for free.
               
               Positioned.fill(
                 child: Container(color: Colors.black.withValues(alpha: 0.2)),

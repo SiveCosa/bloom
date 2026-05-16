@@ -9,6 +9,10 @@ class BloomButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? textColor;
   final double borderRadius;
+  final Widget? prefixIcon;
+  final double fontSize;
+  final FontWeight fontWeight;
+  final double horizontalPadding;
 
   const BloomButton({
     super.key,
@@ -20,6 +24,10 @@ class BloomButton extends StatelessWidget {
     this.backgroundColor = const Color(0xFF0086D8),
     this.textColor = Colors.white,
     this.borderRadius = 15,
+    this.prefixIcon,
+    this.fontSize = 16,
+    this.fontWeight = FontWeight.w600,
+    this.horizontalPadding = 0,
   });
 
   @override
@@ -36,6 +44,7 @@ class BloomButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           disabledBackgroundColor: backgroundColor?.withValues(alpha: 0.5),
         ),
         child: isLoading
@@ -49,12 +58,21 @@ class BloomButton extends StatelessWidget {
                   ),
                 ),
               )
-            : Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (prefixIcon != null) ...[
+                    prefixIcon!,
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: fontWeight,
+                    ),
+                  ),
+                ],
               ),
       ),
     );

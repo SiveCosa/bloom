@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
 import '../shared/widgets/gradient_top_bar.dart';
+import 'widgets/create_event_cta.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -47,19 +48,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
-          // 1. Placeholder Content
-          Padding(
-            padding: EdgeInsets.only(top: topPadding + maskHeight),
-            child: const Center(
-              child: Text(
-                'Home under construction',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5,
-                ),
-              ),
+          // 1. Scrollable Content
+          SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.only(
+              top: topPadding + maskHeight + 20,
+              bottom: 40,
+            ),
+            child: Column(
+              children: [
+                const CreateEventCTA(),
+              ],
             ),
           ),
 
@@ -191,4 +190,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
   }
+
 }

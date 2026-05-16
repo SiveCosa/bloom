@@ -192,11 +192,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/create-event',
-        builder: (context, state) => const CreateEventScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const CreateEventScreen(),
+        ),
       ),
       GoRoute(
         path: '/create-event/preview',
-        builder: (context, state) => const EventPreviewScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const EventPreviewScreen(),
+        ),
       ),
       GoRoute(
         path: '/event/:eventId',
