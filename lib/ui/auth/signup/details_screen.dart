@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/auth/auth_providers.dart';
@@ -182,15 +181,11 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: const AuthAppBar(
-        leftAction: AuthAppBarAction.cancel,
-      ),
+      appBar: const AuthAppBar(leftAction: AuthAppBarAction.cancel),
       body: Stack(
         children: [
           // Dynamic Blur Background
-          const GradientTopBar(
-            height: 120,
-          ),
+          const GradientTopBar(height: 120),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -385,9 +380,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                             try {
                               await ref
                                   .read(authControllerProvider.notifier)
-                                  .validateUsername(
-                                    _usernameController.text,
-                                  );
+                                  .validateUsername(_usernameController.text);
 
                               if (!context.mounted) return;
                               ref
@@ -397,8 +390,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                     name: _nameController.text,
                                     birthday:
                                         '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
-                                    gender:
-                                        _genderValue ?? 'Prefer not to say',
+                                    gender: _genderValue ?? 'Prefer not to say',
                                   );
                               setState(() => _isSubmitting = false);
                               context.go('/auth/signup/campus');
@@ -411,8 +403,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                                       "This username is already taken";
                                 } else {
                                   _errorMessage =
-                                      e.message ??
-                                      "Error validating username.";
+                                      e.message ?? "Error validating username.";
                                 }
                               });
                             } catch (e) {

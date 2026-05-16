@@ -69,16 +69,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             left: 0,
             right: 0,
             height: topPadding + maskHeight,
-            child: Container(
-              color: const Color(0xFF0B0E12),
-            ),
+            child: Container(color: const Color(0xFF0B0E12)),
           ),
 
           // 3. Atmospheric Gradient Background (Stays at original height)
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
 
           // 4. Header UI Components
           SafeArea(
@@ -117,10 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
 
           // Center: Main Logo
-          SvgPicture.asset(
-            'assets/logos/main_logo.svg',
-            height: 40,
-          ),
+          SvgPicture.asset('assets/logos/main_logo.svg', height: 40),
 
           // Right: Notifications
           GestureDetector(

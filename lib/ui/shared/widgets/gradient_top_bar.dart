@@ -61,13 +61,13 @@ class GradientTopBar extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                  stops: [0.0, 0.2, 0.5, 0.8, 1.0],
                   colors: [
-                    const Color(0x000B0E12),
-                    const Color(0x440B0E12),
-                    const Color(0x990B0E12),
-                    const Color(0xFF0B0E12),
-                    const Color(0xFF0B0E12), // Stays solid until the end
+                    Color(0x000B0E12),
+                    Color(0x440B0E12),
+                    Color(0x990B0E12),
+                    Color(0xFF0B0E12),
+                    Color(0xFF0B0E12), // Stays solid until the end
                   ],
                 ),
               ),

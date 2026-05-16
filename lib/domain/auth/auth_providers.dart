@@ -35,10 +35,14 @@ final currentUserProfileProvider = StreamProvider<Map<String, dynamic>?>((ref) {
 });
 
 /// Fetch any user's profile by UID
-final userProfileFutureProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
-  final snap = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-  return snap.data();
-});
+final userProfileFutureProvider =
+    FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      return snap.data();
+    });
 
 /// Firestore `institutions/{id}.allowed_domains` (lowercased) for client-side validation.
 const String kDefaultInstitutionDocId = 'eduvos_01';
@@ -440,7 +444,8 @@ class AuthController extends AsyncNotifier<void> {
         if (!isRemote) {
           final file = File(profileImageUrl);
           if (await file.exists()) {
-            profileImageUrl = await _uploadProfileImage(currentUser.uid, file) ?? '';
+            profileImageUrl =
+                await _uploadProfileImage(currentUser.uid, file) ?? '';
           } else {
             // Fallback: If the file path is invalid, wipe it to prevent DB corruption
             profileImageUrl = '';
@@ -532,16 +537,18 @@ class AuthController extends AsyncNotifier<void> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         // Use the server-side deletion to ensure both Auth and Firestore are cleaned up
-        final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+        final functions = FirebaseFunctions.instanceFor(
+          region: 'africa-south1',
+        );
         final callable = functions.httpsCallable('deleteUserAccount');
         await callable.call();
-        
+
         // Also sign out locally to clear the session
         await FirebaseAuth.instance.signOut();
       }
       ref.read(signUpFormProvider.notifier).clearForm();
       state = const AsyncData(null);
-    } catch (e, st) {
+    } catch (e) {
       debugPrint("Auth rollback failed: $e");
       // Fallback: sign out to at least clear the local session
       await FirebaseAuth.instance.signOut();
@@ -550,7 +557,6 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 }
-
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
   return AuthController();
