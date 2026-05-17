@@ -127,7 +127,14 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
       }
     }
 
-    // 3. Check Event Affiliation
+    // 3. Check Same Campus
+    final currentUserCampus = currentUserData['campus'] as String? ?? '';
+    final targetUserCampus = targetUserData['campus'] as String? ?? '';
+    if (currentUserCampus.isNotEmpty && currentUserCampus == targetUserCampus) {
+      return "At $currentUserCampus";
+    }
+
+    // 4. Check Event Affiliation
     final now = Timestamp.now();
     final scheduleSnap = await firestore
         .collection('users')
