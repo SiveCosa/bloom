@@ -84,6 +84,17 @@ class ConnectionRepository {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    // Increment friend counts on both user documents
+    final currentUserRef = _firestore.collection('users').doc(currentUserId);
+    final targetUserRef = _firestore.collection('users').doc(targetUserId);
+    
+    batch.update(currentUserRef, {
+      'counts.friends': FieldValue.increment(1),
+    });
+    batch.update(targetUserRef, {
+      'counts.friends': FieldValue.increment(1),
+    });
+
     await batch.commit();
   }
 
@@ -92,14 +103,18 @@ class ConnectionRepository {
     final currentUserId = _currentUserId;
     if (currentUserId == null) return;
 
-    final batch = _firestore.batch();
-    
     final currentUserConnRef = _firestore
         .collection('users')
         .doc(currentUserId)
         .collection('connections')
         .doc(targetUserId);
-        
+
+    // Retrieve document to check status before deleting
+    final snap = await currentUserConnRef.get();
+    final isAlreadyConnected = snap.exists && snap.data()?['status'] == 'connected';
+
+    final batch = _firestore.batch();
+    
     final targetUserConnRef = _firestore
         .collection('users')
         .doc(targetUserId)
@@ -108,6 +123,29 @@ class ConnectionRepository {
 
     batch.delete(currentUserConnRef);
     batch.delete(targetUserConnRef);
+
+    // If they were friends, decrement the counts safely (avoid going below 0 for legacy users)
+    if (isAlreadyConnected) {
+      final currentUserRef = _firestore.collection('users').doc(currentUserId);
+      final targetUserRef = _firestore.collection('users').doc(targetUserId);
+      
+      final currentUserDoc = await currentUserRef.get();
+      final targetUserDoc = await targetUserRef.get();
+
+      final currentFriendsCount = (currentUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
+      final targetFriendsCount = (targetUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
+
+      if (currentFriendsCount > 0) {
+        batch.update(currentUserRef, {
+          'counts.friends': FieldValue.increment(-1),
+        });
+      }
+      if (targetFriendsCount > 0) {
+        batch.update(targetUserRef, {
+          'counts.friends': FieldValue.increment(-1),
+        });
+      }
+    }
 
     await batch.commit();
   }

@@ -103,7 +103,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                       requestedAt = DateTime.fromMillisecondsSinceEpoch(timestamp);
                     }
 
-                    final profileAsync = ref.watch(userProfileFutureProvider(recipientUid));
+                    final profileAsync = ref.watch(userProfileStreamProvider(recipientUid));
 
                     return Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),

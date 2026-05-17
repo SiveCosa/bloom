@@ -17,10 +17,33 @@ final connectionStateProvider = StreamProvider.family<FriendshipState, String>((
       .snapshots()
       .map((snap) {
         if (!snap.exists) return FriendshipState.none;
-        final status = snap.data()?['status'] as String?;
-        if (status == 'pending') return FriendshipState.pending;
+        final data = snap.data();
+        if (data == null) return FriendshipState.none;
+        final status = data['status'] as String?;
+        if (status == 'pending') {
+          final initiatedBy = data['initiated_by'] as String?;
+          if (initiatedBy == currentUid) {
+            return FriendshipState.sentPending;
+          } else {
+            return FriendshipState.receivedPending;
+          }
+        }
         if (status == 'connected') return FriendshipState.connected;
         return FriendshipState.none;
+      });
+});
+
+final userFriendsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, targetUid) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(targetUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'connected')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .toList();
       });
 });
 
@@ -202,5 +225,24 @@ final outgoingRequestsCountProvider = StreamProvider<int>((ref) {
             .length;
       });
 });
+
+/// Stream provider for accepted friends (status == 'connected')
+final friendsMadeProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+  if (currentUid == null) return Stream.value([]);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'connected')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .toList();
+      });
+});
+
 
 

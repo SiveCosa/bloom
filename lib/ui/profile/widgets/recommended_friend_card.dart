@@ -26,7 +26,7 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
   late Animation<double> _opacityAnimation;
   
   bool _isDismissing = false;
-  bool? _localRequestedOverride;
+  FriendshipState? _localStateOverride;
 
   @override
   void initState() {
@@ -68,13 +68,15 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
 
     // Watch real-time connection state
     final connectionStateAsync = ref.watch(connectionStateProvider(uid));
-    final isRequested = _localRequestedOverride ?? (connectionStateAsync.value == FriendshipState.pending);
+    final currentState = _localStateOverride ?? (connectionStateAsync.value ?? FriendshipState.none);
 
     // Watch dynamic affinity social context
     final affinityAsync = ref.watch(recommendedFriendAffinityProvider(uid));
     final contextText = affinityAsync.value?.isNotEmpty == true 
         ? affinityAsync.value! 
         : defaultContext;
+
+    final isActionPending = currentState == FriendshipState.sentPending || currentState == FriendshipState.connected;
 
     return SizeTransition(
       axis: Axis.horizontal,
@@ -155,34 +157,59 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                               if (uid.isEmpty) return;
                               final repo = ref.read(connectionRepositoryProvider);
 
-                              if (isRequested) {
-                                // Toggle Off: Cancel/Remove request
-                                setState(() {
-                                  _localRequestedOverride = false;
-                                });
-                                try {
-                                  await repo.removeConnection(uid);
-                                } catch (e) {
+                              switch (currentState) {
+                                case FriendshipState.none:
                                   setState(() {
-                                    _localRequestedOverride = null;
+                                    _localStateOverride = FriendshipState.sentPending;
                                   });
-                                }
-                              } else {
-                                // Toggle On: Send request
-                                setState(() {
-                                  _localRequestedOverride = true;
-                                });
-                                try {
-                                  await repo.sendRequest(uid);
-                                } catch (e) {
+                                  try {
+                                    await repo.sendRequest(uid);
+                                  } catch (e) {
+                                    setState(() {
+                                      _localStateOverride = null;
+                                    });
+                                  }
+                                  break;
+                                case FriendshipState.sentPending:
                                   setState(() {
-                                    _localRequestedOverride = null;
+                                    _localStateOverride = FriendshipState.none;
                                   });
-                                }
+                                  try {
+                                    await repo.removeConnection(uid);
+                                  } catch (e) {
+                                    setState(() {
+                                      _localStateOverride = null;
+                                    });
+                                  }
+                                  break;
+                                case FriendshipState.receivedPending:
+                                  setState(() {
+                                    _localStateOverride = FriendshipState.connected;
+                                  });
+                                  try {
+                                    await repo.acceptRequest(uid);
+                                  } catch (e) {
+                                    setState(() {
+                                      _localStateOverride = null;
+                                    });
+                                  }
+                                  break;
+                                case FriendshipState.connected:
+                                  setState(() {
+                                    _localStateOverride = FriendshipState.none;
+                                  });
+                                  try {
+                                    await repo.removeConnection(uid);
+                                  } catch (e) {
+                                    setState(() {
+                                      _localStateOverride = null;
+                                    });
+                                  }
+                                  break;
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isRequested ? const Color(0xFF3A3F45) : const Color(0xFF0086D8),
+                              backgroundColor: isActionPending ? const Color(0xFF3A3F45) : const Color(0xFF0086D8),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: EdgeInsets.zero,
@@ -191,12 +218,18 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                if (isRequested) ...[
+                                if (isActionPending) ...[
                                   const Icon(Icons.check, size: 14, color: Colors.white),
                                   const SizedBox(width: 4),
                                 ],
                                 Text(
-                                  isRequested ? 'Requested' : 'Add Friend',
+                                  currentState == FriendshipState.sentPending
+                                      ? 'Requested'
+                                      : currentState == FriendshipState.receivedPending
+                                          ? 'Accept'
+                                          : currentState == FriendshipState.connected
+                                              ? 'Friends'
+                                              : 'Add Friend',
                                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                                 ),
                               ],

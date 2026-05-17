@@ -16,14 +16,38 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        request.auth.uid == userId
+        ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['counts'])
+          && request.resource.data.get(['counts', 'hosted'], 0) == resource.data.get(['counts', 'hosted'], 0)
+          && request.resource.data.get(['counts', 'joined'], 0) == resource.data.get(['counts', 'joined'], 0)
+          && (
+            (
+              request.resource.data.get(['counts', 'friends'], 0) == resource.data.get(['counts', 'friends'], 0) + 1
+              && exists(/databases/$(database)/documents/users/$(userId)/connections/$(request.auth.uid))
+            )
+            ||
+            (
+              request.resource.data.get(['counts', 'friends'], 0) == resource.data.get(['counts', 'friends'], 0) - 1
+              && request.resource.data.get(['counts', 'friends'], 0) >= 0
+            )
+          )
+        )
+      );
       allow create: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.keys().hasAll(['email', 'username', 'institution']);
       
       // Connections sub-collection
       match /connections/{targetUid} {
-        allow read: if request.auth != null && (request.auth.uid == userId || request.auth.uid == targetUid);
+        allow read: if request.auth != null && (
+          request.auth.uid == userId 
+          || request.auth.uid == targetUid 
+          || resource.data.status == 'connected'
+        );
         
         allow create: if request.auth != null && (
           // Owner can create

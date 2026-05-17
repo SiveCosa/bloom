@@ -44,6 +44,16 @@ final userProfileFutureProvider =
       return snap.data();
     });
 
+/// Stream any user's profile by UID (real-time updates)
+final userProfileStreamProvider =
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .snapshots()
+          .map((snap) => snap.data());
+    });
+
 /// Firestore `institutions/{id}.allowed_domains` (lowercased) for client-side validation.
 const String kDefaultInstitutionDocId = 'eduvos_01';
 

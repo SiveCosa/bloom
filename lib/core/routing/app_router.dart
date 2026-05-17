@@ -172,15 +172,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (context, state) => const MainShell()),
       GoRoute(
         path: '/profile/friends',
-        builder: (context, state) => const FriendsMadeScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const FriendsMadeScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/hosted',
-        builder: (context, state) => const EventsHostedScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const EventsHostedScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/joined',
-        builder: (context, state) => const EventsJoinedScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const EventsJoinedScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/interested',
@@ -203,18 +212,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'hosted',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final userId = state.pathParameters['userId']!;
               final username = state.extra as String?;
-              return EventsHostedScreen(targetUserId: userId, targetUsername: username);
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: EventsHostedScreen(targetUserId: userId, targetUsername: username),
+              );
             },
           ),
           GoRoute(
             path: 'joined',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final userId = state.pathParameters['userId']!;
               final username = state.extra as String?;
-              return EventsJoinedScreen(targetUserId: userId, targetUsername: username);
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: EventsJoinedScreen(targetUserId: userId, targetUsername: username),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'friends',
+            pageBuilder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: FriendsMadeScreen(targetUserId: userId, targetUsername: username),
+              );
             },
           ),
         ],

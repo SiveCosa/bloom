@@ -216,7 +216,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                             requestedAt = DateTime.fromMillisecondsSinceEpoch(timestamp);
                           }
 
-                          final profileAsync = ref.watch(userProfileFutureProvider(requesterUid));
+                          final profileAsync = ref.watch(userProfileStreamProvider(requesterUid));
 
                           return Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),

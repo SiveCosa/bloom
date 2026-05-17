@@ -1,6 +1,7 @@
 enum FriendshipState { 
   none, 
-  pending, 
+  sentPending, 
+  receivedPending, 
   connected 
 }
 

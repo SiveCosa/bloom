@@ -320,7 +320,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                   const SizedBox(height: 16),
                                                   Consumer(
                                                     builder: (context, ref, child) {
-                                                      final hostProfile = ref.watch(userProfileFutureProvider(event.metadata.hostId)).value;
+                                                      final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
                                                       return HostInviteSection(
                                                         userProfile: hostProfile, 
                                                         onAddCoHost: () {},

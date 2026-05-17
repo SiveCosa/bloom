@@ -173,6 +173,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
 
     final profileAsync = ref.watch(currentUserProfileProvider);
+    final friendsAsync = ref.watch(friendsMadeProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -202,7 +203,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final imageUrl = doc?['profile_image_url']?.toString();
 
               final counts = doc?['counts'] as Map<String, dynamic>?;
-              final friendsCount = (counts?['friends'] ?? 0).toString();
+              final friendsCount = (friendsAsync.value?.length ?? counts?['friends'] ?? 0).toString();
               final hostedCount = (counts?['hosted'] ?? 0).toString();
               final joinedCount = (counts?['joined'] ?? 0).toString();
 

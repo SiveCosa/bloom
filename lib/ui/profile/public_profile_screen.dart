@@ -29,9 +29,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userId = widget.userId;
-    final profileAsync = ref.watch(userProfileFutureProvider(userId));
+    final profileAsync = ref.watch(userProfileStreamProvider(userId));
     final connectionState = ref.watch(connectionStateProvider(userId)).value ?? FriendshipState.none;
     final hostedEventsAsync = ref.watch(publicHostedEventsProvider(userId));
+    final friendsListAsync = ref.watch(userFriendsProvider(userId));
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -52,7 +53,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               final imageUrl = doc['profile_image_url']?.toString();
 
               final counts = doc['counts'] as Map<String, dynamic>?;
-              final friendsCount = (counts?['friends'] ?? 0).toString();
+              final friendsCount = (friendsListAsync.value?.length ?? counts?['friends'] ?? 0).toString();
               final hostedCount = (counts?['hosted'] ?? 0).toString();
               final joinedCount = (counts?['joined'] ?? 0).toString();
 
@@ -126,7 +127,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           // Stats Row
                           Row(
                             children: [
-                              Expanded(child: _buildStatItem('Friends made', friendsCount, () {})),
+                              Expanded(child: _buildStatItem('Friends made', friendsCount, () {
+                                context.push('/profile/$userId/friends', extra: name);
+                              })),
                               _buildDivider(),
                               Expanded(child: _buildStatItem('Hosted events', hostedCount, () {
                                 context.push('/profile/$userId/hosted', extra: name);
@@ -316,17 +319,24 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   }
 
   Widget _buildConnectionActionBar(BuildContext context, WidgetRef ref, FriendshipState state) {
+    final showDecline = state == FriendshipState.receivedPending;
+    
     return SizedBox(
       height: 40,
       child: Row(
         children: [
           Expanded(
             child: _buildBaseButton(
-              label: 'Message',
+              label: showDecline ? 'Decline' : 'Message',
               backgroundColor: Colors.white.withValues(alpha: 0.05),
               textColor: Colors.white,
               onTap: () {
-                // TODO: Message logic
+                if (showDecline) {
+                  ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+                  ref.invalidate(recommendedFriendsProvider);
+                } else {
+                  // TODO: Message logic
+                }
               },
             ),
           ),
@@ -348,7 +358,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           textColor: Colors.white,
           onTap: () => ref.read(connectionRepositoryProvider).sendRequest(widget.userId),
         );
-      case FriendshipState.pending:
+      case FriendshipState.sentPending:
         return _buildBaseButton(
           label: 'Requested',
           backgroundColor: Colors.white.withValues(alpha: 0.05),
@@ -356,6 +366,16 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           trailingIcon: Icons.close,
           onTap: () {
             ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+            ref.invalidate(recommendedFriendsProvider);
+          },
+        );
+      case FriendshipState.receivedPending:
+        return _buildBaseButton(
+          label: 'Accept Request',
+          backgroundColor: const Color(0xFF0086D8),
+          textColor: Colors.white,
+          onTap: () {
+            ref.read(connectionRepositoryProvider).acceptRequest(widget.userId);
             ref.invalidate(recommendedFriendsProvider);
           },
         );
