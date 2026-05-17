@@ -12,7 +12,7 @@ import '../../core/media/image_loader_helper.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import '../widgets/scheduled_event_card.dart';
 
-class PublicProfileScreen extends ConsumerWidget {
+class PublicProfileScreen extends ConsumerStatefulWidget {
   final String userId;
 
   const PublicProfileScreen({
@@ -21,7 +21,14 @@ class PublicProfileScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PublicProfileScreen> createState() => _PublicProfileScreenState();
+}
+
+class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = widget.userId;
     final profileAsync = ref.watch(userProfileFutureProvider(userId));
     final connectionState = ref.watch(connectionStateProvider(userId)).value ?? FriendshipState.none;
     final hostedEventsAsync = ref.watch(publicHostedEventsProvider(userId));
@@ -339,14 +346,18 @@ class PublicProfileScreen extends ConsumerWidget {
           label: 'Add Friend',
           backgroundColor: const Color(0xFF0086D8),
           textColor: Colors.white,
-          onTap: () => ref.read(connectionRepositoryProvider).sendRequest(userId),
+          onTap: () => ref.read(connectionRepositoryProvider).sendRequest(widget.userId),
         );
       case FriendshipState.pending:
         return _buildBaseButton(
           label: 'Requested',
           backgroundColor: Colors.white.withValues(alpha: 0.05),
           textColor: Colors.white54,
-          onTap: () => _showCancelRequestModal(context, ref),
+          trailingIcon: Icons.close,
+          onTap: () {
+            ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+            ref.invalidate(recommendedFriendsProvider);
+          },
         );
       case FriendshipState.connected:
         return _buildBaseButton(
@@ -398,29 +409,6 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _showCancelRequestModal(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF191B1D),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.close, color: Colors.white),
-              title: const Text('Cancel Request', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                ref.read(connectionRepositoryProvider).removeConnection(userId);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showManageFriendModal(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
@@ -435,7 +423,8 @@ class PublicProfileScreen extends ConsumerWidget {
               title: const Text('Remove Friend', style: TextStyle(color: Colors.redAccent)),
               onTap: () {
                 Navigator.pop(context);
-                ref.read(connectionRepositoryProvider).removeConnection(userId);
+                ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+                ref.invalidate(recommendedFriendsProvider);
               },
             ),
           ],
@@ -488,4 +477,6 @@ class PublicProfileScreen extends ConsumerWidget {
     );
   }
 }
+
+
 

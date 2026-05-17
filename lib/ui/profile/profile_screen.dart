@@ -15,6 +15,7 @@ import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
 import '../../domain/friendship/friendship_providers.dart';
+import '../../domain/navigation/navigation_providers.dart';
 import './widgets/recommended_friend_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -164,8 +165,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Invalidate recommendedFriendsProvider when switching away from the profile tab
+    ref.listen<int>(mainShellIndexProvider, (prev, next) {
+      if (prev == 3 && next != 3) {
+        ref.invalidate(recommendedFriendsProvider);
+      }
+    });
+
     final profileAsync = ref.watch(currentUserProfileProvider);
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -235,8 +242,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   assetPath:
                                       'assets/icons/profile/interested_icon.svg',
                                   icon: Icons.star_outline,
-                                  onTap: () =>
-                                      context.push('/profile/interested'),
+                                  onTap: () {
+                                    ref.invalidate(recommendedFriendsProvider);
+                                    context.push('/profile/interested');
+                                  },
                                 ),
                                 const SizedBox(
                                   width: 10,
@@ -329,7 +338,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Friends made',
                                     friendsCount,
-                                    () => context.push('/profile/friends'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/friends');
+                                    },
                                   ),
                                 ),
                                 _buildDivider(),
@@ -337,7 +349,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Hosted events',
                                     hostedCount,
-                                    () => context.push('/profile/hosted'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/hosted');
+                                    },
                                   ),
                                 ),
                                 _buildDivider(),
@@ -345,7 +360,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Joined events',
                                     joinedCount,
-                                    () => context.push('/profile/joined'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/joined');
+                                    },
                                   ),
                                 ),
                               ],
@@ -411,7 +429,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       child: _buildActionButton(
                                         // Edit Profile Button
                                         'Edit profile',
-                                        () => context.push('/profile/edit'),
+                                        () {
+                                          ref.invalidate(recommendedFriendsProvider);
+                                          context.push('/profile/edit');
+                                        },
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

@@ -63,7 +63,7 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
   Widget build(BuildContext context) {
     final uid = widget.user['uid'] ?? widget.user['id'] ?? '';
     final username = widget.user['username'] ?? 'User';
-    final imageUrl = widget.user['profile_image_url'] ?? widget.user['avatar_url'];
+    final imageUrl = widget.user['profile_image_url']?.toString() ?? widget.user['avatar_url']?.toString();
     final defaultContext = widget.user['known_from'] ?? 'Same institution';
 
     // Watch real-time connection state
@@ -88,6 +88,7 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
               GestureDetector(
                 onTap: () {
                   if (uid.isNotEmpty) {
+                    ref.invalidate(recommendedFriendsProvider);
                     context.push('/profile/$uid');
                   }
                 },
@@ -104,11 +105,9 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                     child: Column(
                       children: [
                         // Avatar (Top)
-                        CircleAvatar(
+                        buildAvatarImage(
+                          source: imageUrl,
                           radius: 35,
-                          backgroundColor: Colors.white10,
-                          backgroundImage: imageUrl != null ? getAvatarImageProvider(imageUrl) : null,
-                          child: imageUrl == null ? const Icon(Icons.person, color: Colors.white54) : null,
                         ),
                         const SizedBox(height: 8),
                         

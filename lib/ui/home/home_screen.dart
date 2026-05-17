@@ -159,10 +159,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(isActive ? 0.12 : 0.08),
+                color: Colors.white.withValues(alpha: isActive ? 0.12 : 0.08),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.07),
+                  color: Colors.white.withValues(alpha: 0.07),
                   width: 0.5,
                 ),
               ),
@@ -179,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     const TextSpan(text: ' '),
                     TextSpan(
                       text: chip['count'],
-                      style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                     ),
                   ],
                 ),

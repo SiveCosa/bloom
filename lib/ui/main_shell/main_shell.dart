@@ -65,10 +65,10 @@ class _MainShellState extends ConsumerState<MainShell> {
           height: 56 + bottomPadding,
           padding: EdgeInsets.only(bottom: bottomPadding),
           decoration: BoxDecoration(
-            color: const Color(0xFF0B0E12).withOpacity(0.70),
+            color: const Color(0xFF0B0E12).withValues(alpha: 0.70),
             border: Border(
               top: BorderSide(
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
                 width: 1.0,
               ),
             ),

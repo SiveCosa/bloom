@@ -470,23 +470,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: events.isNotEmpty
-                          ? BoxDecoration(
-                              color: _getEventColor(events[0]),
-                              shape: BoxShape.circle,
-                            )
-                          : null,
+                      width: 34,
+                      height: 34,
+                      alignment: Alignment.center,
                       child: Text(
                         DateFormat('dd').format(day),
                         style: TextStyle(
-                          color: events.isNotEmpty
+                          color: isSelected || isToday
                               ? Colors.white
                               : Colors.white.withValues(alpha: 0.8),
                           fontSize: 16,
                           fontWeight: isSelected || isToday || events.isNotEmpty
                               ? FontWeight.bold
                               : FontWeight.normal,
+                          shadows: events.isNotEmpty && !isToday
+                              ? [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.8),
+                                    offset: const Offset(0, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                              : null,
                         ),
                       ),
                     ),
@@ -500,29 +505,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Color _getEventColor(ScheduledEvent event) {
-    if (event.auroraColors.isEmpty) {
-      return const Color(0xFFC151FD); // Fallback to brand purple
-    }
-    
-    // Pick the most suitable color from the palette.
-    // Index 0 or 2 are usually good candidates for dominant/vibrant colors.
-    return _parseHexColor(event.auroraColors[0]);
-  }
 
-  Color _parseHexColor(String hex) {
-    String hexStr = hex.replaceFirst('#', '');
-    if (hexStr.length == 6) {
-      hexStr = 'FF$hexStr';
-    } else if (hexStr.length == 8 && hexStr.startsWith('0x')) {
-      hexStr = hexStr.substring(2);
-    }
-    try {
-      return Color(int.parse(hexStr, radix: 16));
-    } catch (e) {
-      return const Color(0xFFC151FD); // Fallback
-    }
-  }
 
   Widget _buildEventBackground(List<ScheduledEvent> events) {
     if (events.isEmpty) return Container();
@@ -535,21 +518,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         bottom: 3,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: Stack(
-            children: [
-              if (events[0].posterUrl != null)
-                Image.network(
-                  events[0].posterUrl!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildFallbackFill(),
-                )
-              else
-                _buildFallbackFill(),
-              Container(color: Colors.black.withValues(alpha: 0.3)),
-            ],
+          child: Opacity(
+            opacity: events[0].isPast ? 0.5 : 1.0,
+            child: Stack(
+              children: [
+                if (events[0].posterUrl != null)
+                  Image.network(
+                    events[0].posterUrl!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildFallbackFill(),
+                  )
+                else
+                  _buildFallbackFill(),
+                Container(color: Colors.black.withValues(alpha: 0.3)),
+              ],
+            ),
           ),
         ),
       );
@@ -568,7 +554,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 angle: -10 * math.pi / 180,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5),
-                  child: _buildMiniPoster(events[1]),
+                  child: Opacity(
+                    opacity: events[1].isPast ? 0.5 : 1.0,
+                    child: _buildMiniPoster(events[1]),
+                  ),
                 ),
               ),
             ),
@@ -582,7 +571,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 angle: 10 * math.pi / 180,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5),
-                  child: _buildMiniPoster(events[0]),
+                  child: Opacity(
+                    opacity: events[0].isPast ? 0.5 : 1.0,
+                    child: _buildMiniPoster(events[0]),
+                  ),
                 ),
               ),
             ),

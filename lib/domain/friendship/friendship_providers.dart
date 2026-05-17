@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
 import 'friendship_models.dart';
@@ -31,7 +32,7 @@ final recommendedFriendsProvider = FutureProvider<List<Map<String, dynamic>>>((r
     final data = result.data as List<dynamic>;
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   } catch (e) {
-    print('Error fetching recommendations: $e');
+    debugPrint('Error fetching recommendations: $e');
     return [];
   }
 });
@@ -121,8 +122,85 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
 
     return '';
   } catch (e) {
-    print('Error calculating affinity: $e');
+    debugPrint('Error calculating affinity: $e');
     return '';
   }
 });
+
+/// Stream provider for incoming pending friend requests
+final incomingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+  if (currentUid == null) return Stream.value([]);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'pending')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .where((data) => data['initiated_by'] != currentUid)
+            .toList();
+      });
+});
+
+/// Stream provider for the count of incoming pending friend requests
+final incomingRequestsCountProvider = StreamProvider<int>((ref) {
+  final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+  if (currentUid == null) return Stream.value(0);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'pending')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .where((data) => data['initiated_by'] != currentUid)
+            .length;
+      });
+});
+
+/// Stream provider for outgoing pending friend requests
+final outgoingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+  if (currentUid == null) return Stream.value([]);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'pending')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .where((data) => data['initiated_by'] == currentUid)
+            .toList();
+      });
+});
+
+/// Stream provider for the count of outgoing pending friend requests
+final outgoingRequestsCountProvider = StreamProvider<int>((ref) {
+  final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+  if (currentUid == null) return Stream.value(0);
+
+  return FirebaseFirestore.instance
+      .collection('users')
+      .doc(currentUid)
+      .collection('connections')
+      .where('status', isEqualTo: 'pending')
+      .snapshots()
+      .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => {'uid': doc.id, ...doc.data()})
+            .where((data) => data['initiated_by'] == currentUid)
+            .length;
+      });
+});
+
 

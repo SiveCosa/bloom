@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../../../data/firebase_provider.dart';
 import 'dart:math' as math;
 
@@ -125,7 +124,7 @@ class StackedPosters extends ConsumerWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isFront ? 0.4 : 0.2),
+                color: Colors.black.withValues(alpha: isFront ? 0.4 : 0.2),
                 blurRadius: isFront ? 12 : 6,
                 spreadRadius: isFront ? 1 : 0,
                 offset: const Offset(0, 2),
@@ -140,7 +139,7 @@ class StackedPosters extends ConsumerWidget {
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     child: const Center(
                       child: SizedBox(
                         width: 20,
@@ -154,7 +153,7 @@ class StackedPosters extends ConsumerWidget {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   child: const Icon(Icons.broken_image, color: Colors.white10),
                 ),
               ),

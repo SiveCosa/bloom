@@ -35,6 +35,9 @@ import '../../ui/create_event/event_preview_screen.dart';
 import '../../ui/event/event_invitation_screen.dart';
 import '../../ui/messages/messages_screen.dart';
 import '../../ui/notifications/notifications_screen.dart';
+import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
+import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
+import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -264,6 +267,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
+        routes: [
+          GoRoute(
+            path: 'friend-requests',
+            builder: (context, state) => const FriendRequestsScreen(),
+          ),
+          GoRoute(
+            path: 'event-invitations',
+            builder: (context, state) => const EventInvitationsScreen(),
+          ),
+          GoRoute(
+            path: 'pending-requests',
+            builder: (context, state) => const PendingRequestsScreen(),
+          ),
+        ],
       ),
     ],
   );
