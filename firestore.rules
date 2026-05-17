@@ -13,12 +13,51 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Users: Users can only read and write their own profile during setup
+    // Users collection
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
       allow create: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.keys().hasAll(['email', 'username', 'institution']);
+      
+      // Connections sub-collection
+      match /connections/{targetUid} {
+        allow read: if request.auth != null && (request.auth.uid == userId || request.auth.uid == targetUid);
+        
+        allow create: if request.auth != null && (
+          // Owner can create
+          request.auth.uid == userId 
+          || 
+          // Peer can create a pending request initiated by themselves
+          (request.auth.uid == targetUid && 
+           request.resource.data.status == 'pending' && 
+           request.resource.data.initiated_by == request.auth.uid)
+        );
+        
+        allow update: if request.auth != null && (
+          // Owner can update
+          request.auth.uid == userId
+          ||
+          // Peer can update status to 'connected' only if the owner was the initiator
+          (request.auth.uid == targetUid && 
+           request.resource.data.status == 'connected' && 
+           resource.data.status == 'pending' &&
+           resource.data.initiated_by == userId &&
+           request.resource.data.initiated_by == resource.data.initiated_by)
+        );
+
+        allow delete: if request.auth != null && (
+          // Either party can delete (cancel request, unfriend, decline)
+          request.auth.uid == userId || request.auth.uid == targetUid
+        );
+      }
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
     // Deny everything else

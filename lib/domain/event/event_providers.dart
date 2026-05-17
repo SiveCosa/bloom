@@ -23,3 +23,6 @@ final userEventRsvpProvider = StreamProvider.family<String?, String>((ref, event
 final eventGuestsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, eventId) {
   return ref.watch(eventRepositoryProvider).getEventGuestsStream(eventId);
 });
+final publicHostedEventsProvider = StreamProvider.family<List<Event>, String>((ref, userId) {
+  return ref.watch(eventRepositoryProvider).getHostedEventsStream(userId);
+});

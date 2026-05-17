@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../domain/calendar/scheduled_event.dart';
 
@@ -81,7 +82,7 @@ class ScheduledEventCard extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () {
-                            debugPrint('Navigate to host profile: ${event.hostId}');
+                            context.push('/profile/${event.hostId}');
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: CircleAvatar(

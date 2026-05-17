@@ -14,6 +14,8 @@ import '../../domain/auth/auth_providers.dart';
 import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
+import '../../domain/friendship/friendship_providers.dart';
+import './widgets/recommended_friend_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -426,9 +428,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(
-                              height: 20,
-                            ), // Extra spacing at the bottom for comfortable scrolling
+                            const SizedBox(height: 30),
+                            _buildRecommendedFriendsSection(),
+                            const SizedBox(height: 40),
                           ],
                         ),
                       ),
@@ -734,6 +736,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildRecommendedFriendsSection() {
+    final recommendedAsync = ref.watch(recommendedFriendsProvider);
+    final dismissed = ref.watch(dismissedRecommendationsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recommended Friends',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        recommendedAsync.when(
+          data: (users) {
+            final filteredUsers = users.where((u) {
+              final uid = u['uid'] ?? u['id'] ?? '';
+              return !dismissed.contains(uid);
+            }).toList();
+
+            if (filteredUsers.isEmpty) return const SizedBox.shrink();
+            
+            return SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: filteredUsers.length > 10 ? 10 : filteredUsers.length,
+                clipBehavior: Clip.none,
+                itemBuilder: (context, index) {
+                  final targetUser = filteredUsers[index];
+                  final uid = targetUser['uid'] ?? targetUser['id'] ?? '';
+                  return RecommendedFriendCard(
+                    key: ValueKey<String>(uid),
+                    user: targetUser,
+                    onDismiss: () {
+                      ref.read(dismissedRecommendationsProvider.notifier).dismiss(uid);
+                    },
+                  );
+                },
+              ),
+            );
+          },
+          loading: () => const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (err, stack) => const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 

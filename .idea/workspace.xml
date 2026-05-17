@@ -5,15 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5ecb5b63-7e42-4e42-bad4-7d514c8b2656" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_Packages.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Flutter_Plugins.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/functions/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/functions/index.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/core/routing/app_router.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/core/routing/app_router.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/ui/create_event/create_event_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/create_event/create_event_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/ui/create_event/widgets/aurora_background.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/create_event/widgets/aurora_background.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/ui/home/home_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/home/home_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/ui/shared/widgets/bloom_button.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/shared/widgets/bloom_button.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/domain/event/event_providers.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/domain/event/event_providers.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/ui/profile/profile_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/profile/profile_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/ui/widgets/scheduled_event_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/ui/widgets/scheduled_event_card.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -67,6 +63,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "com.google.services.firebase.aqiPopupShown": "true",
+    "dart.analysis.tool.window.visible": "false",
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "io.flutter.project.isFirstOpen": "true",

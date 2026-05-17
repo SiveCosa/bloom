@@ -29,6 +29,7 @@ import '../../ui/profile/sub_screens/events_joined_screen.dart';
 import '../../ui/profile/sub_screens/interested_events_screen.dart';
 import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
 import '../../ui/profile/sub_screens/edit_profile_screen.dart';
+import '../../ui/profile/public_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
 import '../../ui/event/event_invitation_screen.dart';
@@ -189,6 +190,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/preferences',
         builder: (context, state) => const PreferencesEditorScreen(),
+      ),
+      GoRoute(
+        path: '/profile/:userId',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return PublicProfileScreen(userId: userId);
+        },
+        routes: [
+          GoRoute(
+            path: 'hosted',
+            builder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return EventsHostedScreen(targetUserId: userId, targetUsername: username);
+            },
+          ),
+          GoRoute(
+            path: 'joined',
+            builder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return EventsJoinedScreen(targetUserId: userId, targetUsername: username);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/create-event',

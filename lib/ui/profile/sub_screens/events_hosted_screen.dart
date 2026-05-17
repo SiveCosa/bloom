@@ -7,11 +7,19 @@ import '../../shared/widgets/hosted_event_card.dart';
 import 'dart:ui' as ui;
 
 class EventsHostedScreen extends ConsumerWidget {
-  const EventsHostedScreen({super.key});
+  final String? targetUserId;
+  final String? targetUsername;
+
+  const EventsHostedScreen({super.key, this.targetUserId, this.targetUsername});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(hostedEventsProvider);
+    final isPublic = targetUserId != null;
+    final eventsAsync = isPublic 
+        ? ref.watch(publicHostedEventsProvider(targetUserId!)) 
+        : ref.watch(hostedEventsProvider);
+    
+    final titleText = isPublic ? '${targetUsername ?? "User"} hosted' : 'Events Hosted';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -53,9 +61,9 @@ class EventsHostedScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Events Hosted',
-                        style: TextStyle(
+                      Text(
+                        titleText,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,

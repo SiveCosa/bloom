@@ -686,3 +686,133 @@ exports.cleanupPastEvents = onSchedule(
     console.log(`Cleanup complete: Archived ${count} past events.`);
   }
 );
+
+// 12. Friend Recommendations Engine
+exports.getFriendRecommendations = onCall({ region: "africa-south1" }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be signed in to get recommendations.");
+  }
+
+  const currentUserId = request.auth.uid;
+  const recommendations = [];
+  const recommendedUids = new Set([currentUserId]); // Exclude self
+  const limit = 10;
+
+  try {
+    // Helper to add user if not already added
+    const addUser = async (uid, contextString) => {
+      if (recommendedUids.has(uid) || recommendations.length >= limit) return false;
+
+      const userSnap = await db.collection("users").doc(uid).get();
+      if (!userSnap.exists) return false;
+
+      const data = userSnap.data();
+      recommendations.push({
+        uid: uid,
+        username: data.username || "Unknown",
+        profile_image_url: data.profile_image_url || data.avatar_url || "",
+        known_from: contextString,
+      });
+      recommendedUids.add(uid);
+      return true;
+    };
+
+    // Pre-fetch current user's active connections to exclude them from discovery
+    const connectionsSnap = await db.collection("users").doc(currentUserId).collection("connections").get();
+    connectionsSnap.docs.forEach(doc => {
+      const data = doc.data();
+      // Exclude if already connected or if current user initiated the request
+      if (data.status === 'connected' || data.initiated_by === currentUserId) {
+        recommendedUids.add(doc.id);
+      }
+    });
+
+    // --- STEP 1: Pending Requests ---
+    const pendingSnap = await db.collection("users").doc(currentUserId).collection("connections")
+      .where("status", "==", "pending")
+      .get();
+
+    for (const doc of pendingSnap.docs) {
+      if (recommendations.length >= limit) break;
+      await addUser(doc.id, "Requested to be your friend");
+    }
+
+    // --- STEP 2: Shared Past Events (3-Event Cap) ---
+    if (recommendations.length < limit) {
+      const now = admin.firestore.Timestamp.now();
+      const scheduleSnap = await db.collection("users").doc(currentUserId).collection("schedule")
+        .where("start_time", "<", now)
+        .orderBy("start_time", "desc")
+        .limit(3)
+        .get();
+
+      for (const eventDoc of scheduleSnap.docs) {
+        if (recommendations.length >= limit) break;
+        const eventId = eventDoc.id;
+        const eventTitle = eventDoc.data().title || "an event";
+
+        // Query guests for this event
+        const guestsSnap = await db.collection("events").doc(eventId).collection("guests")
+          .where("status", "==", "going")
+          .get();
+
+        for (const guestDoc of guestsSnap.docs) {
+          if (recommendations.length >= limit) break;
+          await addUser(guestDoc.id, `Was at ${eventTitle}`);
+        }
+      }
+    }
+
+    // --- STEP 3: Campus Fallback ---
+    if (recommendations.length < limit) {
+      const currentUserSnap = await db.collection("users").doc(currentUserId).get();
+      if (currentUserSnap.exists) {
+        const campusId = currentUserSnap.data().campus_id || currentUserSnap.data().campus; // Check both just in case
+        if (campusId) {
+          // Assuming campus_id or campus string maps to the context name
+          const campusName = currentUserSnap.data().campus || campusId;
+          const campusSnap = await db.collection("users")
+            .where("campus_id", "==", campusId) // Try searching by campus_id first
+            .limit(limit * 2)
+            .get();
+
+          if (!campusSnap.empty) {
+            for (const userDoc of campusSnap.docs) {
+              if (recommendations.length >= limit) break;
+              await addUser(userDoc.id, campusName);
+            }
+          } else {
+             // Fallback to query by 'campus'
+             const campusStrSnap = await db.collection("users")
+               .where("campus", "==", campusName)
+               .limit(limit * 2)
+               .get();
+             for (const userDoc of campusStrSnap.docs) {
+               if (recommendations.length >= limit) break;
+               await addUser(userDoc.id, campusName);
+             }
+          }
+        }
+      }
+    }
+
+    // --- STEP 4: Testing Fallback ---
+    // For testing purposes: display all new users up to 10 if we still haven't hit the limit
+    if (recommendations.length < limit) {
+      const anyUsersSnap = await db.collection("users")
+        .orderBy("created_at", "desc")
+        .limit(limit * 3)
+        .get();
+        
+      for (const userDoc of anyUsersSnap.docs) {
+        if (recommendations.length >= limit) break;
+        await addUser(userDoc.id, "New on Bloom (Testing)");
+      }
+    }
+
+    return recommendations;
+  } catch (error) {
+    console.error("Error getting friend recommendations:", error);
+    throw new HttpsError("internal", "Failed to get recommendations.");
+  }
+});
