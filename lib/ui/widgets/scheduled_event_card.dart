@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/calendar/scheduled_event.dart';
+import '../../domain/auth/auth_providers.dart';
 
-class ScheduledEventCard extends StatelessWidget {
+class ScheduledEventCard extends ConsumerWidget {
   final ScheduledEvent event;
   final bool isHost;
   final VoidCallback? onTap;
@@ -16,7 +19,18 @@ class ScheduledEventCard extends StatelessWidget {
 
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch real-time host profile info
+    final hostProfileAsync = ref.watch(userProfileStreamProvider(event.hostId));
+
+    final hostImageUrl = hostProfileAsync.when(
+      data: (profile) => profile?['profile_image_url']?.toString() ??
+          profile?['avatar_url']?.toString() ??
+          event.hostImageUrl,
+      loading: () => event.hostImageUrl,
+      error: (err, st) => event.hostImageUrl,
+    );
+
     return Opacity(
       opacity: event.isPast ? 0.5 : 1.0,
       child: Container(
@@ -81,16 +95,16 @@ class ScheduledEventCard extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () {
-                            debugPrint('Navigate to host profile: ${event.hostId}');
+                            context.push('/profile/${event.hostId}');
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: CircleAvatar(
                             radius: 12,
-                            backgroundImage: event.hostImageUrl != null
-                                ? NetworkImage(event.hostImageUrl!)
+                            backgroundImage: hostImageUrl != null
+                                ? NetworkImage(hostImageUrl)
                                 : null,
                             backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            child: event.hostImageUrl == null
+                            child: hostImageUrl == null
                                 ? const Icon(Icons.person,
                                     size: 14, color: Colors.white70)
                                 : null,

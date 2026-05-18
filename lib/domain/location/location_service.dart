@@ -27,7 +27,9 @@ class LocationService {
       }
 
       Position position = await Geolocator.getCurrentPosition(
-        timeLimit: const Duration(seconds: 10),
+        locationSettings: const LocationSettings(
+          timeLimit: Duration(seconds: 10),
+        ),
       );
 
       final user = _auth.currentUser;

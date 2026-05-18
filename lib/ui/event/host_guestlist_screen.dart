@@ -16,7 +16,7 @@ class HostGuestlistScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  _HostGuestlistScreenState createState() => _HostGuestlistScreenState();
+  ConsumerState<HostGuestlistScreen> createState() => _HostGuestlistScreenState();
 }
 
 class _HostGuestlistScreenState extends ConsumerState<HostGuestlistScreen> {

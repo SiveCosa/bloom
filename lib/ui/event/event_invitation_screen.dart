@@ -27,7 +27,7 @@ class EventInvitationScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  _EventInvitationScreenState createState() => _EventInvitationScreenState();
+  ConsumerState<EventInvitationScreen> createState() => _EventInvitationScreenState();
 }
 
 class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
@@ -320,7 +320,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                   const SizedBox(height: 16),
                                                   Consumer(
                                                     builder: (context, ref, child) {
-                                                      final hostProfile = ref.watch(userProfileFutureProvider(event.metadata.hostId)).value;
+                                                      final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
                                                       return HostInviteSection(
                                                         userProfile: hostProfile, 
                                                         onAddCoHost: () {},
@@ -644,56 +644,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       }
     }
     return '';
-  }
-
-  Widget _buildStatusRow(Event event) {
-    final status = event.computedStatus;
-    final color = Color(event.statusColorValue);
-    
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (status == EventStatus.active && event.timing.isOngoing)
-          _buildLiveIndicator(color)
-        else
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-        const SizedBox(width: 8),
-        Text(
-          event.statusLabel,
-          style: TextStyle(
-            color: color,
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLiveIndicator(Color color) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDateRow(Event event) {

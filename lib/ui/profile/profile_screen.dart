@@ -14,6 +14,9 @@ import '../../domain/auth/auth_providers.dart';
 import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
+import '../../domain/friendship/friendship_providers.dart';
+import '../../domain/navigation/navigation_providers.dart';
+import './widgets/recommended_friend_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -162,8 +165,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Invalidate recommendedFriendsProvider when switching away from the profile tab
+    ref.listen<int>(mainShellIndexProvider, (prev, next) {
+      if (prev == 3 && next != 3) {
+        ref.invalidate(recommendedFriendsProvider);
+      }
+    });
+
     final profileAsync = ref.watch(currentUserProfileProvider);
-    final screenHeight = MediaQuery.of(context).size.height;
+    final friendsAsync = ref.watch(friendsMadeProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -193,7 +203,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final imageUrl = doc?['profile_image_url']?.toString();
 
               final counts = doc?['counts'] as Map<String, dynamic>?;
-              final friendsCount = (counts?['friends'] ?? 0).toString();
+              final friendsCount = (friendsAsync.value?.length ?? counts?['friends'] ?? 0).toString();
               final hostedCount = (counts?['hosted'] ?? 0).toString();
               final joinedCount = (counts?['joined'] ?? 0).toString();
 
@@ -233,8 +243,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   assetPath:
                                       'assets/icons/profile/interested_icon.svg',
                                   icon: Icons.star_outline,
-                                  onTap: () =>
-                                      context.push('/profile/interested'),
+                                  onTap: () {
+                                    ref.invalidate(recommendedFriendsProvider);
+                                    context.push('/profile/interested');
+                                  },
                                 ),
                                 const SizedBox(
                                   width: 10,
@@ -327,7 +339,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Friends made',
                                     friendsCount,
-                                    () => context.push('/profile/friends'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/friends');
+                                    },
                                   ),
                                 ),
                                 _buildDivider(),
@@ -335,7 +350,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Hosted events',
                                     hostedCount,
-                                    () => context.push('/profile/hosted'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/hosted');
+                                    },
                                   ),
                                 ),
                                 _buildDivider(),
@@ -343,7 +361,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   child: _buildStatItem(
                                     'Joined events',
                                     joinedCount,
-                                    () => context.push('/profile/joined'),
+                                    () {
+                                      ref.invalidate(recommendedFriendsProvider);
+                                      context.push('/profile/joined');
+                                    },
                                   ),
                                 ),
                               ],
@@ -409,7 +430,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       child: _buildActionButton(
                                         // Edit Profile Button
                                         'Edit profile',
-                                        () => context.push('/profile/edit'),
+                                        () {
+                                          ref.invalidate(recommendedFriendsProvider);
+                                          context.push('/profile/edit');
+                                        },
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -426,9 +450,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(
-                              height: 20,
-                            ), // Extra spacing at the bottom for comfortable scrolling
+                            const SizedBox(height: 30),
+                            _buildRecommendedFriendsSection(),
+                            const SizedBox(height: 40),
                           ],
                         ),
                       ),
@@ -734,6 +758,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildRecommendedFriendsSection() {
+    final recommendedAsync = ref.watch(recommendedFriendsProvider);
+    final dismissed = ref.watch(dismissedRecommendationsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recommended Friends',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: Colors.white.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        recommendedAsync.when(
+          data: (users) {
+            final filteredUsers = users.where((u) {
+              final uid = u['uid'] ?? u['id'] ?? '';
+              return !dismissed.contains(uid);
+            }).toList();
+
+            if (filteredUsers.isEmpty) return const SizedBox.shrink();
+            
+            return SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: filteredUsers.length > 10 ? 10 : filteredUsers.length,
+                clipBehavior: Clip.none,
+                itemBuilder: (context, index) {
+                  final targetUser = filteredUsers[index];
+                  final uid = targetUser['uid'] ?? targetUser['id'] ?? '';
+                  return RecommendedFriendCard(
+                    key: ValueKey<String>(uid),
+                    user: targetUser,
+                    onDismiss: () {
+                      ref.read(dismissedRecommendationsProvider.notifier).dismiss(uid);
+                    },
+                  );
+                },
+              ),
+            );
+          },
+          loading: () => const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (err, stack) => const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 

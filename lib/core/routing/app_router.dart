@@ -29,11 +29,15 @@ import '../../ui/profile/sub_screens/events_joined_screen.dart';
 import '../../ui/profile/sub_screens/interested_events_screen.dart';
 import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
 import '../../ui/profile/sub_screens/edit_profile_screen.dart';
+import '../../ui/profile/public_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
 import '../../ui/event/event_invitation_screen.dart';
 import '../../ui/messages/messages_screen.dart';
 import '../../ui/notifications/notifications_screen.dart';
+import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
+import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
+import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -168,15 +172,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (context, state) => const MainShell()),
       GoRoute(
         path: '/profile/friends',
-        builder: (context, state) => const FriendsMadeScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const FriendsMadeScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/hosted',
-        builder: (context, state) => const EventsHostedScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const EventsHostedScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/joined',
-        builder: (context, state) => const EventsJoinedScreen(),
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const EventsJoinedScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/interested',
@@ -189,6 +202,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/preferences',
         builder: (context, state) => const PreferencesEditorScreen(),
+      ),
+      GoRoute(
+        path: '/profile/:userId',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return PublicProfileScreen(userId: userId);
+        },
+        routes: [
+          GoRoute(
+            path: 'hosted',
+            pageBuilder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: EventsHostedScreen(targetUserId: userId, targetUsername: username),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'joined',
+            pageBuilder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: EventsJoinedScreen(targetUserId: userId, targetUsername: username),
+              );
+            },
+          ),
+          GoRoute(
+            path: 'friends',
+            pageBuilder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              final username = state.extra as String?;
+              return NoTransitionPage(
+                key: state.pageKey,
+                child: FriendsMadeScreen(targetUserId: userId, targetUsername: username),
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/create-event',
@@ -238,6 +293,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
+        routes: [
+          GoRoute(
+            path: 'friend-requests',
+            builder: (context, state) => const FriendRequestsScreen(),
+          ),
+          GoRoute(
+            path: 'event-invitations',
+            builder: (context, state) => const EventInvitationsScreen(),
+          ),
+          GoRoute(
+            path: 'pending-requests',
+            builder: (context, state) => const PendingRequestsScreen(),
+          ),
+        ],
       ),
     ],
   );
