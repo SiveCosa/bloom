@@ -107,6 +107,19 @@ class EventRepository {
         .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
   }
 
+  Stream<List<Map<String, dynamic>>> getUpcomingScheduleStream(String userId) {
+    final now = DateTime.now();
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('schedule')
+        .where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
+        .orderBy('startTime', descending: false)
+        .limit(10)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
+  }
+
   Stream<Event?> getEventStream(String id) {
     return _firestore.collection('events').doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;

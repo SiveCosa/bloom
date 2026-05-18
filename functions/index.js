@@ -473,6 +473,21 @@ exports.syncUserSchedule = onDocumentWritten(
     }
 
     const eventData = eventSnap.data();
+    const hostId = eventData.metadata.hostId;
+
+    let hostName = "Host";
+    let hostImageUrl = "";
+
+    try {
+      const hostSnap = await db.collection("users").doc(hostId).get();
+      if (hostSnap.exists) {
+        const hostData = hostSnap.data();
+        hostName = hostData.name || hostData.username || "Host";
+        hostImageUrl = hostData.profile_image_url || hostData.avatar_url || "";
+      }
+    } catch (err) {
+      console.error(`Error syncing host info for event schedule: ${err}`);
+    }
     
     // Denormalize as per GitHub task requirements
     // We use both snake_case (requested) and camelCase (for model compatibility)
@@ -488,10 +503,12 @@ exports.syncUserSchedule = onDocumentWritten(
       posterUrl: eventData.visuals.posterUrl || "",
       subtitle_info: eventData.location?.displayName || eventData.title,
       locationName: eventData.location?.displayName || "",
-      host_id: eventData.metadata.hostId,
-      hostId: eventData.metadata.hostId,
-      host_name: "Host", // Placeholder
-      hostName: "Host",
+      host_id: hostId,
+      hostId: hostId,
+      host_name: hostName,
+      hostName: hostName,
+      host_image_url: hostImageUrl,
+      hostImageUrl: hostImageUrl,
       aurora_colors: eventData.visuals.auroraColors || [],
       auroraColors: eventData.visuals.auroraColors || [],
       updated_at: admin.firestore.FieldValue.serverTimestamp(),

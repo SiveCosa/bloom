@@ -43,3 +43,13 @@ final publicScheduleStreamProvider = StreamProvider.family<List<ScheduledEvent>,
     return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
   });
 });
+
+final upcomingScheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  if (user == null) return Stream.value([]);
+
+  final repository = ref.watch(eventRepositoryProvider);
+  return repository.getUpcomingScheduleStream(user.uid).map((list) {
+    return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
+  });
+});
