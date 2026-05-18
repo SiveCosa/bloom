@@ -863,9 +863,13 @@ exports.getForYouFeed = onCall(
     const invitesSnap = await db.collection("users").doc(currentUserId).collection("invites").get();
     invitesSnap.docs.forEach(doc => currentUserInvites.add(doc.id));
 
-    // 2. Fetch Active Events
-    const activeEventsSnap = await db.collection("events").where("metadata.status", "==", "active").get();
+    // 2. Fetch Active Events (with 300 records scaling cap)
+    const activeEventsSnap = await db.collection("events")
+      .where("metadata.status", "==", "active")
+      .limit(300)
+      .get();
     
+    const now = new Date();
     // Cache for host friends to avoid duplicate queries
     const hostFriendsCache = new Map();
     // Cache for host documents
@@ -878,16 +882,17 @@ exports.getForYouFeed = onCall(
       const eventData = eventDoc.data();
       const eventId = eventDoc.id;
 
-      // Demographic Isolation
-      const genderRestriction = eventData.audience?.genderRestriction || eventData.audience?.gender_restriction || eventData.constraints?.genderRestriction || eventData.constraints?.gender_restriction || eventData.genderRestriction || eventData.gender_restriction;
-
-      if (genderRestriction === "male" || genderRestriction === "female") {
-        if (!userGender || userGender.toLowerCase() !== genderRestriction.toLowerCase()) {
-          continue; // Failed demographic checkpoint
-        }
+      // --- Time-Expiry Check ---
+      const startDate = eventData.timing?.startDate ? (typeof eventData.timing.startDate.toDate === 'function' ? eventData.timing.startDate.toDate() : new Date(eventData.timing.startDate)) : null;
+      const endDate = eventData.timing?.endDate ? (typeof eventData.timing.endDate.toDate === 'function' ? eventData.timing.endDate.toDate() : new Date(eventData.timing.endDate)) : null;
+      
+      // Fallback: If endDate is not specified, default to 24 hours after startDate.
+      const effectiveEndDate = endDate || (startDate ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000) : null);
+      if (effectiveEndDate && effectiveEndDate < now) {
+        continue; // Skip past/ended events
       }
 
-      // Privacy & Social Visibility
+      // --- Privacy & Social Visibility ---
       const visibility = eventData.audience?.visibility || "public";
       const hostId = eventData.metadata?.hostId;
 
@@ -900,11 +905,11 @@ exports.getForYouFeed = onCall(
         if (!currentUserInvites.has(eventId) && !explicitlyInvited) {
           continue; // Failed private checkpoint
         }
-      } else if (visibility === "friends_only") {
+      } else if (visibility === "friendsOnly" || visibility === "friends_only") {
         if (!currentUserFriends.has(hostId)) {
-          continue; // Failed friends_only checkpoint
+          continue; // Failed friendsOnly checkpoint
         }
-      } else if (visibility === "friends_of_friends") {
+      } else if (visibility === "friendsOfFriends" || visibility === "friends_of_friends") {
         if (!currentUserFriends.has(hostId)) {
           // Check if there is a mutual friend
           let hostFriends = hostFriendsCache.get(hostId);
@@ -924,8 +929,16 @@ exports.getForYouFeed = onCall(
           }
 
           if (!hasMutual) {
-            continue; // Failed friends_of_friends checkpoint
+            continue; // Failed friendsOfFriends checkpoint
           }
+        }
+      } else if (visibility === "maleOnly" || visibility === "male_only") {
+        if (userGender !== "male") {
+          continue; // Failed maleOnly checkpoint
+        }
+      } else if (visibility === "femaleOnly" || visibility === "female_only") {
+        if (userGender !== "female") {
+          continue; // Failed femaleOnly checkpoint
         }
       }
 
