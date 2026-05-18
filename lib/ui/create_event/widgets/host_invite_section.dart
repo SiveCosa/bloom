@@ -25,6 +25,7 @@ class HostInviteSection extends StatelessWidget {
       return _HostedByCardPreview(
         userProfile: userProfile, 
         coHosts: coHosts,
+        onAddCoHost: onAddCoHost,
         isFormMode: true,
       );
     }
@@ -33,6 +34,7 @@ class HostInviteSection extends StatelessWidget {
       return _HostedByCardPreview(
         userProfile: userProfile, 
         coHosts: coHosts,
+        onAddCoHost: onAddCoHost,
         isFormMode: false,
       );
     }
@@ -45,6 +47,7 @@ class HostInviteSection extends StatelessWidget {
         _HostedByCardPreview(
           userProfile: userProfile, 
           coHosts: coHosts,
+          onAddCoHost: onAddCoHost,
           isFormMode: false,
         ),
       ],
@@ -55,11 +58,13 @@ class HostInviteSection extends StatelessWidget {
 class _HostedByCardPreview extends StatelessWidget {
   final Map<String, dynamic>? userProfile;
   final List<Map<String, dynamic>> coHosts;
+  final VoidCallback onAddCoHost;
   final bool isFormMode;
 
   const _HostedByCardPreview({
     this.userProfile, 
     this.coHosts = const [],
+    required this.onAddCoHost,
     this.isFormMode = false,
   });
 
@@ -88,6 +93,38 @@ class _HostedByCardPreview extends StatelessWidget {
                 ),
               ),
             ),
+            if (isFormMode) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: onAddCoHost,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                        child: const Icon(Icons.add, color: Colors.white, size: 28),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Co-Host',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
