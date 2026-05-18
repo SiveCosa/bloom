@@ -15,7 +15,6 @@ import 'widgets/event_section_card.dart';
 import 'widgets/bloom_toggle.dart';
 import 'widgets/event_description_input.dart';
 import 'widgets/visibility_selection_modal.dart';
-import 'widgets/audience_modal.dart';
 import 'widgets/plus_ones_selection_modal.dart';
 import 'widgets/tag_selection_modal.dart';
 import '../../domain/event/event_visibility.dart';
@@ -26,6 +25,7 @@ import 'widgets/rsvp_deadline_modal.dart';
 import 'widgets/rsvp_option_preview.dart';
 import 'widgets/aurora_background.dart';
 import 'widgets/host_invite_section.dart';
+import 'widgets/co_host_selection_modal.dart';
 import '../../domain/event/event_location.dart';
 import '../../domain/navigation/navigation_providers.dart';
 
@@ -69,14 +69,14 @@ class CreateEventScreen extends ConsumerWidget {
     );
   }
 
-  void _showSkeletonModal(BuildContext context, String title) {
+  void _showCoHostSelection(BuildContext context) {
     FocusManager.instance.primaryFocus?.unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AudienceModal(title: title),
+      builder: (context) => const CoHostSelectionModal(),
     );
   }
 
@@ -394,7 +394,8 @@ class CreateEventScreen extends ConsumerWidget {
                             showInviteFriends: false,
                             isFormMode: true,
                             userProfile: userProfile,
-                            onAddCoHost: () => _showSkeletonModal(context, 'Add Cohost'),
+                            coHosts: state.coHosts,
+                            onAddCoHost: () => _showCoHostSelection(context),
                           ),
 
                           const SizedBox(height: 10),

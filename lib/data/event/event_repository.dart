@@ -75,7 +75,66 @@ class EventRepository {
   }
 
   Future<void> updateEvent(Event event) async {
-    await _firestore.collection('events').doc(event.id).update(event.toMap());
+    final batch = _firestore.batch();
+    batch.set(_firestore.collection('events').doc(event.id), event.toMap(), SetOptions(merge: true));
+    
+    final scheduleRef = _firestore
+        .collection('users')
+        .doc(event.metadata.hostId)
+        .collection('schedule')
+        .doc(event.id);
+        
+    final scheduleData = <String, dynamic>{
+      'title': event.title,
+      if (event.timing.startDate != null) 'startTime': Timestamp.fromDate(event.timing.startDate!),
+      if (event.timing.startDate != null) 'start_time': Timestamp.fromDate(event.timing.startDate!),
+      if (event.timing.endDate != null) 'endTime': Timestamp.fromDate(event.timing.endDate!),
+      if (event.timing.endDate != null) 'end_time': Timestamp.fromDate(event.timing.endDate!),
+      if (event.visuals.posterUrl != null) 'posterUrl': event.visuals.posterUrl,
+      if (event.visuals.posterUrl != null) 'poster_url': event.visuals.posterUrl,
+      'auroraColors': event.visuals.auroraColors,
+      'aurora_colors': event.visuals.auroraColors,
+      if (event.location != null) 'locationName': event.location!.displayName,
+      if (event.location != null) 'location_name': event.location!.displayName,
+      if (event.location != null) 'subtitle_info': event.location!.displayName,
+    };
+    batch.set(scheduleRef, scheduleData, SetOptions(merge: true));
+    await batch.commit();
+  }
+
+  Future<void> deleteEvent(Event event) async {
+    // Delete the poster image from Firebase Storage if it has one
+    if (event.visuals.posterUrl != null && event.visuals.posterUrl!.isNotEmpty) {
+      try {
+        final ref = _storage.ref().child('posters').child(event.id).child('poster.webp');
+        await ref.delete();
+      } catch (e) {
+        // If file doesn't exist or deletion fails, log and continue
+        debugPrint('Failed to delete event poster from Storage: $e');
+      }
+    }
+
+    final batch = _firestore.batch();
+    
+    // Remove from main collection
+    batch.delete(_firestore.collection('events').doc(event.id));
+    
+    // Remove from host schedule
+    batch.delete(_firestore
+        .collection('users')
+        .doc(event.metadata.hostId)
+        .collection('schedule')
+        .doc(event.id));
+        
+    // Decrement hosted count for the user
+    final userRef = _firestore.collection('users').doc(event.metadata.hostId);
+    batch.set(userRef, {
+      'counts': {
+        'hosted': FieldValue.increment(-1),
+      }
+    }, SetOptions(merge: true));
+    
+    await batch.commit();
   }
 
   Future<Event?> getEvent(String id) async {
@@ -124,6 +183,12 @@ class EventRepository {
     return _firestore.collection('events').doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;
       return Event.fromMap(doc.data()!, doc.id);
+    });
+  }
+
+  Future<void> updateRSVPReminders(String eventId, List<String> reminders) async {
+    await _firestore.collection('events').doc(eventId).update({
+      'rsvpReminders': reminders,
     });
   }
 

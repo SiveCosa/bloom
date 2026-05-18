@@ -24,6 +24,7 @@ class Event {
   final EventLiveCounts liveCounts;
   final List<String> previewGuests;
   final EventMetadata metadata;
+  final List<String> coHostIds;
 
   const Event({
     required this.id,
@@ -39,6 +40,7 @@ class Event {
     required this.liveCounts,
     required this.previewGuests,
     required this.metadata,
+    this.coHostIds = const [],
   });
 
   Event copyWith({
@@ -55,6 +57,7 @@ class Event {
     List<EventExtra>? extras,
     List<String>? rsvpReminders,
     EventMetadata? metadata,
+    List<String>? coHostIds,
   }) {
     return Event(
       id: id ?? this.id,
@@ -70,6 +73,7 @@ class Event {
       extras: extras ?? this.extras,
       rsvpReminders: rsvpReminders ?? this.rsvpReminders,
       metadata: metadata ?? this.metadata,
+      coHostIds: coHostIds ?? this.coHostIds,
     );
   }
 
@@ -87,6 +91,7 @@ class Event {
       'extras': extras.map((e) => e.toMap()).toList(),
       'rsvpReminders': rsvpReminders,
       'metadata': metadata.toMap(),
+      'co_host_ids': coHostIds,
     };
   }
 
@@ -105,6 +110,7 @@ class Event {
       extras: (map['extras'] as List? ?? []).map((e) => EventExtra.fromMap(e)).toList(),
       rsvpReminders: List<String>.from(map['rsvpReminders'] ?? []),
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
+      coHostIds: List<String>.from(map['co_host_ids'] ?? []),
     );
   }
 

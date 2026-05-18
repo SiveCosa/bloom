@@ -156,22 +156,44 @@ class GuestListCard extends StatelessWidget {
       );
     }
     
+    final bool hasValidImage = url != null && url.isNotEmpty;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: const Color(0xFF1A1D24),
         border: Border.all(color: const Color(0xFF0B0E12), width: 2),
-        image: url != null && url.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(url),
-                fit: BoxFit.cover,
-              )
-            : null,
       ),
-      child: url == null || url.isEmpty
-          ? const Icon(Icons.person, color: Colors.white24, size: 20)
-          : null,
+      child: ClipOval(
+        child: hasValidImage
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFF1A1D24),
+                  child: Icon(Icons.person, color: Colors.white24, size: size * 0.45),
+                ),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    color: const Color(0xFF1A1D24),
+                    child: Center(
+                      child: SizedBox(
+                        width: size * 0.4,
+                        height: size * 0.4,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white30),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              )
+            : Icon(Icons.person, color: Colors.white24, size: size * 0.45),
+      ),
     );
   }
 
