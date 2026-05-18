@@ -430,7 +430,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final scheduleAsync = ref.watch(scheduleStreamProvider);
     final events = scheduleAsync.when(
-      data: (data) => data.where((e) => _isSameDay(e.startTime, day)).toList(),
+      data: (data) => data.where((e) => e.startTime != null && _isSameDay(e.startTime!, day)).toList(),
       loading: () => <ScheduledEvent>[],
       error: (err, stack) => <ScheduledEvent>[],
     );
@@ -682,7 +682,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     data: (events) {
                       final filteredEvents = events
                           .where(
-                            (e) => _isSameDay(e.startTime, selectedDate),
+                            (e) => e.startTime != null && _isSameDay(e.startTime!, selectedDate),
                           )
                           .toList();
                       if (filteredEvents.isEmpty) {
@@ -753,12 +753,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return scheduleAsync.when(
           data: (events) {
             final now = DateTime.now();
-            final upcoming = events.where((e) => e.startTime.isAfter(now) || _isSameDay(e.startTime, now)).toList();
-            final past = events.where((e) => e.startTime.isBefore(now) && !_isSameDay(e.startTime, now)).toList();
+            final upcoming = events.where((e) => e.startTime == null || e.startTime!.isAfter(now) || _isSameDay(e.startTime!, now)).toList();
+            final past = events.where((e) => e.startTime != null && e.startTime!.isBefore(now) && !_isSameDay(e.startTime!, now)).toList();
 
             // Task 1: Sorting
-            upcoming.sort((a, b) => a.startTime.compareTo(b.startTime));
-            past.sort((a, b) => b.startTime.compareTo(a.startTime));
+            upcoming.sort((a, b) {
+              if (a.startTime == null && b.startTime == null) return 0;
+              if (a.startTime == null) return -1;
+              if (b.startTime == null) return 1;
+              return a.startTime!.compareTo(b.startTime!);
+            });
+            past.sort((a, b) => b.startTime!.compareTo(a.startTime!));
 
             // Task 1: Grouping
             final upcomingGrouped = _groupEventsByDay(upcoming);
@@ -810,16 +815,26 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         );
   }
 
-  List<Widget> _buildEventList(Map<DateTime, List<ScheduledEvent>> groupedEvents, String? currentUserId, String type) {
+  List<Widget> _buildEventList(Map<DateTime?, List<ScheduledEvent>> groupedEvents, String? currentUserId, String type) {
     final List<Widget> slivers = [];
     final sortedDates = groupedEvents.keys.toList();
     
     // Dates are already sorted implicitly by the list sorting before grouping, 
     // but let's be explicit based on type
     if (type == "Upcoming") {
-      sortedDates.sort((a, b) => a.compareTo(b));
+      sortedDates.sort((a, b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+        return a.compareTo(b);
+      });
     } else {
-      sortedDates.sort((a, b) => b.compareTo(a));
+      sortedDates.sort((a, b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return 1;
+        if (b == null) return -1;
+        return b.compareTo(a);
+      });
     }
 
     for (var date in sortedDates) {
@@ -861,7 +876,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return slivers;
   }
 
-  Widget _buildGroupHeader(DateTime date) {
+  Widget _buildGroupHeader(DateTime? date) {
+    if (date == null) {
+      return const Text(
+        "Date TBD",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w600, // Semi-bold
+        ),
+      );
+    }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     
@@ -892,10 +917,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Map<DateTime, List<ScheduledEvent>> _groupEventsByDay(List<ScheduledEvent> events) {
-    final Map<DateTime, List<ScheduledEvent>> grouped = {};
+  Map<DateTime?, List<ScheduledEvent>> _groupEventsByDay(List<ScheduledEvent> events) {
+    final Map<DateTime?, List<ScheduledEvent>> grouped = {};
     for (var event in events) {
-      final date = DateTime(event.startTime.year, event.startTime.month, event.startTime.day);
+      final date = event.startTime != null 
+          ? DateTime(event.startTime!.year, event.startTime!.month, event.startTime!.day)
+          : null;
       if (grouped[date] == null) grouped[date] = [];
       grouped[date]!.add(event);
     }

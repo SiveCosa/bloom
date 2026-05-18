@@ -219,117 +219,129 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                           final profileAsync = ref.watch(userProfileStreamProvider(requesterUid));
 
                           return Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            height: 80,
                             decoration: const BoxDecoration(
                               color: Colors.transparent,
                             ),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                // Avatar image loading or error states handled cleanly
-                                profileAsync.when(
-                                  data: (profile) {
-                                    final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
-                                    return buildAvatarImage(source: avatarUrl, radius: 24);
-                                  },
-                                  loading: () => const CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Color(0xFF1A1D24),
-                                    child: SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => context.push('/profile/$requesterUid'),
+                              child: Row(
+                                children: [
+                                  // Avatar image loading or error states handled cleanly
+                                  profileAsync.when(
+                                    data: (profile) {
+                                      final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
+                                      return buildAvatarImage(source: avatarUrl, radius: 25);
+                                    },
+                                    loading: () => const CircleAvatar(
+                                      radius: 25,
+                                      backgroundColor: Color(0xFF1A1D24),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+                                        ),
                                       ),
                                     ),
+                                    error: (err, stack) => const CircleAvatar(
+                                      radius: 25,
+                                      backgroundColor: Color(0xFF1A1D24),
+                                      child: Icon(Icons.person, color: Colors.white24, size: 25),
+                                    ),
                                   ),
-                                  error: (err, stack) => const CircleAvatar(
-                                    radius: 24,
-                                    backgroundColor: Color(0xFF1A1D24),
-                                    child: Icon(Icons.person, color: Colors.white24, size: 24),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                // Username and timestamp
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      profileAsync.when(
-                                        data: (profile) => Text(
-                                          profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
+                                  const SizedBox(width: 12),
+                                  // Username and timestamp
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        profileAsync.when(
+                                          data: (profile) => Text(
+                                            profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        loading: () => const ContainerPlaceholder(width: 80, height: 14),
-                                        error: (err, stack) => const Text(
-                                          'User',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
+                                          loading: () => const ContainerPlaceholder(width: 80, height: 14),
+                                          error: (err, stack) => const Text(
+                                            'User',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      profileAsync.when(
-                                        data: (profile) {
-                                          final username = profile?['username'] as String?;
-                                          final elapsed = _getElapsedTime(requestedAt);
-                                          return Row(
-                                            children: [
-                                              if (username != null && username.isNotEmpty) ...[
-                                                Text(
-                                                  '@$username',
-                                                  style: TextStyle(
-                                                    color: Colors.white.withValues(alpha: 0.5),
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                                if (elapsed.isNotEmpty) ...[
-                                                  const SizedBox(width: 6),
+                                        const SizedBox(height: 4),
+                                        profileAsync.when(
+                                          data: (profile) {
+                                            final username = profile?['username'] as String?;
+                                            final elapsed = _getElapsedTime(requestedAt);
+                                            return Row(
+                                              children: [
+                                                if (username != null && username.isNotEmpty) ...[
                                                   Text(
-                                                    '•',
+                                                    '@$username',
                                                     style: TextStyle(
-                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      color: Colors.white.withValues(alpha: 0.5),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  if (elapsed.isNotEmpty) ...[
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      '•',
+                                                      style: TextStyle(
+                                                        color: Colors.white.withValues(alpha: 0.3),
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                  ],
+                                                ],
+                                                if (elapsed.isNotEmpty)
+                                                  Text(
+                                                    elapsed,
+                                                    style: TextStyle(
+                                                      color: Colors.white.withValues(alpha: 0.35),
                                                       fontSize: 12,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 6),
-                                                ],
                                               ],
-                                              if (elapsed.isNotEmpty)
-                                                Text(
-                                                  elapsed,
-                                                  style: TextStyle(
-                                                    color: Colors.white.withValues(alpha: 0.35),
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                            ],
-                                          );
-                                        },
-                                        loading: () => const ContainerPlaceholder(width: 120, height: 12),
-                                        error: (err, stack) {
-                                          final elapsed = _getElapsedTime(requestedAt);
-                                          return Text(
-                                            elapsed,
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.35),
-                                              fontSize: 12,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
+                                            );
+                                          },
+                                          loading: () => const ContainerPlaceholder(width: 120, height: 12),
+                                          error: (err, stack) {
+                                            final elapsed = _getElapsedTime(requestedAt);
+                                            return Text(
+                                              elapsed,
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(alpha: 0.35),
+                                                fontSize: 12,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                ],
+                              ),
+                            ),
+                          ),
                                 const SizedBox(width: 8),
                                 // Accept and Decline Buttons
                                 Row(

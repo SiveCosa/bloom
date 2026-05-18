@@ -1,7 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import '../../data/event/event_repository.dart';
 import '../auth/auth_providers.dart';
 import 'event.dart';
+import '../calendar/scheduled_event.dart';
+import 'event_visibility.dart';
+import 'event_location.dart';
 
 final hostedEventsProvider = StreamProvider<List<Event>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
@@ -23,6 +28,102 @@ final userEventRsvpProvider = StreamProvider.family<String?, String>((ref, event
 final eventGuestsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, eventId) {
   return ref.watch(eventRepositoryProvider).getEventGuestsStream(eventId);
 });
+
 final publicHostedEventsProvider = StreamProvider.family<List<Event>, String>((ref, userId) {
   return ref.watch(eventRepositoryProvider).getHostedEventsStream(userId);
+});
+
+final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+    final result = await functions.httpsCallable('getForYouFeed').call();
+    final data = result.data as List<dynamic>;
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  } catch (e) {
+    debugPrint('Error fetching raw for you feed: $e');
+    return [];
+  }
+});
+
+final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
+  final rawFeedAsync = ref.watch(forYouRawFeedProvider);
+  return rawFeedAsync.when(
+    data: (rawList) {
+      return rawList.map((map) {
+        final startTimeMillis = map['start_time'] as int?;
+        final start = startTimeMillis != null 
+            ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+            : null;
+        
+        return ScheduledEvent(
+          id: map['id'] as String? ?? '',
+          title: map['title'] as String? ?? '',
+          posterUrl: map['poster_url'] as String?,
+          startTime: start,
+          endTime: start != null 
+              ? DateTime(start.year, start.month, start.day, 23, 59, 59)
+              : DateTime.now(),
+          hostName: map['host_username'] as String? ?? '',
+          hostId: '',
+          hostImageUrl: map['host_avatar_url'] as String?,
+          auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+          locationName: map['location_name'] as String? ?? '',
+        );
+      }).toList();
+    },
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});
+
+final forYouEventsProvider = Provider<List<Event>>((ref) {
+  final rawFeedAsync = ref.watch(forYouRawFeedProvider);
+  return rawFeedAsync.when(
+    data: (rawList) {
+      return rawList.map((map) {
+        final startTimeMillis = map['start_time'] as int?;
+        final start = startTimeMillis != null 
+            ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+            : null;
+
+        return Event(
+          id: map['id'] as String? ?? '',
+          title: map['title'] as String? ?? '',
+          description: '',
+          tags: const [],
+          visuals: EventVisuals(
+            posterUrl: map['poster_url'] as String?,
+            aspectRatio: 1.0,
+            auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+          ),
+          timing: EventTiming(
+            startDate: start,
+            startTimeTbd: start == null,
+          ),
+          location: EventLocation(
+            displayName: map['location_name'] as String? ?? '',
+            formattedAddress: map['location_name'] as String? ?? '',
+            latitude: 0.0,
+            longitude: 0.0,
+            geohash: '',
+          ),
+          audience: const EventAudience(
+            visibility: EventVisibility.public,
+          ),
+          extras: const [],
+          rsvpReminders: const [],
+          liveCounts: const EventLiveCounts(),
+          previewGuests: const [],
+          metadata: EventMetadata(
+            hostId: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            status: EventStatus.active,
+          ),
+        );
+      }).toList();
+    },
+    loading: () => [],
+    error: (err, stack) => [],
+  );
 });

@@ -95,8 +95,18 @@ class EventsJoinedScreen extends ConsumerWidget {
                       final upcoming = joinedEvents.where((e) => e.endTime.isAfter(now)).toList();
                       final past = joinedEvents.where((e) => e.endTime.isBefore(now)).toList();
 
-                      upcoming.sort((a, b) => a.startTime.compareTo(b.startTime));
-                      past.sort((a, b) => b.startTime.compareTo(a.startTime));
+                      upcoming.sort((a, b) {
+                        if (a.startTime == null && b.startTime == null) return 0;
+                        if (a.startTime == null) return -1;
+                        if (b.startTime == null) return 1;
+                        return a.startTime!.compareTo(b.startTime!);
+                      });
+                      past.sort((a, b) {
+                        if (a.startTime == null && b.startTime == null) return 0;
+                        if (a.startTime == null) return 1;
+                        if (b.startTime == null) return -1;
+                        return b.startTime!.compareTo(a.startTime!);
+                      });
 
                       return CustomScrollView(
                         physics: const BouncingScrollPhysics(),

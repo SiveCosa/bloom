@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
-import 'package:bloom/domain/calendar/calendar_providers.dart';
+import 'package:bloom/domain/event/event_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
@@ -63,7 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               children: [
                 const CreateEventCTA(),
                 const SizedBox(height: 24),
-                _buildTestingCarouselSection(),
+                _buildForYouSection(),
               ],
             ),
           ),
@@ -197,47 +197,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildTestingCarouselSection() {
-    final scheduleAsync = ref.watch(upcomingScheduleStreamProvider);
+  Widget _buildForYouSection() {
+    final rawFeedAsync = ref.watch(forYouRawFeedProvider);
 
-    return scheduleAsync.when(
-      data: (events) {
-        if (events.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-            child: Center(
-              child: Text(
-                'No upcoming events in schedule',
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          );
+    return rawFeedAsync.when(
+      data: (rawList) {
+        if (rawList.isEmpty) {
+          return const SizedBox.shrink();
         }
+
+        final events = ref.read(forYouScheduledEventsProvider);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Upcoming Schedule (Test)',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: GestureDetector(
+                onTap: () => context.push('/home/for-you'),
+                behavior: HitTestBehavior.opaque,
+                child: Row(
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/home/fyp_icon.svg',
+                      width: 30,
+                      height: 30,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'For You',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Your social life curated',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Colors.white.withValues(alpha: 0.5),
+                      size: 24,
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             SizedBox(
               height: 394,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 itemCount: events.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   return EventCardLarge(
                     event: events[index],
@@ -253,14 +281,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       loading: () => const SizedBox(
         height: 394,
         child: Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(
+            color: Color(0xFFF04A9F),
+          ),
         ),
       ),
       error: (err, stack) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Center(
           child: Text(
-            'Error loading schedule: $err',
+            'Error loading For You feed: $err',
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'data/firebase_provider.dart';
-import 'ui/home/widgets/stacked_posters.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +24,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-    
-    // Pre-warm poster URLs so they are ready by the time user hits home
-    ref.watch(homePostersUrlsProvider);
+
 
     return MaterialApp.router(
       title: 'Bloom', // Confirmed project name

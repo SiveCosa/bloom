@@ -36,7 +36,8 @@ class EventCardLarge extends ConsumerWidget {
     }).where((c) => c != Colors.transparent).toList();
   }
 
-  String _formatDateTime(DateTime startTime) {
+  String _formatDateTime(DateTime? startTime) {
+    if (startTime == null) return 'Date TBD';
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final eventDate = DateTime(startTime.year, startTime.month, startTime.day);
@@ -278,7 +279,9 @@ class EventCardLarge extends ConsumerWidget {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  event.locationName,
+                                  event.locationName.trim().isEmpty
+                                      ? 'Location TBD'
+                                      : event.locationName,
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 13,

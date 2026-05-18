@@ -38,6 +38,7 @@ import '../../ui/notifications/notifications_screen.dart';
 import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
 import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
 import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
+import '../../ui/discover/for_you_screen.dart';
 // import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
 
 // No longer using PlaceholderScreen
@@ -273,6 +274,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           );
         },
+      ),
+      GoRoute(
+        path: '/home/for-you',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const ForYouScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
       ),
       GoRoute(
         path: '/messages',

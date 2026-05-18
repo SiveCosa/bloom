@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/media/image_loader_helper.dart';
 import '../../../domain/friendship/friendship_providers.dart';
 import '../../../domain/auth/auth_providers.dart';
@@ -106,112 +107,124 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                     final profileAsync = ref.watch(userProfileStreamProvider(recipientUid));
 
                     return Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      height: 80,
                       decoration: const BoxDecoration(
                         color: Colors.transparent,
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Avatar image loading or error states handled cleanly
-                          profileAsync.when(
-                            data: (profile) {
-                              final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
-                              return buildAvatarImage(source: avatarUrl, radius: 24);
-                            },
-                            loading: () => const CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Color(0xFF1A1D24),
-                              child: SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-                                ),
-                              ),
-                            ),
-                            error: (err, stack) => const CircleAvatar(
-                              radius: 24,
-                              backgroundColor: Color(0xFF1A1D24),
-                              child: Icon(Icons.person, color: Colors.white24, size: 24),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Username and timestamp
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                profileAsync.when(
-                                  data: (profile) => Text(
-                                    profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => context.push('/profile/$recipientUid'),
+                              child: Row(
+                                children: [
+                                  // Avatar image loading or error states handled cleanly
+                                  profileAsync.when(
+                                    data: (profile) {
+                                      final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
+                                      return buildAvatarImage(source: avatarUrl, radius: 25);
+                                    },
+                                    loading: () => const CircleAvatar(
+                                      radius: 25,
+                                      backgroundColor: Color(0xFF1A1D24),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+                                        ),
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  loading: () => const ContainerPlaceholder(width: 80, height: 14),
-                                  error: (err, stack) => const Text(
-                                    'User',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                                    error: (err, stack) => const CircleAvatar(
+                                      radius: 25,
+                                      backgroundColor: Color(0xFF1A1D24),
+                                      child: Icon(Icons.person, color: Colors.white24, size: 25),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                profileAsync.when(
-                                  data: (profile) {
-                                    final username = profile?['username'] as String?;
-                                    return Row(
+                                  const SizedBox(width: 12),
+                                  // Username and timestamp
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        if (username != null && username.isNotEmpty) ...[
-                                          Text(
-                                            '@$username',
+                                        profileAsync.when(
+                                          data: (profile) => Text(
+                                            profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          loading: () => const ContainerPlaceholder(width: 80, height: 14),
+                                          error: (err, stack) => const Text(
+                                            'User',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.5),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
                                             ),
                                           ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            '•',
+                                        ),
+                                        const SizedBox(height: 4),
+                                        profileAsync.when(
+                                          data: (profile) {
+                                            final username = profile?['username'] as String?;
+                                            return Row(
+                                              children: [
+                                                if (username != null && username.isNotEmpty) ...[
+                                                  Text(
+                                                    '@$username',
+                                                    style: TextStyle(
+                                                      color: Colors.white.withValues(alpha: 0.5),
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    '•',
+                                                    style: TextStyle(
+                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                ],
+                                                Text(
+                                                  requestedAt != null
+                                                      ? _getElapsedTime(requestedAt)
+                                                      : 'Just now',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withValues(alpha: 0.35),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                          loading: () => const ContainerPlaceholder(width: 120, height: 12),
+                                          error: (err, stack) => Text(
+                                            requestedAt != null
+                                                ? _getElapsedTime(requestedAt)
+                                                : 'Just now',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.3),
+                                              color: Colors.white.withValues(alpha: 0.35),
                                               fontSize: 12,
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                        ],
-                                        Text(
-                                          requestedAt != null
-                                              ? _getElapsedTime(requestedAt)
-                                              : 'Just now',
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(alpha: 0.35),
-                                            fontSize: 12,
                                           ),
                                         ),
                                       ],
-                                    );
-                                  },
-                                  loading: () => const ContainerPlaceholder(width: 120, height: 12),
-                                  error: (err, stack) => Text(
-                                    requestedAt != null
-                                        ? _getElapsedTime(requestedAt)
-                                        : 'Just now',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.35),
-                                      fontSize: 12,
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),

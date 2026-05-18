@@ -17,7 +17,7 @@ class HostedEventCard extends StatelessWidget {
     final dateFormat = DateFormat('EEE, d MMM');
     final timeFormat = DateFormat('ha');
     
-    String timingText = 'TBD';
+    String timingText = 'Date TBD';
     if (event.timing.startDate != null) {
       timingText = dateFormat.format(event.timing.startDate!);
       if (!event.timing.startTimeTbd) {
@@ -112,7 +112,9 @@ class HostedEventCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              event.location?.displayName ?? 'TBD',
+                              (event.location?.displayName == null || event.location!.displayName.trim().isEmpty)
+                                  ? 'Location TBD'
+                                  : event.location!.displayName,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,

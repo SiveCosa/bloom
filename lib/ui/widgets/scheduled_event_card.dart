@@ -89,7 +89,7 @@ class ScheduledEventCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 18),
                       // Host Profile Picture with ripple
                       Material(
                         color: Colors.transparent,
@@ -109,47 +109,6 @@ class ScheduledEventCard extends ConsumerWidget {
                                     size: 14, color: Colors.white70)
                                 : null,
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Menu Button
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: PopupMenuButton<String>(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            Icons.more_vert,
-                            size: 22,
-                            color: Colors.white.withValues(alpha: 0.6),
-                          ),
-                          offset: const Offset(0, 35),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                          ),
-                          itemBuilder: (context) {
-                            if (isHost) {
-                              return [
-                                const PopupMenuItem(
-                                    value: 'edit', child: Text('Edit')),
-                                const PopupMenuItem(
-                                    value: 'cancel', child: Text('Cancel')),
-                                const PopupMenuItem(
-                                    value: 'delete', child: Text('Delete')),
-                                const PopupMenuItem(
-                                    value: 'reminders',
-                                    child: Text('Reminders')),
-                              ];
-                            }
-                            return [
-                              const PopupMenuItem(
-                                  value: 'report', child: Text('Report')),
-                            ];
-                          },
                         ),
                       ),
                     ],
@@ -177,11 +136,17 @@ class ScheduledEventCard extends ConsumerWidget {
                         color: Colors.white70,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        event.locationName,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
+                      Expanded(
+                        child: Text(
+                          event.locationName.trim().isEmpty
+                              ? 'Location TBD'
+                              : event.locationName,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -210,6 +175,16 @@ class ScheduledEventCard extends ConsumerWidget {
     }
 
     final startTime = event.startTime;
+    if (startTime == null) {
+      return const Text(
+        'Date TBD',
+        style: TextStyle(
+          color: Colors.white70,
+          fontSize: 13,
+        ),
+      );
+    }
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final eventDate = DateTime(startTime.year, startTime.month, startTime.day);
