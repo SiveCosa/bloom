@@ -27,6 +27,8 @@ class CreateEventState {
   final bool isEditingSpots;
   final List<Color> auroraColors; // For UI rendering
   final String? defaultPosterUrl;
+  final String? editingEventId;
+  final List<Map<String, dynamic>> coHosts;
 
   static const String fallbackPosterUrl =
       'https://firebasestorage.googleapis.com/v0/b/bloom-e98c2.firebasestorage.app/o/posters%2Fdefault%2Fdefault_poster.webp?alt=media&token=56f3fc10-9054-4467-a1b9-a98240939a99';
@@ -54,6 +56,8 @@ class CreateEventState {
     this.isEditingSpots = false,
     this.auroraColors = defaultAuroraColors,
     this.defaultPosterUrl = fallbackPosterUrl,
+    this.editingEventId,
+    this.coHosts = const [],
   });
 
   CreateEventState copyWith({
@@ -71,6 +75,8 @@ class CreateEventState {
     bool? isEditingSpots,
     List<Color>? auroraColors,
     Object? defaultPosterUrl = _undefined,
+    Object? editingEventId = _undefined,
+    List<Map<String, dynamic>>? coHosts,
   }) {
     return CreateEventState(
       title: title ?? this.title,
@@ -93,6 +99,10 @@ class CreateEventState {
       defaultPosterUrl: defaultPosterUrl == _undefined
           ? this.defaultPosterUrl
           : (defaultPosterUrl as String?),
+      editingEventId: editingEventId == _undefined
+          ? this.editingEventId
+          : (editingEventId as String?),
+      coHosts: coHosts ?? this.coHosts,
     );
   }
 
@@ -124,6 +134,12 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
     url ??= CreateEventState.fallbackPosterUrl;
 
+    // Guard against race conditions when editing an event with a custom poster
+    if (state.editingEventId != null) {
+      state = state.copyWith(defaultPosterUrl: url);
+      return;
+    }
+
     state = state.copyWith(defaultPosterUrl: url);
 
     // Extract colors for the default poster to set the initial aurora background
@@ -148,6 +164,11 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       }
       if (paletteGenerator.dominantColor != null) {
         colors.add(paletteGenerator.dominantColor!.color);
+      }
+
+      // Recheck before applying color/poster updates in case an event was loaded for editing during palette generation
+      if (state.editingEventId != null) {
+        return;
       }
 
       if (colors.isNotEmpty) {
@@ -359,6 +380,46 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     );
   }
 
+  void loadEventForEditing(Event event, Map<String, dynamic>? hostProfile, List<Map<String, dynamic>> resolvedCoHosts) {
+    final parsedColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+    state = CreateEventState(
+      title: event.title,
+      description: event.description,
+      tags: event.tags,
+      visuals: event.visuals,
+      timing: event.timing,
+      location: event.location,
+      audience: event.audience,
+      extras: event.extras,
+      rsvpReminders: event.rsvpReminders,
+      auroraColors: parsedColors.isEmpty ? CreateEventState.defaultAuroraColors : parsedColors,
+      defaultPosterUrl: event.visuals.posterUrl ?? CreateEventState.fallbackPosterUrl,
+      editingEventId: event.id,
+      coHosts: resolvedCoHosts,
+    );
+  }
+
+  Color _parseHexColor(String hex) {
+    var cleanHex = hex.replaceAll('#', '');
+    if (cleanHex.length == 6) {
+      cleanHex = 'FF$cleanHex';
+    }
+    return Color(int.parse(cleanHex, radix: 16));
+  }
+
+  void addCoHost(Map<String, dynamic> user) {
+    final uid = user['uid'] as String? ?? user['id'] as String?;
+    if (uid == null) return;
+    if (state.coHosts.any((host) => (host['uid'] ?? host['id']) == uid)) return;
+    state = state.copyWith(coHosts: [...state.coHosts, user]);
+  }
+
+  void removeCoHost(String uid) {
+    state = state.copyWith(
+      coHosts: state.coHosts.where((host) => (host['uid'] ?? host['id']) != uid).toList(),
+    );
+  }
+
   Future<void> compileAndPublishEvent() async {
     final user = ref.read(firebaseAuthProvider).currentUser;
     final hostId = user?.uid;
@@ -370,8 +431,10 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     final repo = ref.read(eventRepositoryProvider);
 
     try {
-      // 1. Generate ID early for image path consistency
-      final eventId = FirebaseFirestore.instance.collection('events').doc().id;
+      final isEditing = state.editingEventId != null;
+      final eventId = isEditing 
+          ? state.editingEventId! 
+          : FirebaseFirestore.instance.collection('events').doc().id;
 
       String? finalPosterUrl =
           state.visuals.posterUrl ?? state.defaultPosterUrl;
@@ -385,6 +448,29 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       }
 
       // 3. Compile final event data
+      EventLiveCounts liveCounts = const EventLiveCounts();
+      List<String> previewGuests = const [];
+      DateTime createdAt = DateTime.now();
+      EventStatus status = EventStatus.active;
+      String actualHostId = hostId;
+
+      if (isEditing) {
+        // Fetch existing event to preserve operational parameters (Immutability Guard)
+        final existingEvent = await repo.getEvent(eventId);
+        if (existingEvent != null) {
+          liveCounts = existingEvent.liveCounts;
+          previewGuests = existingEvent.previewGuests;
+          createdAt = existingEvent.metadata.createdAt;
+          status = existingEvent.metadata.status;
+          actualHostId = existingEvent.metadata.hostId;
+        }
+      }
+
+      final coHostIdsList = state.coHosts
+          .map((h) => (h['uid'] ?? h['id'] ?? '') as String)
+          .where((id) => id.isNotEmpty)
+          .toList();
+
       final event = Event(
         id: eventId,
         title: state.title,
@@ -396,19 +482,25 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
         audience: state.audience,
         extras: state.extras,
         rsvpReminders: state.rsvpReminders,
-        liveCounts: const EventLiveCounts(),
-        previewGuests: const [],
+        liveCounts: liveCounts,
+        previewGuests: previewGuests,
         metadata: EventMetadata(
-          hostId: hostId,
-          createdAt: DateTime.now(),
+          hostId: actualHostId,
+          createdAt: createdAt,
           updatedAt: DateTime.now(),
-          status: EventStatus.active,
+          status: status,
         ),
+        coHostIds: coHostIdsList,
       );
 
       // 4. Save to repository
-      await repo.createEvent(event);
-      debugPrint('Event published successfully with ID: $eventId');
+      if (isEditing) {
+        await repo.updateEvent(event);
+        debugPrint('Event updated successfully with ID: $eventId');
+      } else {
+        await repo.createEvent(event);
+        debugPrint('Event published successfully with ID: $eventId');
+      }
       reset(); // Reset state to default after successful creation
     } catch (e) {
       debugPrint('Error publishing event: $e');

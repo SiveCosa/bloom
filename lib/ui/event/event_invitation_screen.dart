@@ -1,7 +1,10 @@
 import 'dart:ui' as ui;
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -12,6 +15,10 @@ import 'package:bloom/ui/create_event/widgets/aurora_background.dart';
 import 'package:bloom/ui/shared/widgets/event_weather_card.dart';
 import 'package:bloom/domain/event/event_visibility.dart';
 import 'package:bloom/domain/event/event_extra.dart';
+import 'package:bloom/domain/event/create_event_state.dart';
+import 'package:bloom/data/firebase_provider.dart' show firestoreProvider;
+import 'package:bloom/data/event/event_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/event_rsvp_bar.dart';
 import 'widgets/guest_list_card.dart';
 import 'widgets/host_control_bar.dart';
@@ -34,6 +41,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   final DraggableScrollableController _sheetController = DraggableScrollableController();
   final ValueNotifier<double> _sheetSize = ValueNotifier(0.55);
   bool _isDescriptionExpanded = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -68,6 +76,31 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isDeleting) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0B0E12),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFAD83FE)),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Deleting event...',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final eventAsync = ref.watch(eventStreamProvider(widget.eventId));
     final currentUser = ref.watch(firebaseAuthProvider).currentUser;
 
@@ -355,7 +388,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               ),
 
               // 5. Contextual Top App Bar
-              _buildTopAppBar(isHost),
+              _buildTopAppBar(isHost, event),
 
               // 6. Bottom Gradient Grounding (Reactive)
               ValueListenableBuilder<double>(
@@ -492,7 +525,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     );
   }
 
-  Widget _buildTopAppBar(bool isHost) {
+  Widget _buildTopAppBar(bool isHost, Event event) {
     return Positioned(
       top: 0,
       left: 0,
@@ -513,8 +546,20 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   if (isHost) ...[
                     _buildTopButton(
                       const Icon(Icons.mode_edit_outline, color: Colors.black, size: 22),
-                      () {
+                      () async {
                         // Edit logic
+                        final router = GoRouter.of(context);
+                        final hostId = event.metadata.hostId;
+                        final hostProfile = await ref.read(userProfileFutureProvider(hostId).future);
+                        final List<Map<String, dynamic>> resolvedCoHosts = [];
+                        for (final coHostId in event.coHostIds) {
+                          final profile = await ref.read(userProfileFutureProvider(coHostId).future);
+                          if (profile != null) {
+                            resolvedCoHosts.add(profile);
+                          }
+                        }
+                        ref.read(createEventProvider.notifier).loadEventForEditing(event, hostProfile, resolvedCoHosts);
+                        router.push('/create-event');
                       },
                     ),
                     const SizedBox(width: 10),
@@ -526,6 +571,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     ),
                     () {
                       // Share logic
+                      Share.share('Check out ${event.title} on Bloom!');
                     },
                   ),
                   const SizedBox(width: 10),
@@ -533,6 +579,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     const Icon(Icons.more_vert_rounded, color: Colors.black, size: 22),
                     () {
                       // Options logic
+                      _showOptionsModal(context, event, isHost);
                     },
                   ),
                 ],
@@ -1086,59 +1133,34 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
   Widget _buildMapCard(Event event) {
     if (event.location == null) return const SizedBox.shrink();
+    final themeColor = event.visuals.auroraColors.isNotEmpty
+        ? _parseHexColor(event.visuals.auroraColors[0])
+        : const Color(0xFFAD83FE);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Column(
-            children: [
-              AspectRatio(
-                aspectRatio: 2.1,
-                child: Container(
-                  color: Colors.grey[900],
-                  child: const Center(
-                    child: Icon(Icons.map_outlined, color: Colors.white24, size: 40),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  children: [
-                    Text(
-                      event.location!.displayName,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.location!.formattedAddress,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
+    return _PulsingMapCard(
+      event: event,
+      themeColor: themeColor,
+      onLaunchMap: _launchMap,
     );
+  }
+
+  Future<void> _launchMap(double lat, double lng, String label) async {
+    final String appleUri = 'maps://?q=$lat,$lng';
+    final String googleUri = 'geo:$lat,$lng?q=$lat,$lng';
+    final String fallbackUri = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+
+    try {
+      if (await canLaunchUrl(Uri.parse(appleUri))) {
+        await launchUrl(Uri.parse(appleUri));
+      } else if (await canLaunchUrl(Uri.parse(googleUri))) {
+        await launchUrl(Uri.parse(googleUri));
+      } else {
+        await launchUrl(Uri.parse(fallbackUri), mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Error launching map: $e');
+      await launchUrl(Uri.parse(fallbackUri), mode: LaunchMode.externalApplication);
+    }
   }
 
   void _showRemindersModal(BuildContext context, Event event) {
@@ -1176,13 +1198,289 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
             ),
             const SizedBox(height: 32),
-            _buildReminderOption(Icons.notifications_active, 'Nudge pending guests', () => Navigator.pop(context)),
+            _buildReminderOption(Icons.notifications_active, 'Nudge pending guests', () {
+              Navigator.pop(context);
+              _showNudgeModal(context, event);
+            }),
             const SizedBox(height: 12),
-            _buildReminderOption(Icons.campaign, 'Broadcast to attendees', () => Navigator.pop(context)),
+            _buildReminderOption(Icons.campaign, 'Broadcast to attendees', () {
+              Navigator.pop(context);
+              _showBroadcastModal(context, event);
+            }),
             const SizedBox(height: 12),
-            _buildReminderOption(Icons.schedule, 'Schedule auto-reminder', () => Navigator.pop(context)),
+            _buildReminderOption(Icons.schedule, 'Schedule auto-reminder', () {
+              Navigator.pop(context);
+              _showAutoReminderModal(context, event);
+            }),
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showNudgeModal(BuildContext context, Event event) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF15191D),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Consumer(
+            builder: (context, ref, child) {
+              final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+              return guestsAsync.when(
+                data: (guests) {
+                  final pendingGuests = guests.where((g) {
+                    final status = g['status'] as String? ?? 'invited';
+                    return status != 'going' && status != 'declined' && status != 'not_going';
+                  }).toList();
+
+                  return _NudgeGuestsSheet(
+                    pendingGuests: pendingGuests,
+                    scrollController: scrollController,
+                    onNudge: (selectedUids) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          content: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF2E3B4E), Color(0xFF1F2937)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Successfully nudged ${selectedUids.length} guest${selectedUids.length == 1 ? '' : 's'}!',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                error: (e, s) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBroadcastModal(BuildContext context, Event event) {
+    final TextEditingController controller = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF15191D),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Broadcast to Attendees',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Send a message to all guests who are "Going".',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                maxLength: 250,
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Type your update here...',
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFAD83FE)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () async {
+                  final message = controller.text.trim();
+                  if (message.isNotEmpty) {
+                    Navigator.pop(context);
+                    final firestore = ref.read(firestoreProvider);
+                    await firestore
+                        .collection('events')
+                        .doc(event.id)
+                        .collection('broadcasts')
+                        .add({
+                      'message': message,
+                      'sentAt': FieldValue.serverTimestamp(),
+                      'senderId': ref.read(firebaseAuthProvider).currentUser?.uid,
+                    });
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          content: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF2E3B4E), Color(0xFF1F2937)],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.campaign, color: Colors.greenAccent),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Broadcast successfully sent!',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFAD83FE),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('Send Broadcast', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAutoReminderModal(BuildContext context, Event event) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF15191D),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
+        child: _AutoReminderSelectorSheet(
+          event: event,
+          onSave: (selectedReminders) async {
+            Navigator.pop(context);
+            await ref.read(eventRepositoryProvider).updateRSVPReminders(event.id, selectedReminders);
+            
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  content: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2E3B4E), Color(0xFF1F2937)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.schedule, color: Colors.greenAccent),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Automated reminders updated successfully!',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
         ),
       ),
     );
@@ -1210,6 +1508,794 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showOptionsModal(BuildContext context, Event event, bool isHost) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF15191D),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              isHost ? 'Host Options' : 'Event Options',
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 32),
+            if (isHost) ...[
+              _buildReminderOption(
+                Icons.mode_edit_outline,
+                'Edit Event',
+                () async {
+                  final router = GoRouter.of(context);
+                  Navigator.pop(context);
+                  final hostId = event.metadata.hostId;
+                  final hostProfile = await ref.read(userProfileFutureProvider(hostId).future);
+                  final List<Map<String, dynamic>> resolvedCoHosts = [];
+                  for (final coHostId in event.coHostIds) {
+                    final profile = await ref.read(userProfileFutureProvider(coHostId).future);
+                    if (profile != null) {
+                      resolvedCoHosts.add(profile);
+                    }
+                  }
+                  ref.read(createEventProvider.notifier).loadEventForEditing(event, hostProfile, resolvedCoHosts);
+                  router.push('/create-event');
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildReminderOption(
+                Icons.cancel_outlined,
+                'Cancel Event',
+                () async {
+                  Navigator.pop(context);
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFF15191D),
+                      title: const Text('Cancel Event', style: TextStyle(color: Colors.white)),
+                      content: const Text('Are you sure you want to cancel this event? This will notify your guests.', style: TextStyle(color: Colors.white70)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('No', style: TextStyle(color: Colors.white70)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Yes, Cancel', style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    final cancelledEvent = event.copyWith(
+                      metadata: event.metadata.copyWith(
+                        status: EventStatus.cancelled,
+                        updatedAt: DateTime.now(),
+                      ),
+                    );
+                    await ref.read(eventRepositoryProvider).updateEvent(cancelledEvent);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Event has been cancelled.')),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildReminderOption(
+                Icons.delete_outline_rounded,
+                'Delete Event',
+                () async {
+                  Navigator.pop(context);
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFF15191D),
+                      title: const Text('Delete Event', style: TextStyle(color: Colors.white)),
+                      content: const Text('Are you sure you want to permanently delete this event? This action cannot be undone.', style: TextStyle(color: Colors.white70)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    setState(() {
+                      _isDeleting = true;
+                    });
+                    await ref.read(eventRepositoryProvider).deleteEvent(event);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Event has been permanently deleted.')),
+                      );
+                      context.go('/');
+                    }
+                  }
+                },
+              ),
+            ] else ...[
+              _buildReminderOption(
+                Icons.reply_rounded,
+                'Share Event',
+                () {
+                  Navigator.pop(context);
+                  Share.share('Check out ${event.title} on Bloom!');
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildReminderOption(
+                Icons.report_gmailerrorred_rounded,
+                'Report Event',
+                () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Thank you for reporting. Our safety team will review this event.')),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildReminderOption(
+                Icons.exit_to_app_rounded,
+                'Leave Event',
+                () async {
+                  Navigator.pop(context);
+                  final currentUser = ref.read(firebaseAuthProvider).currentUser;
+                  if (currentUser != null) {
+                    final bool? confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: const Color(0xFF15191D),
+                        title: const Text('Leave Event', style: TextStyle(color: Colors.white)),
+                        content: const Text('Are you sure you want to leave this event? Your RSVP status will be updated to Declined.', style: TextStyle(color: Colors.white70)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await ref.read(eventRepositoryProvider).updateRSVP(event.id, currentUser.uid, 'declined');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('You have left the event.')),
+                        );
+                      }
+                    }
+                  }
+                },
+              ),
+            ],
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PulsingMapCard extends StatefulWidget {
+  final Event event;
+  final Color themeColor;
+  final Future<void> Function(double lat, double lng, String label) onLaunchMap;
+
+  const _PulsingMapCard({
+    required this.event,
+    required this.themeColor,
+    required this.onLaunchMap,
+  });
+
+  @override
+  State<_PulsingMapCard> createState() => _PulsingMapCardState();
+}
+
+class _PulsingMapCardState extends State<_PulsingMapCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  Uint8List? _mapImageBytes;
+  bool _isLoadingMap = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+    _fetchStaticMap();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PulsingMapCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event.location?.latitude != widget.event.location?.latitude ||
+        oldWidget.event.location?.longitude != widget.event.location?.longitude ||
+        oldWidget.themeColor != widget.themeColor) {
+      _fetchStaticMap();
+    }
+  }
+
+  Future<void> _fetchStaticMap() async {
+    final location = widget.event.location;
+    if (location == null) return;
+
+    if (!mounted) return;
+    setState(() {
+      _isLoadingMap = true;
+    });
+
+    try {
+      final hexColor = widget.themeColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
+
+      final result = await FirebaseFunctions.instanceFor(region: 'africa-south1')
+          .httpsCallable('googleMapsProxy')
+          .call({
+        'endpoint': 'staticmap',
+        'params': {
+          'center': '${location.latitude},${location.longitude}',
+          'zoom': 15,
+          'size': '600x300',
+          'scale': 2,
+          'color': hexColor,
+        },
+      });
+
+      if (!mounted) return;
+
+      final data = result.data as Map<String, dynamic>;
+      if (data['status'] == 'OK' && data['image'] != null) {
+        final decodedBytes = base64Decode(data['image']);
+        setState(() {
+          _mapImageBytes = decodedBytes;
+          _isLoadingMap = false;
+        });
+      } else {
+        debugPrint('Google Maps Proxy Static Map error: ${data['status']}');
+        setState(() {
+          _isLoadingMap = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Exception fetching static map: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMap = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildMapBackground() {
+    if (_isLoadingMap) {
+      return const _MapShimmer();
+    }
+
+    if (_mapImageBytes != null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.memory(
+            _mapImageBytes!,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.45),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _MapGridPainter(
+            pulseValue: _controller.value,
+            themeColor: widget.themeColor,
+          ),
+          child: Container(),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.event.location == null) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => widget.onLaunchMap(
+        widget.event.location!.latitude,
+        widget.event.location!.longitude,
+        widget.event.location!.displayName,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 2.1,
+                  child: Container(
+                    color: const Color(0xFF0F1113),
+                    child: Stack(
+                      children: [
+                        // Static Map Background / Shimmer / Fallback Custom Paint Grid
+                        Positioned.fill(
+                          child: _buildMapBackground(),
+                        ),
+
+                        // Tap overlay button / premium tooltip
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.navigation_outlined, color: Colors.white, size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Navigate',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 20),
+                  child: Column(
+                    children: [
+                      Text(
+                        widget.event.location!.displayName,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.event.location!.formattedAddress,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapGridPainter extends CustomPainter {
+  final double pulseValue;
+  final Color themeColor;
+
+  _MapGridPainter({required this.pulseValue, required this.themeColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Draw dark background grid lines (orthogonal)
+    paint.color = Colors.white.withValues(alpha: 0.05);
+    const double gridSize = 25.0;
+    for (double i = 0; i < size.width; i += gridSize) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+    for (double i = 0; i < size.height; i += gridSize) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+
+    // Draw some stylized neon roads/streets
+    paint.strokeWidth = 2.0;
+    paint.color = themeColor.withValues(alpha: 0.12);
+    
+    // Main horizontal road crossing center
+    canvas.drawLine(Offset(0, center.dy), Offset(size.width, center.dy), paint);
+    // Main vertical road crossing center
+    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), paint);
+    
+    // Some diagonal roads
+    paint.strokeWidth = 1.0;
+    paint.color = themeColor.withValues(alpha: 0.06);
+    canvas.drawLine(Offset(0, 0), Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(0, size.height), Offset(size.width, 0), paint);
+
+    // Draw concentric radar-like circles around the event center
+    paint.style = PaintingStyle.stroke;
+    for (int r = 1; r <= 3; r++) {
+      final double radius = r * 45.0;
+      paint.color = themeColor.withValues(alpha: 0.08 / r);
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    // Pulse Circle: expanding out
+    final pulsePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = themeColor.withValues(alpha: (0.45 * (1.0 - pulseValue)))
+      ..strokeWidth = 2.0;
+    canvas.drawCircle(center, 15.0 + (pulseValue * 65.0), pulsePaint);
+
+    final pulseFillPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = themeColor.withValues(alpha: (0.12 * (1.0 - pulseValue)));
+    canvas.drawCircle(center, 15.0 + (pulseValue * 65.0), pulseFillPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _MapShimmer extends StatefulWidget {
+  const _MapShimmer();
+
+  @override
+  State<_MapShimmer> createState() => _MapShimmerState();
+}
+
+class _MapShimmerState extends State<_MapShimmer> with SingleTickerProviderStateMixin {
+  late AnimationController _shimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF15181B),
+                Color.lerp(const Color(0xFF15181B), const Color(0xFF25292E), _shimmerController.value)!,
+                const Color(0xFF15181B),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+          child: Center(
+            child: Opacity(
+              opacity: 0.5,
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.3)),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NudgeGuestsSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> pendingGuests;
+  final ScrollController scrollController;
+  final Function(List<String>) onNudge;
+
+  const _NudgeGuestsSheet({
+    required this.pendingGuests,
+    required this.scrollController,
+    required this.onNudge,
+  });
+
+  @override
+  State<_NudgeGuestsSheet> createState() => _NudgeGuestsSheetState();
+}
+
+class _NudgeGuestsSheetState extends State<_NudgeGuestsSheet> {
+  final Set<String> _selectedUids = {};
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    for (final guest in widget.pendingGuests) {
+      final uid = guest['uid'] as String?;
+      if (uid != null) {
+        _selectedUids.add(uid);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredGuests = widget.pendingGuests.where((guest) {
+      final displayName = (guest['displayName'] as String? ?? '').toLowerCase();
+      final email = (guest['email'] as String? ?? '').toLowerCase();
+      return displayName.contains(_searchQuery) || email.contains(_searchQuery);
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Nudge Pending Guests',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Remind guests who have not responded to RSVP.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val.trim().toLowerCase();
+              });
+            },
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Search guests...',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+              prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.4)),
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFAD83FE)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: filteredGuests.isEmpty
+                ? Center(
+                    child: Text(
+                      'No pending guests found',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: widget.scrollController,
+                    itemCount: filteredGuests.length,
+                    itemBuilder: (context, index) {
+                      final guest = filteredGuests[index];
+                      final uid = guest['uid'] as String? ?? '';
+                      final displayName = guest['displayName'] as String? ?? 'Guest';
+                      final isSelected = _selectedUids.contains(uid);
+
+                      return CheckboxListTile(
+                        title: Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 15)),
+                        subtitle: Text(guest['email'] as String? ?? '', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
+                        value: isSelected,
+                        activeColor: const Color(0xFFAD83FE),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedUids.add(uid);
+                            } else {
+                              _selectedUids.remove(uid);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _selectedUids.isEmpty
+                ? null
+                : () => widget.onNudge(_selectedUids.toList()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFAD83FE),
+              disabledBackgroundColor: Colors.white.withValues(alpha: 0.1),
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: Text(
+              'Send Nudge (${_selectedUids.length})',
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(height: 24 + MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    );
+  }
+}
+
+class _AutoReminderSelectorSheet extends StatefulWidget {
+  final Event event;
+  final Function(List<String>) onSave;
+
+  const _AutoReminderSelectorSheet({
+    required this.event,
+    required this.onSave,
+  });
+
+  @override
+  State<_AutoReminderSelectorSheet> createState() => _AutoReminderSelectorSheetState();
+}
+
+class _AutoReminderSelectorSheetState extends State<_AutoReminderSelectorSheet> {
+  final List<String> _allOptions = [
+    '1 hour before',
+    '24 hours before',
+    '48 hours before',
+    '3 days before',
+  ];
+  final Set<String> _selectedOptions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedOptions.addAll(widget.event.rsvpReminders);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Schedule Auto-Reminder',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Select when automated RSVP reminders should be sent out.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        ..._allOptions.map((option) {
+          final isSelected = _selectedOptions.contains(option);
+          return CheckboxListTile(
+            title: Text(option, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+            value: isSelected,
+            activeColor: const Color(0xFFAD83FE),
+            checkColor: Colors.white,
+            onChanged: (val) {
+              setState(() {
+                if (val == true) {
+                  _selectedOptions.add(option);
+                } else {
+                  _selectedOptions.remove(option);
+                }
+              });
+            },
+          );
+        }),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: () => widget.onSave(_selectedOptions.toList()),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFAD83FE),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: const Text('Save Settings', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }
