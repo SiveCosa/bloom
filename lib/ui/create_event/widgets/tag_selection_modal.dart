@@ -34,7 +34,7 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
 
   void _handleClear() {
     setState(() {
-      _selectedTags = [];
+      _selectedTags.clear();
     });
   }
 

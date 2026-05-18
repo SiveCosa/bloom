@@ -420,6 +420,10 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     );
   }
 
+  void updateCoHosts(List<Map<String, dynamic>> coHosts) {
+    state = state.copyWith(coHosts: coHosts);
+  }
+
   Future<void> compileAndPublishEvent() async {
     final user = ref.read(firebaseAuthProvider).currentUser;
     final hostId = user?.uid;

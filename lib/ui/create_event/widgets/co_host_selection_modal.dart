@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../domain/event/create_event_state.dart';
 import '../../../domain/auth/auth_providers.dart';
+import '../../../domain/friendship/friendship_providers.dart';
 import '../../../core/media/image_loader_helper.dart';
+import '../../shared/widgets/custom_text_fields.dart';
 
 class CoHostSelectionModal extends ConsumerStatefulWidget {
   const CoHostSelectionModal({super.key});
@@ -15,10 +16,12 @@ class CoHostSelectionModal extends ConsumerStatefulWidget {
 class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
   final TextEditingController _searchController = TextEditingController();
   String _searchText = '';
+  late List<Map<String, dynamic>> _selectedCoHosts;
 
   @override
   void initState() {
     super.initState();
+    _selectedCoHosts = List<Map<String, dynamic>>.from(ref.read(createEventProvider).coHosts);
     _searchController.addListener(() {
       setState(() {
         _searchText = _searchController.text.trim().toLowerCase();
@@ -32,10 +35,22 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
     super.dispose();
   }
 
+  void _handleSave() {
+    ref.read(createEventProvider.notifier).updateCoHosts(_selectedCoHosts);
+    Navigator.pop(context);
+  }
+
+  void _handleClear() {
+    setState(() {
+      _selectedCoHosts.clear();
+    });
+    ref.read(createEventProvider.notifier).updateCoHosts(_selectedCoHosts);
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(createEventProvider);
-    final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
+    final friendsAsync = ref.watch(friendsMadeProvider);
 
     return Container(
       width: double.infinity,
@@ -56,80 +71,99 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Add Co-Hosts',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 20),
+
+          // Header with Save and Clear
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: _handleClear,
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Add Co-Hosts',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _handleSave,
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Color(0xFF6C8EEF),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           // Search Input Field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                      cursorColor: Colors.white,
-                      decoration: InputDecoration(
-                        hintText: 'Search users by username...',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          fontSize: 15,
-                        ),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  if (_searchController.text.isNotEmpty)
-                    GestureDetector(
-                      onTap: () => _searchController.clear(),
-                      child: Icon(
-                        Icons.clear,
-                        color: Colors.white.withValues(alpha: 0.5),
-                        size: 18,
-                      ),
-                    ),
-                ],
-              ),
+            child: RoundedTextField(
+              controller: _searchController,
+              hintText: 'Search friends by name or username...',
+              onChanged: (val) {
+                setState(() {
+                  _searchText = val.trim().toLowerCase();
+                });
+              },
+              prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white54, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchText = '';
+                        });
+                      },
+                    )
+                  : null,
             ),
           ),
           const SizedBox(height: 16),
           // User search list
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            child: friendsAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Error loading friends',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              data: (friendsList) {
+                if (friendsList.isEmpty) {
                   return Center(
                     child: Text(
-                      'No users found',
+                      'No friends found to add as co-hosts',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
                       ),
@@ -137,52 +171,84 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                   );
                 }
 
-                // Filter users locally based on search text and active user ID
-                final users = snapshot.data!.docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  data['uid'] = doc.id;
-                  return data;
-                }).where((user) {
-                  final uid = user['uid'] as String;
-                  if (uid == currentUid) return false; // Hide self
+                // Resolve all friend profiles reactively
+                final List<Map<String, dynamic>> resolvedFriends = [];
+                for (final friend in friendsList) {
+                  final uid = friend['uid'] as String;
+                  final profileAsync = ref.watch(userProfileStreamProvider(uid));
+                  final profile = profileAsync.value;
+                  if (profile != null) {
+                    resolvedFriends.add({
+                      'uid': uid,
+                      ...profile,
+                    });
+                  }
+                }
 
-                  final username = (user['username'] as String? ?? '').toLowerCase();
-                  final nickname = (user['nickname'] as String? ?? '').toLowerCase();
+                // Filter by search text
+                final filteredFriends = resolvedFriends.where((profile) {
+                  final username = (profile['username'] as String? ?? '').toLowerCase();
+                  final nickname = (profile['nickname'] as String? ?? '').toLowerCase();
                   return username.contains(_searchText) || nickname.contains(_searchText);
                 }).toList();
 
-                if (users.isEmpty) {
+                final bool isAllLoaded = resolvedFriends.length == friendsList.length;
+
+                if (filteredFriends.isEmpty) {
                   return Center(
-                    child: Text(
-                      'No matching users',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                      ),
-                    ),
+                    child: isAllLoaded
+                        ? Text(
+                            'No matching friends',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                            ),
+                          )
+                        : const CircularProgressIndicator(color: Colors.white),
                   );
                 }
 
+                // Sort: Selected co-hosts at the top, then alphabetically
+                filteredFriends.sort((a, b) {
+                  final aSelected = _selectedCoHosts.any(
+                    (host) => (host['uid'] ?? host['id']) == a['uid'],
+                  );
+                  final bSelected = _selectedCoHosts.any(
+                    (host) => (host['uid'] ?? host['id']) == b['uid'],
+                  );
+
+                  if (aSelected && !bSelected) return -1;
+                  if (!aSelected && bSelected) return 1;
+
+                  final aName = (a['nickname'] as String? ?? a['username'] as String? ?? '').toLowerCase();
+                  final bName = (b['nickname'] as String? ?? b['username'] as String? ?? '').toLowerCase();
+                  return aName.compareTo(bName);
+                });
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: users.length,
+                  itemCount: filteredFriends.length,
                   itemBuilder: (context, index) {
-                    final user = users[index];
+                    final user = filteredFriends[index];
                     final uid = user['uid'] as String;
                     final username = user['username'] as String? ?? 'username';
                     final nickname = user['nickname'] as String? ?? '';
                     final profileImageUrl = user['profile_image_url'] as String?;
-                    
-                    final isSelected = state.coHosts.any(
+
+                    final isSelected = _selectedCoHosts.any(
                       (host) => (host['uid'] ?? host['id']) == uid,
                     );
 
                     return InkWell(
                       onTap: () {
-                        if (isSelected) {
-                          ref.read(createEventProvider.notifier).removeCoHost(uid);
-                        } else {
-                          ref.read(createEventProvider.notifier).addCoHost(user);
-                        }
+                        setState(() {
+                          if (isSelected) {
+                            _selectedCoHosts.removeWhere(
+                              (host) => (host['uid'] ?? host['id']) == uid,
+                            );
+                          } else {
+                            _selectedCoHosts.add(user);
+                          }
+                        });
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -261,3 +327,4 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
     );
   }
 }
+

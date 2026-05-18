@@ -112,7 +112,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           );
         }
 
-        final bool isHost = currentUser?.uid == event.metadata.hostId;
+        final bool isHost = currentUser?.uid == event.metadata.hostId || event.coHostIds.contains(currentUser?.uid);
 
         return Scaffold(
           backgroundColor: const Color(0xFF0B0E12),
@@ -351,16 +351,28 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                   ],
                                                   _buildGuestList(event),
                                                   const SizedBox(height: 16),
-                                                  Consumer(
-                                                    builder: (context, ref, child) {
-                                                      final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
-                                                      return HostInviteSection(
-                                                        userProfile: hostProfile, 
-                                                        onAddCoHost: () {},
-                                                        showInviteFriends: false,
-                                                      );
-                                                    },
-                                                  ),
+                                                   Consumer(
+                                                     builder: (context, ref, child) {
+                                                       final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
+                                                       final List<Map<String, dynamic>> resolvedCoHosts = [];
+                                                       for (final coHostId in event.coHostIds) {
+                                                         final coHostProfileAsync = ref.watch(userProfileStreamProvider(coHostId));
+                                                         final coHostProfile = coHostProfileAsync.value;
+                                                         if (coHostProfile != null) {
+                                                           resolvedCoHosts.add({
+                                                             'uid': coHostId,
+                                                             ...coHostProfile,
+                                                           });
+                                                         }
+                                                       }
+                                                       return HostInviteSection(
+                                                         userProfile: hostProfile, 
+                                                         coHosts: resolvedCoHosts,
+                                                         onAddCoHost: () {},
+                                                         showInviteFriends: false,
+                                                       );
+                                                     },
+                                                   ),
                                                   if (event.location != null) ...[
                                                     const SizedBox(height: 16),
                                                     _buildWeatherCard(event),
@@ -555,7 +567,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                         for (final coHostId in event.coHostIds) {
                           final profile = await ref.read(userProfileFutureProvider(coHostId).future);
                           if (profile != null) {
-                            resolvedCoHosts.add(profile);
+                            resolvedCoHosts.add({
+                              'uid': coHostId,
+                              ...profile,
+                            });
                           }
                         }
                         ref.read(createEventProvider.notifier).loadEventForEditing(event, hostProfile, resolvedCoHosts);
@@ -941,54 +956,81 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 
   Widget _buildExpandableDescription(String text) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return GestureDetector(
-          onTap: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
-          behavior: HitTestBehavior.opaque,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: _isDescriptionExpanded ? double.infinity : 200,
-                ),
-                child: ShaderMask(
-                  shaderCallback: (bounds) {
-                    if (_isDescriptionExpanded) {
-                      return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
-                    }
-                    return LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.white, Colors.white.withValues(alpha: 0)],
-                      stops: const [0.7, 1.0],
-                    ).createShader(bounds);
-                  },
-                  blendMode: BlendMode.dstIn,
-                  child: Text.rich(
-                    _getFormattedDescriptionSpan(text, null),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      height: 1.5,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textPainter = TextPainter(
+          text: _getFormattedDescriptionSpan(text, null),
+          textDirection: ui.TextDirection.ltr,
+          maxLines: null,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        final bool needsExpansion = textPainter.height > 200;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final bool isExpanded = _isDescriptionExpanded || !needsExpansion;
+
+            return GestureDetector(
+              onTap: needsExpansion
+                  ? () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded)
+                  : null,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: isExpanded ? double.infinity : 200,
                     ),
+                    child: needsExpansion
+                        ? ShaderMask(
+                            shaderCallback: (bounds) {
+                              if (isExpanded) {
+                                return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
+                              }
+                              return LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                                stops: const [0.7, 1.0],
+                              ).createShader(bounds);
+                            },
+                            blendMode: BlendMode.dstIn,
+                            child: Text.rich(
+                              _getFormattedDescriptionSpan(text, null),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.5,
+                              ),
+                            ),
+                          )
+                        : Text.rich(
+                            _getFormattedDescriptionSpan(text, null),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
                   ),
-                ),
+                  if (needsExpansion) ...[
+                    const SizedBox(height: 25),
+                    Center(
+                      child: Text(
+                        _isDescriptionExpanded ? 'Show less' : 'Read more',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 25),
-              Center(
-                child: Text(
-                  _isDescriptionExpanded ? 'Show less' : 'Read more',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -1054,63 +1096,87 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 
   TextSpan _getFormattedDescriptionSpan(String text, int? maxLength) {
-    String displayStr = (maxLength != null && text.length > maxLength) 
+    String displayStr = (maxLength != null && text.length > maxLength)
         ? text.substring(0, maxLength)
         : text;
 
-    final pattern = RegExp(
-      r'(\*[^*]+?\*)|(![^!]+?!)',
-      multiLine: true,
-    );
+    final List<String> lines = displayStr.split('\n');
+    final List<InlineSpan> lineSpans = [];
 
-    final List<TextSpan> children = [];
-    int lastMatchEnd = 0;
     const baseStyle = TextStyle(
       color: Colors.white,
       fontSize: 14,
       height: 1.5,
     );
 
-    for (final match in pattern.allMatches(displayStr)) {
-      if (match.start > lastMatchEnd) {
-        children.add(TextSpan(
-          text: displayStr.substring(lastMatchEnd, match.start),
+    // Matches inline bold (*bold*) and inline heading (!heading!)
+    final pattern = RegExp(
+      r'(\*[^\s\*](?:[^*]*?[^\s\*])?\*)|(![^\s!](?:[^!]*?[^\s!])?!)',
+    );
+
+    for (int i = 0; i < lines.length; i++) {
+      String lineText = lines[i];
+
+      // Check if it is a list item
+      final trimmedLine = lineText.trimLeft();
+      if (trimmedLine.startsWith('* ')) {
+        final indentCount = lineText.length - trimmedLine.length;
+        final indent = ' ' * indentCount;
+        lineText = '$indent•  ${trimmedLine.substring(2)}';
+      } else if (trimmedLine.startsWith('- ')) {
+        final indentCount = lineText.length - trimmedLine.length;
+        final indent = ' ' * indentCount;
+        lineText = '$indent•  ${trimmedLine.substring(2)}';
+      }
+
+      final List<TextSpan> lineChildren = [];
+      int lastMatchEnd = 0;
+
+      for (final match in pattern.allMatches(lineText)) {
+        if (match.start > lastMatchEnd) {
+          lineChildren.add(TextSpan(
+            text: lineText.substring(lastMatchEnd, match.start),
+            style: baseStyle,
+          ));
+        }
+
+        final matchText = match.group(0)!;
+
+        if (matchText.startsWith('*')) {
+          lineChildren.add(TextSpan(
+            text: matchText.substring(1, matchText.length - 1),
+            style: baseStyle.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ));
+        } else if (matchText.startsWith('!')) {
+          lineChildren.add(TextSpan(
+            text: matchText.substring(1, matchText.length - 1),
+            style: baseStyle.copyWith(
+              fontWeight: FontWeight.w900,
+              fontSize: 16.0,
+            ),
+          ));
+        }
+
+        lastMatchEnd = match.end;
+      }
+
+      if (lastMatchEnd < lineText.length) {
+        lineChildren.add(TextSpan(
+          text: lineText.substring(lastMatchEnd),
           style: baseStyle,
         ));
       }
 
-      final matchText = match.group(0)!;
+      lineSpans.add(TextSpan(children: lineChildren));
 
-      if (matchText.startsWith('*')) {
-        // Bold: *text*
-        children.add(TextSpan(
-          text: matchText.substring(1, matchText.length - 1),
-          style: baseStyle.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ));
-      } else if (matchText.startsWith('!')) {
-        // Heading: !text!
-        children.add(TextSpan(
-          text: matchText.substring(1, matchText.length - 1),
-          style: baseStyle.copyWith(
-            fontWeight: FontWeight.w900,
-            fontSize: 16.0,
-          ),
-        ));
+      if (i < lines.length - 1) {
+        lineSpans.add(const TextSpan(text: '\n', style: baseStyle));
       }
-
-      lastMatchEnd = match.end;
     }
 
-    if (lastMatchEnd < displayStr.length) {
-      children.add(TextSpan(
-        text: displayStr.substring(lastMatchEnd),
-        style: baseStyle,
-      ));
-    }
-
-    return TextSpan(children: children);
+    return TextSpan(children: lineSpans);
   }
 
   Widget _buildWeatherCard(Event event) {
