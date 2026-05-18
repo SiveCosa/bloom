@@ -965,3 +965,196 @@ exports.onEventDelete = onDocumentWritten(
     }
   }
 );
+
+// 13. Secure "For You" Discovery Engine
+exports.getForYouFeed = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const currentUserId = request.auth.uid;
+    
+    // 1. Profile Data Loading
+    const userSnap = await db.collection("users").doc(currentUserId).get();
+    if (!userSnap.exists) {
+      throw new HttpsError("not-found", "User profile not found.");
+    }
+    const userData = userSnap.data();
+    const userInterests = Array.isArray(userData.interests) ? userData.interests : [];
+    const userGender = userData.gender || null;
+
+    // Load user's active connections (friends)
+    const currentUserFriends = new Set();
+    const connectionsSnap = await db.collection("users").doc(currentUserId).collection("connections").where("status", "==", "connected").get();
+    connectionsSnap.docs.forEach(doc => currentUserFriends.add(doc.id));
+
+    // Load user's active invites
+    const currentUserInvites = new Set();
+    const invitesSnap = await db.collection("users").doc(currentUserId).collection("invites").get();
+    invitesSnap.docs.forEach(doc => currentUserInvites.add(doc.id));
+
+    // 2. Fetch Active Events (with 300 records scaling cap)
+    const activeEventsSnap = await db.collection("events")
+      .where("metadata.status", "==", "active")
+      .limit(300)
+      .get();
+    
+    const now = new Date();
+    // Cache for host friends to avoid duplicate queries
+    const hostFriendsCache = new Map();
+    // Cache for host documents
+    const hostDataCache = new Map();
+
+    const candidateEvents = [];
+
+    // 3. Hard Filtering
+    for (const eventDoc of activeEventsSnap.docs) {
+      const eventData = eventDoc.data();
+      const eventId = eventDoc.id;
+
+      // --- Time-Expiry Check ---
+      const startDate = eventData.timing?.startDate ? (typeof eventData.timing.startDate.toDate === 'function' ? eventData.timing.startDate.toDate() : new Date(eventData.timing.startDate)) : null;
+      const endDate = eventData.timing?.endDate ? (typeof eventData.timing.endDate.toDate === 'function' ? eventData.timing.endDate.toDate() : new Date(eventData.timing.endDate)) : null;
+      
+      // Fallback: If endDate is not specified, default to 24 hours after startDate.
+      const effectiveEndDate = endDate || (startDate ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000) : null);
+      if (effectiveEndDate && effectiveEndDate < now) {
+        continue; // Skip past/ended events
+      }
+
+      // --- Privacy & Social Visibility ---
+      const visibility = eventData.audience?.visibility || "public";
+      const hostId = eventData.metadata?.hostId;
+
+      if (!hostId) continue; // Invalid event data
+
+      if (visibility === "private") {
+        const invitedUserIds = eventData.invitedUserIds || eventData.invited_user_ids || eventData.invitations || eventData.audience?.invitedUserIds || eventData.audience?.invited_user_ids || [];
+        const explicitlyInvited = invitedUserIds.includes(currentUserId);
+        
+        if (!currentUserInvites.has(eventId) && !explicitlyInvited) {
+          continue; // Failed private checkpoint
+        }
+      } else if (visibility === "friendsOnly" || visibility === "friends_only") {
+        if (!currentUserFriends.has(hostId)) {
+          continue; // Failed friendsOnly checkpoint
+        }
+      } else if (visibility === "friendsOfFriends" || visibility === "friends_of_friends") {
+        if (!currentUserFriends.has(hostId)) {
+          // Check if there is a mutual friend
+          let hostFriends = hostFriendsCache.get(hostId);
+          if (!hostFriends) {
+            hostFriends = new Set();
+            const hFriendsSnap = await db.collection("users").doc(hostId).collection("connections").where("status", "==", "connected").get();
+            hFriendsSnap.docs.forEach(doc => hostFriends.add(doc.id));
+            hostFriendsCache.set(hostId, hostFriends);
+          }
+
+          let hasMutual = false;
+          for (const friendUid of currentUserFriends) {
+            if (hostFriends.has(friendUid)) {
+              hasMutual = true;
+              break;
+            }
+          }
+
+          if (!hasMutual) {
+            continue; // Failed friendsOfFriends checkpoint
+          }
+        }
+      } else if (visibility === "maleOnly" || visibility === "male_only") {
+        if (userGender !== "male") {
+          continue; // Failed maleOnly checkpoint
+        }
+      } else if (visibility === "femaleOnly" || visibility === "female_only") {
+        if (userGender !== "female") {
+          continue; // Failed femaleOnly checkpoint
+        }
+      }
+
+      // 4. Scoring
+      // Match Score
+      const eventTags = eventData.tags || [];
+      let matchScore = 0;
+      for (const interest of userInterests) {
+        if (eventTags.includes(interest)) {
+          matchScore++;
+        }
+      }
+
+      // Popularity Score
+      let popularityScore = eventData.popularity_score || eventData.popularityScore;
+      if (typeof popularityScore !== 'number') {
+        const goingCount = eventData.counts?.going || eventData.counts?.attendees || eventData.rsvpCounts?.going || eventData.rsvp_counts?.going || 0;
+        const interestedCount = eventData.counts?.interested || eventData.rsvpCounts?.interested || eventData.rsvp_counts?.interested || 0;
+        const viewCount = eventData.counts?.views || eventData.viewCount || eventData.view_count || 0;
+        
+        popularityScore = (goingCount * 3) + (interestedCount * 2) + viewCount;
+      }
+
+      candidateEvents.push({
+        id: eventId,
+        title: eventData.title || "",
+        poster_url: eventData.visuals?.posterUrl || "",
+        start_time: eventData.timing?.startDate ? (typeof eventData.timing.startDate.toMillis === 'function' ? eventData.timing.startDate.toMillis() : null) : null,
+        location_name: eventData.location?.displayName || "",
+        aurora_colors: eventData.visuals?.auroraColors || [],
+        hostId: hostId, // Temporarily keep to fetch host payload fields later
+        matchScore: matchScore,
+        popularityScore: popularityScore
+      });
+    }
+
+    // Sort and Rank
+    candidateEvents.sort((a, b) => {
+      if (b.matchScore !== a.matchScore) {
+        return b.matchScore - a.matchScore; // Primary: matchScore desc
+      }
+      return b.popularityScore - a.popularityScore; // Secondary: popularityScore desc
+    });
+
+    // Performance Capping
+    const topEvents = candidateEvents.slice(0, 10);
+
+    // Payload Minimization (resolve host fields)
+    const payload = [];
+    for (const event of topEvents) {
+      let hostName = "";
+      let hostAvatar = "";
+
+      if (event.hostId) {
+        if (!hostDataCache.has(event.hostId)) {
+          const hSnap = await db.collection("users").doc(event.hostId).get();
+          if (hSnap.exists) {
+            const hData = hSnap.data();
+            hostDataCache.set(event.hostId, {
+              username: hData.username || "",
+              avatar: hData.profile_image_url || ""
+            });
+          } else {
+            hostDataCache.set(event.hostId, { username: "", avatar: "" });
+          }
+        }
+        
+        const cachedHost = hostDataCache.get(event.hostId);
+        hostName = cachedHost.username;
+        hostAvatar = cachedHost.avatar;
+      }
+
+      payload.push({
+        id: event.id,
+        title: event.title,
+        poster_url: event.poster_url,
+        start_time: event.start_time,
+        location_name: event.location_name,
+        aurora_colors: event.aurora_colors,
+        host_username: hostName,
+        host_avatar_url: hostAvatar
+      });
+    }
+
+    return payload;
+  }
+);
