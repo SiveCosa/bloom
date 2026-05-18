@@ -406,6 +406,35 @@ exports.googleMapsProxy = onCall(
     }
 
     const apiKey = GOOGLE_MAPS_API_KEY.value();
+
+    if (endpoint === "staticmap") {
+      const scale = params.scale || 2;
+      const zoom = params.zoom || 15;
+      const size = params.size || '600x300';
+      const maptype = params.maptype || 'roadmap';
+      const color = params.color || 'AD83FE';
+      const center = params.center;
+
+      if (!center) {
+        throw new HttpsError("invalid-argument", "Center parameter is required for staticmap.");
+      }
+
+      const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(center)}&zoom=${zoom}&size=${size}&scale=${scale}&maptype=${maptype}&markers=color:0x${color}%7C${encodeURIComponent(center)}&key=${apiKey}`;
+
+      try {
+        const response = await fetch(staticMapUrl);
+        if (!response.ok) {
+          throw new Error(`Google Maps Static API responded with status ${response.status}`);
+        }
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        return { status: 'OK', image: base64 };
+      } catch (error) {
+        console.error("Google Maps Static Map Proxy Error:", error);
+        throw new HttpsError("internal", `Failed to fetch static map: ${error.message}`);
+      }
+    }
+
     let url = "";
 
     switch (endpoint) {
@@ -833,6 +862,109 @@ exports.getFriendRecommendations = onCall({ region: "africa-south1" }, async (re
     throw new HttpsError("internal", "Failed to get recommendations.");
   }
 });
+
+// 12. Event Deletion Cleanup Trigger
+// When an event is deleted, clean up all guests' schedules, broadcasts, and other related metadata
+exports.onEventDelete = onDocumentWritten(
+  {
+    document: "events/{eventId}",
+    region: "africa-south1",
+  },
+  async (event) => {
+    const eventId = event.params.eventId;
+    const beforeSnap = event.data.before;
+    const afterSnap = event.data.after;
+
+    // We only care about deletion (document existed before, but not after)
+    if (beforeSnap.exists && !afterSnap.exists) {
+      console.log(`Event ${eventId} has been deleted. Starting full Firebase-side cleanup...`);
+
+      const before = beforeSnap.data();
+      
+      // 1. Delete all guest schedule entries
+      const guestsSnap = await db.collection("events").doc(eventId)
+        .collection("guests")
+        .get();
+
+      if (!guestsSnap.empty) {
+        const docs = guestsSnap.docs;
+        const chunkSize = 400;
+        let updatedCount = 0;
+
+        for (let i = 0; i < docs.length; i += chunkSize) {
+          const batch = db.batch();
+          const chunk = docs.slice(i, i + chunkSize);
+
+          chunk.forEach((guestDoc) => {
+            const userId = guestDoc.id;
+            const scheduleRef = db.collection("users").doc(userId).collection("schedule").doc(eventId);
+            batch.delete(scheduleRef);
+            
+            // Also delete the guest document under the deleted event (although the parent is deleted, subcollections might still exist)
+            batch.delete(guestDoc.ref);
+            updatedCount++;
+          });
+
+          await batch.commit();
+        }
+        console.log(`Cleaned up ${updatedCount} guest schedules for deleted event ${eventId}`);
+      }
+
+      // 2. Delete broadcasts subcollection documents
+      const broadcastsSnap = await db.collection("events").doc(eventId)
+        .collection("broadcasts")
+        .get();
+
+      if (!broadcastsSnap.empty) {
+        const batch = db.batch();
+        broadcastsSnap.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+        console.log(`Cleaned up broadcasts for deleted event ${eventId}`);
+      }
+
+      // 3. Decrement hosted count for the host (just in case the client failed to decrement)
+      const hostId = before.metadata?.hostId;
+      if (hostId) {
+        const hostRef = db.collection("users").doc(hostId);
+        try {
+          await db.runTransaction(async (transaction) => {
+            const hostDoc = await transaction.get(hostRef);
+            if (hostDoc.exists) {
+              const currentHosted = hostDoc.data().counts?.hosted || 0;
+              if (currentHosted > 0) {
+                transaction.update(hostRef, {
+                  "counts.hosted": admin.firestore.FieldValue.increment(-1)
+                });
+              }
+            }
+          });
+          console.log(`Decremented hosted event count for host ${hostId}`);
+        } catch (e) {
+          console.error(`Failed to adjust hosted count for user ${hostId}: ${e}`);
+        }
+      }
+
+      // 4. Delete the poster image from Firebase Storage
+      const posterUrl = before.visuals?.posterUrl;
+      if (posterUrl) {
+        try {
+          const bucket = admin.storage().bucket();
+          const filePath = `posters/${eventId}/poster.webp`;
+          const file = bucket.file(filePath);
+          const [exists] = await file.exists();
+          if (exists) {
+            await file.delete();
+            console.log(`Deleted event poster from Storage: ${filePath}`);
+          }
+        } catch (e) {
+          console.error(`Failed to delete poster from Storage: ${e}`);
+        }
+      }
+    }
+  }
+);
 
 // 13. Secure "For You" Discovery Engine
 exports.getForYouFeed = onCall(
