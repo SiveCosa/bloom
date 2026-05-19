@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/create_event_state.dart';
 import 'bloom_toggle.dart';
 import '../../../domain/event/event_visibility.dart';
+import '../../shared/widgets/bloom_modal_shell.dart';
 
 class AudienceModal extends ConsumerWidget {
   final String title;
@@ -13,33 +14,11 @@ class AudienceModal extends ConsumerWidget {
     final state = ref.watch(createEventProvider);
     final notifier = ref.read(createEventProvider.notifier);
 
-    return Container(
+    return BloomModalShell(
+      title: title,
       height: MediaQuery.of(context).size.height * 0.7,
-      decoration: const BoxDecoration(
-        color: Color(0xFF191B1D),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
       child: Column(
         children: [
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
           Expanded(
             child: ListView(
               physics: const ClampingScrollPhysics(),

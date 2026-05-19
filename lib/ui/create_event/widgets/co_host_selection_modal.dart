@@ -5,6 +5,8 @@ import '../../../domain/auth/auth_providers.dart';
 import '../../../domain/friendship/friendship_providers.dart';
 import '../../../core/media/image_loader_helper.dart';
 import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_modal_shell.dart';
+import '../../shared/widgets/bloom_selection_tile.dart';
 
 class CoHostSelectionModal extends ConsumerStatefulWidget {
   const CoHostSelectionModal({super.key});
@@ -52,73 +54,15 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
   Widget build(BuildContext context) {
     final friendsAsync = ref.watch(friendsMadeProvider);
 
-    return Container(
-      width: double.infinity,
+    return BloomModalShell(
+      title: 'Add Co-Hosts',
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Color(0xFF191B1D),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
+      leftActionText: 'Clear',
+      onLeftActionPressed: _handleClear,
+      rightActionText: 'Save',
+      onRightActionPressed: _handleSave,
       child: Column(
         children: [
-          const SizedBox(height: 12),
-          // Drag Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Header with Save and Clear
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: _handleClear,
-                    child: Text(
-                      'Clear',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const Text(
-                  'Add Co-Hosts',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _handleSave,
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        color: Color(0xFF6C8EEF),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
           // Search Input Field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -238,7 +182,27 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                       (host) => (host['uid'] ?? host['id']) == uid,
                     );
 
-                    return InkWell(
+                    return BloomSelectionTile(
+                      leading: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: buildAvatarImage(
+                          source: profileImageUrl,
+                          radius: 25,
+                        ),
+                      ),
+                      title: nickname.isNotEmpty ? nickname : username,
+                      subtitle: nickname.isNotEmpty ? '@$username' : '',
+                      isSelected: isSelected,
+                      useSolidCheck: true,
+                      verticalPadding: 10,
                       onTap: () {
                         setState(() {
                           if (isSelected) {
@@ -250,71 +214,6 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                           }
                         });
                       },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  width: 1,
-                                ),
-                              ),
-                              child: buildAvatarImage(
-                                source: profileImageUrl,
-                                radius: 25,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    nickname.isNotEmpty ? nickname : username,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (nickname.isNotEmpty)
-                                    Text(
-                                      '@$username',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.5),
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
-                                  width: 2,
-                                ),
-                                color: isSelected ? Colors.white : Colors.transparent,
-                              ),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.black,
-                                      size: 16,
-                                    )
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
                     );
                   },
                 );
@@ -327,4 +226,3 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
     );
   }
 }
-

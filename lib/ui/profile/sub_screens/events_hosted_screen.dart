@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/event/event_providers.dart';
-import '../../shared/widgets/hosted_event_card.dart';
+import '../../shared/widgets/event_medium_card.dart';
 import 'dart:ui' as ui;
 
 class EventsHostedScreen extends ConsumerWidget {
@@ -100,7 +100,7 @@ class EventsHostedScreen extends ConsumerWidget {
                           if (upcoming.isNotEmpty)
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
-                                (context, index) => HostedEventCard(
+                                (context, index) => EventMediumCard(
                                   event: upcoming[index],
                                   onTap: () => context.push('/event/${upcoming[index].id}'),
                                 ),
@@ -138,7 +138,7 @@ class EventsHostedScreen extends ConsumerWidget {
                           if (past.isNotEmpty)
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
-                                (context, index) => HostedEventCard(
+                                (context, index) => EventMediumCard(
                                   event: past[index],
                                   onTap: () => context.push('/event/${past[index].id}'),
                                 ),

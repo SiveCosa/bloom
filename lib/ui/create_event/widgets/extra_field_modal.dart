@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../domain/event/event_extra.dart';
 import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_modal_shell.dart';
 
 class ExtraFieldModal extends StatefulWidget {
   final ExtraType initialType;
@@ -76,170 +77,110 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: true,
-      bottom: false,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: const BoxDecoration(
-            color: Color(0xFF191B1D),
+    return BloomModalShell(
+      title: 'Extra Field',
+      height: MediaQuery.of(context).size.height,
+      useSafeArea: true,
+      leftActionText: 'Clear',
+      onLeftActionPressed: () {
+        if (widget.initialExtra != null) {
+          widget.onDelete?.call();
+        }
+        Navigator.pop(context);
+      },
+      rightActionText: 'Save',
+      onRightActionPressed: _handleSave,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        children: [
+          SquareTextField(
+            controller: _displayController,
+            focusNode: _displayFocus,
+            maxLength: 50,
+            hintText: _currentType.displayHint,
+            prefixIcon: Icon(
+              _currentType.icon,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
           ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              // Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          Text(
+            'Keep it short and sweet here! Share more information in your event description.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.3),
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
 
-              // Header
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        if (widget.initialExtra != null) {
-                          widget.onDelete?.call();
-                        }
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Clear',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+          const SizedBox(height: 24),
+          const Divider(color: Colors.white12, height: 1),
+          const SizedBox(height: 24),
+
+          // Icon Selector Row
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ExtraType.values.map((type) {
+                final isSelected = _currentType == type;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _currentType = type;
+                        _errorText = null;
+                      });
+                    },
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                          width: 1,
                         ),
+                      ),
+                      child: Icon(
+                        type.icon,
+                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
+                        size: 20,
                       ),
                     ),
                   ),
-                  const Text(
-                    'Extra Field',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _handleSave,
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          color: Color(0xFF6C8EEF),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                );
+              }).toList(),
+            ),
+          ),
 
-              SquareTextField(
-                controller: _displayController,
-                focusNode: _displayFocus,
-                maxLength: 50,
-                hintText: _currentType.displayHint,
-                prefixIcon: Icon(
-                  _currentType.icon,
-                  color: Colors.white.withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Keep it short and sweet here! Share more information in your event description.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+          const SizedBox(height: 24),
 
-              const SizedBox(height: 24),
-              const Divider(color: Colors.white12, height: 1),
-              const SizedBox(height: 24),
-
-              // Icon Selector Row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: ExtraType.values.map((type) {
-                    final isSelected = _currentType == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _currentType = type;
-                            _errorText = null;
-                          });
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(15),
-                            border: Border.all(
-                              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(
-                            type.icon,
-                            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+          // Link Label
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _currentType.isLinkRequired ? 'Link (REQUIRED)' : 'Link (Optional)',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
 
-              const SizedBox(height: 24),
-
-              // Link Label
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _currentType.isLinkRequired ? 'Link (REQUIRED)' : 'Link (Optional)',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              SquareTextField(
-                controller: _linkController,
-                focusNode: _linkFocus,
-                hintText: 'https://',
-                inputFormatters: [
-                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                ],
-                errorMessage: _errorText,
-              ),
-              const SizedBox(height: 20),
+          SquareTextField(
+            controller: _linkController,
+            focusNode: _linkFocus,
+            hintText: 'https://',
+            inputFormatters: [
+              FilteringTextInputFormatter.deny(RegExp(r'\s')),
             ],
+            errorMessage: _errorText,
           ),
-        ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../../domain/friendship/friendship_providers.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../../../data/connection_repository.dart';
 import '../../shared/widgets/gradient_top_bar.dart';
+import '../../shared/widgets/container_placeholder.dart';
 
 class PendingRequestsScreen extends ConsumerStatefulWidget {
   const PendingRequestsScreen({super.key});
@@ -283,29 +284,6 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ContainerPlaceholder extends StatelessWidget {
-  final double width;
-  final double height;
-
-  const ContainerPlaceholder({
-    super.key,
-    required this.width,
-    required this.height,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(4),
       ),
     );
   }

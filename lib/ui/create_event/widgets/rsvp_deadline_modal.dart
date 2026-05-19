@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/event/create_event_state.dart';
+import '../../shared/widgets/bloom_modal_shell.dart';
 import 'date_wheel_scroller.dart';
 
 class RSVPDeadlineModal extends ConsumerStatefulWidget {
@@ -47,70 +48,16 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('EEE, d MMM yyyy');
 
-    return Container(
+    return BloomModalShell(
+      title: 'RSVP Deadline',
       height: MediaQuery.of(context).size.height,
-      decoration: const BoxDecoration(color: Color(0xFF191B1D)),
+      useSafeArea: true,
+      leftActionText: 'Clear',
+      onLeftActionPressed: _onClear,
+      rightActionText: 'Save',
+      onRightActionPressed: _onSave,
       child: Column(
         children: [
-          const SizedBox(height: 12),
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: _onClear,
-                    child: Text(
-                      'Clear',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const Text(
-                  'RSVP Deadline',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: _onSave,
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        color: Color(0xFF6C8EEF),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           const SizedBox(height: 30),
 
           // Selected Date Display

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/event/event.dart';
 
-class HostedEventCard extends StatelessWidget {
+class EventMediumCard extends StatelessWidget {
   final Event event;
   final VoidCallback? onTap;
 
-  const HostedEventCard({
+  const EventMediumCard({
     super.key,
     required this.event,
     this.onTap,
@@ -26,8 +26,6 @@ class HostedEventCard extends StatelessWidget {
     }
 
     final trimmedDescription = event.description.trim().replaceAll(RegExp(r'\n\s*\n'), '\n');
-
-
 
     return GestureDetector(
       onTap: onTap,
@@ -180,7 +178,6 @@ class HostedEventCard extends StatelessWidget {
   }
 
   Widget _buildAttendeeAvatars() {
-    // This would normally come from a separate attendees provider
     return SizedBox(
       height: 32,
       width: 70,

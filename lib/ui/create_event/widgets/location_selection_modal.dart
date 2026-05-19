@@ -9,6 +9,7 @@ import 'package:dart_geohash/dart_geohash.dart';
 
 import '../../../domain/event/event_location.dart';
 import '../../shared/widgets/custom_text_fields.dart';
+import '../../shared/widgets/bloom_modal_shell.dart';
 
 enum LocationModalState { search, details }
 
@@ -237,85 +238,19 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: true,
-      bottom: false,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: const BoxDecoration(
-            color: Color(0xFF191B1D),
-          ),
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              // Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Header
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Location',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (_currentState == LocationModalState.details)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _handleSave,
-                        child: const Text(
-                          'Save',
-                          style: TextStyle(
-                            color: Color(0xFF6C8EEF),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Body
-              Expanded(
-                child: _currentState == LocationModalState.search
-                    ? _buildSearchView()
-                    : _buildDetailsView(),
-              ),
-            ],
-          ),
-        ),
+    return BloomModalShell(
+      title: 'Location',
+      height: MediaQuery.of(context).size.height,
+      useSafeArea: true,
+      leftActionText: 'Cancel',
+      onLeftActionPressed: () => Navigator.pop(context),
+      rightActionText: _currentState == LocationModalState.details ? 'Save' : null,
+      onRightActionPressed: _currentState == LocationModalState.details ? _handleSave : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Expanded(
+        child: _currentState == LocationModalState.search
+            ? _buildSearchView()
+            : _buildDetailsView(),
       ),
     );
   }
