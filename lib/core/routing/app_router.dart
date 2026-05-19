@@ -39,7 +39,8 @@ import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
 import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
 import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 import '../../ui/discover/for_you_screen.dart';
-// import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
+import '../../ui/discover/category_events_screen.dart';
+
 
 // No longer using PlaceholderScreen
 
@@ -284,6 +285,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
+      ),
+      GoRoute(
+        path: '/discover/category/:category',
+        builder: (context, state) {
+          final category = state.pathParameters['category']!;
+          return CategoryEventsScreen(category: category);
+        },
       ),
       GoRoute(
         path: '/messages',
