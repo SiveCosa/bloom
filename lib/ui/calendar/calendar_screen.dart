@@ -476,7 +476,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       child: Text(
                         DateFormat('dd').format(day),
                         style: TextStyle(
-                          color: isSelected || isToday
+                          color: isSelected || isToday || events.isNotEmpty
                               ? Colors.white
                               : Colors.white.withValues(alpha: 0.8),
                           fontSize: 16,
@@ -520,10 +520,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           borderRadius: BorderRadius.circular(8),
           child: Opacity(
             opacity: events[0].isPast ? 0.5 : 1.0,
-            child: Stack(
-              children: [
-                if (events[0].posterUrl != null)
-                  Image.network(
+            child: events[0].posterUrl != null
+                ? Image.network(
                     events[0].posterUrl!,
                     fit: BoxFit.cover,
                     width: double.infinity,
@@ -531,11 +529,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     errorBuilder: (context, error, stackTrace) =>
                         _buildFallbackFill(),
                   )
-                else
-                  _buildFallbackFill(),
-                Container(color: Colors.black.withValues(alpha: 0.3)),
-              ],
-            ),
+                : _buildFallbackFill(),
           ),
         ),
       );
@@ -585,21 +579,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   Widget _buildMiniPoster(ScheduledEvent event) {
-    return Stack(
-      children: [
-        if (event.posterUrl != null)
-          Image.network(
-            event.posterUrl!,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (context, error, stackTrace) => _buildFallbackFill(),
-          )
-        else
-          _buildFallbackFill(),
-        Container(color: Colors.black.withValues(alpha: 0.3)),
-      ],
-    );
+    if (event.posterUrl != null) {
+      return Image.network(
+        event.posterUrl!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) => _buildFallbackFill(),
+      );
+    }
+    return _buildFallbackFill();
   }
 
   Widget _buildFallbackFill() {

@@ -1715,17 +1715,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               ),
               const SizedBox(height: 12),
               _buildReminderOption(
-                Icons.report_gmailerrorred_rounded,
-                'Report Event',
-                () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Thank you for reporting. Our safety team will review this event.')),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildReminderOption(
                 Icons.exit_to_app_rounded,
                 'Leave Event',
                 () async {

@@ -204,6 +204,15 @@ class EventRepository {
     }, SetOptions(merge: true));
   }
 
+  Future<void> removeRSVP(String eventId, String userId) async {
+    await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('guests')
+        .doc(userId)
+        .delete();
+  }
+
   Stream<String?> getUserRSVPStream(String eventId, String userId) {
     return _firestore
         .collection('events')

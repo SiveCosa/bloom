@@ -1029,6 +1029,7 @@ exports.getForYouFeed = onCall(
       const hostId = eventData.metadata?.hostId;
 
       if (!hostId) continue; // Invalid event data
+      if (hostId === currentUserId) continue; // Skip events hosted by the current user
 
       if (visibility === "private") {
         const invitedUserIds = eventData.invitedUserIds || eventData.invited_user_ids || eventData.invitations || eventData.audience?.invitedUserIds || eventData.audience?.invited_user_ids || [];
@@ -1150,6 +1151,7 @@ exports.getForYouFeed = onCall(
         start_time: event.start_time,
         location_name: event.location_name,
         aurora_colors: event.aurora_colors,
+        host_id: event.hostId,
         host_username: hostName,
         host_avatar_url: hostAvatar
       });

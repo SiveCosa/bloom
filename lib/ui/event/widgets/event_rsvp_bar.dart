@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:bloom/domain/event/event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,22 +5,82 @@ import '../../../domain/event/event_providers.dart';
 import '../../../data/event/event_repository.dart';
 import '../../../domain/auth/auth_providers.dart';
 
-class EventRsvpBar extends ConsumerWidget {
+class EventRsvpBar extends ConsumerStatefulWidget {
   final String eventId;
 
   const EventRsvpBar({super.key, required this.eventId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final eventAsync = ref.watch(eventStreamProvider(eventId));
-    final rsvpStatusAsync = ref.watch(userEventRsvpProvider(eventId));
+  ConsumerState<EventRsvpBar> createState() => _EventRsvpBarState();
+}
+
+class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
+  int? _lastNonNullActiveIndex;
+  bool _hasActiveSelection = false;
+  bool _shouldAnimate = false;
+  bool _isInitialized = false;
+
+  int? _getIndexForStatus(String? status) {
+    if (status == 'going' || status == 'waitlisted') {
+      return 0;
+    }
+    if (status == 'maybe') {
+      return 1;
+    }
+    if (status == 'declined') {
+      return 2;
+    }
+    return null;
+  }
+
+  void _initializeIfNeeded(String? initialStatus) {
+    if (_isInitialized) return;
+    _isInitialized = true;
+    final initialIndex = _getIndexForStatus(initialStatus);
+    if (initialIndex != null) {
+      _hasActiveSelection = true;
+      _lastNonNullActiveIndex = initialIndex;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to changes to handle animation transition toggles
+    ref.listen<AsyncValue<String?>>(userEventRsvpProvider(widget.eventId), (prevVal, nextVal) {
+      final prevStatus = prevVal?.value;
+      final nextStatus = nextVal.value;
+
+      final prevIndex = _getIndexForStatus(prevStatus);
+      final nextIndex = _getIndexForStatus(nextStatus);
+
+      setState(() {
+        if (nextIndex != null) {
+          _hasActiveSelection = true;
+          if (prevIndex != null && prevIndex != nextIndex) {
+            _shouldAnimate = true;
+          } else {
+            _shouldAnimate = false;
+          }
+          _lastNonNullActiveIndex = nextIndex;
+        } else {
+          _hasActiveSelection = false;
+          _shouldAnimate = false;
+        }
+      });
+    });
+
+    final eventAsync = ref.watch(eventStreamProvider(widget.eventId));
+    final rsvpStatusAsync = ref.watch(userEventRsvpProvider(widget.eventId));
     final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
 
     return eventAsync.when(
       data: (event) {
         if (event == null) return const SizedBox.shrink();
         return rsvpStatusAsync.when(
-          data: (status) => _buildBar(context, ref, userId, status, event),
+          data: (status) {
+            _initializeIfNeeded(status);
+            return _buildBar(context, userId, status, event);
+          },
           loading: () => _buildLoadingBar(),
           error: (_, _) => const SizedBox.shrink(),
         );
@@ -31,9 +90,18 @@ class EventRsvpBar extends ConsumerWidget {
     );
   }
 
+  Color _parseHexColor(String hex) {
+    String hexStr = hex.replaceFirst('#', '');
+    if (hexStr.length == 6) hexStr = 'FF$hexStr';
+    try {
+      return Color(int.parse(hexStr, radix: 16));
+    } catch (e) {
+      return const Color(0xFFAD83FE);
+    }
+  }
+
   Widget _buildBar(
     BuildContext context,
-    WidgetRef ref,
     String? userId,
     String? currentStatus,
     Event event,
@@ -45,129 +113,216 @@ class EventRsvpBar extends ConsumerWidget {
     final requireApproval = event.audience.requireApproval;
     final allowMaybe = event.audience.allowMaybe;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(requireApproval ? 25 : 32.5),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: requireApproval ? 50 : 65,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(requireApproval ? 25 : 32.5),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    final colors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+    
+    List<Color> gradientColors;
+    if (colors.length >= 2) {
+      gradientColors = [colors[0], colors[1]];
+    } else if (colors.length == 1) {
+      gradientColors = [colors[0], colors[0].withValues(alpha: 0.8)];
+    } else {
+      gradientColors = [const Color(0xFF6366f1), const Color(0xFFa855f7)];
+    }
+
+    final double barHeight = requireApproval ? 50 : 75;
+    final double borderRadiusVal = requireApproval ? 25 : 37.5;
+
+    final activeIndex = _getIndexForStatus(currentStatus);
+    final displayIndex = _lastNonNullActiveIndex ?? 0;
+
+    return Container(
+      height: barHeight,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadiusVal),
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: requireApproval
-              ? GestureDetector(
-                  onTap: (isFull && !showWaitlist && !isAlreadyGoing && currentStatus != 'requested') 
-                      ? null 
-                      : () => _handleRsvp(ref, userId, 'requested'),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        currentStatus == 'requested'
-                            ? Icons.check_circle
-                            : (isFull && !showWaitlist && !isAlreadyGoing) 
-                                ? Icons.block 
-                                : Icons.add_circle_outline,
-                        color: Colors.white.withValues(alpha: 0.6),
-                        size: 24,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        currentStatus == 'requested'
-                            ? 'Requested'
-                            : (isFull && !isAlreadyGoing)
-                                ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
-                                : 'Get on the list',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : Row(
+        ],
+      ),
+      child: requireApproval
+          ? GestureDetector(
+              onTap: () {
+                if (currentStatus == 'requested' || currentStatus == 'waitlisted') {
+                  _handleRemoveRsvp(userId);
+                } else if (isFull && !isAlreadyGoing) {
+                  if (showWaitlist) {
+                    _handleRsvp(userId, 'waitlisted');
+                  }
+                } else {
+                  _handleRsvp(userId, 'requested');
+                }
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(21),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (isAlreadyGoing)
-                      _RsvpButton(
-                        label: 'Going',
-                        icon: Icons.check_circle,
-                        isSelected: true,
-                        onPressed: () => _handleRsvp(ref, userId, 'going'),
-                      )
-                    else if (isAlreadyWaitlisted)
-                      _RsvpButton(
-                        label: 'Waitlisted',
-                        icon: Icons.access_time_filled_rounded,
-                        isSelected: true,
-                        onPressed: () => _handleRsvp(ref, userId, 'waitlisted'),
-                      )
-                    else if (isFull)
-                      _RsvpButton(
-                        label: showWaitlist ? 'Waitlist' : 'Event Full',
-                        icon: showWaitlist ? Icons.access_time_rounded : Icons.block,
-                        isSelected: false,
-                        isDisabled: !showWaitlist,
-                        onPressed: showWaitlist 
-                            ? () => _handleRsvp(ref, userId, 'waitlisted')
-                            : () {},
-                      )
-                    else
-                      _RsvpButton(
-                        label: 'Going',
-                        icon: currentStatus == 'going'
-                            ? Icons.check_circle
-                            : Icons.check_circle_outline,
-                        isSelected: currentStatus == 'going',
-                        onPressed: () => _handleRsvp(ref, userId, 'going'),
+                    Icon(
+                      currentStatus == 'requested'
+                          ? Icons.check_circle
+                          : (isFull && !showWaitlist && !isAlreadyGoing) 
+                              ? Icons.block 
+                              : Icons.add_circle_outline,
+                      color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                          ? Colors.black
+                          : Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      currentStatus == 'requested'
+                          ? 'Requested'
+                          : (isFull && !isAlreadyGoing)
+                              ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
+                              : 'Get on the list',
+                      style: TextStyle(
+                        color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                            ? const Color(0xFF4B5563)
+                            : Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
-                    
-                    if (allowMaybe && (!isFull || isAlreadyGoing || isAlreadyWaitlisted)) ...[
-                      _buildRSVPDivider(),
-                      _RsvpButton(
-                        label: 'Maybe',
-                        icon: currentStatus == 'maybe'
-                            ? Icons.help
-                            : Icons.help_outline,
-                        isSelected: currentStatus == 'maybe',
-                        onPressed: () => _handleRsvp(ref, userId, 'maybe'),
-                      ),
-                    ],
-                    _buildRSVPDivider(),
-                    _RsvpButton(
-                      label: 'Decline',
-                      icon: currentStatus == 'declined'
-                          ? Icons.highlight_off_rounded
-                          : Icons.highlight_off,
-                      isSelected: currentStatus == 'declined',
-                      onPressed: () => _handleRsvp(ref, userId, 'declined'),
                     ),
                   ],
                 ),
-        ),
-      ),
+              ),
+            )
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final buttonWidth = (constraints.maxWidth - 2) / 3;
+                final leftOffset = displayIndex * (buttonWidth + 1);
+
+                return Stack(
+                  children: [
+                    AnimatedPositioned(
+                      duration: _shouldAnimate
+                          ? const Duration(milliseconds: 250)
+                          : Duration.zero,
+                      curve: Curves.easeInOutCubic,
+                      left: leftOffset,
+                      top: 0,
+                      bottom: 0,
+                      width: buttonWidth,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _hasActiveSelection ? 1.0 : 0.0,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(34),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (isAlreadyGoing)
+                          _RsvpButton(
+                            label: 'Going',
+                            icon: Icons.check_circle,
+                            isSelected: activeIndex == 0,
+                            onPressed: () => _handleRemoveRsvp(userId),
+                          )
+                        else if (isAlreadyWaitlisted)
+                          _RsvpButton(
+                            label: 'Waitlisted',
+                            icon: Icons.access_time_filled_rounded,
+                            isSelected: activeIndex == 0,
+                            onPressed: () => _handleRemoveRsvp(userId),
+                          )
+                        else if (isFull)
+                          _RsvpButton(
+                            label: showWaitlist ? 'Waitlist' : 'Event Full',
+                            icon: showWaitlist ? Icons.access_time_rounded : Icons.block,
+                            isSelected: activeIndex == 0,
+                            isDisabled: !showWaitlist,
+                            onPressed: showWaitlist 
+                                ? () => _handleRsvp(userId, 'waitlisted')
+                                : () {},
+                          )
+                        else
+                          _RsvpButton(
+                            label: 'Going',
+                            icon: currentStatus == 'going'
+                                ? Icons.check_circle
+                                : Icons.check_circle_outline,
+                            isSelected: activeIndex == 0,
+                            onPressed: () {
+                              if (currentStatus == 'going') {
+                                _handleRemoveRsvp(userId);
+                              } else {
+                                _handleRsvp(userId, 'going');
+                              }
+                            },
+                          ),
+                        
+                        _buildRSVPDivider(),
+                        _RsvpButton(
+                          label: 'Maybe',
+                          icon: currentStatus == 'maybe'
+                              ? Icons.help
+                              : Icons.help_outline,
+                          isSelected: activeIndex == 1,
+                          isDisabled: !allowMaybe || (isFull && !isAlreadyGoing && !isAlreadyWaitlisted && currentStatus != 'maybe'),
+                          onPressed: () {
+                            if (currentStatus == 'maybe') {
+                              _handleRemoveRsvp(userId);
+                            } else {
+                              _handleRsvp(userId, 'maybe');
+                            }
+                          },
+                        ),
+                        _buildRSVPDivider(),
+                        _RsvpButton(
+                          label: 'Decline',
+                          icon: currentStatus == 'declined'
+                              ? Icons.highlight_off_rounded
+                              : Icons.highlight_off,
+                          isSelected: activeIndex == 2,
+                          onPressed: () {
+                            if (currentStatus == 'declined') {
+                              _handleRemoveRsvp(userId);
+                            } else {
+                              _handleRsvp(userId, 'declined');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
     );
   }
 
   Widget _buildRSVPDivider() {
-    return Container(
-      width: 1,
-      height: 30,
-      color: Colors.white.withValues(alpha: 0.1),
+    return Center(
+      child: Container(
+        width: 1,
+        height: 30,
+        color: Colors.white.withValues(alpha: 0.1),
+      ),
     );
   }
 
@@ -185,9 +340,14 @@ class EventRsvpBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleRsvp(WidgetRef ref, String? userId, String status) async {
+  Future<void> _handleRsvp(String? userId, String status) async {
     if (userId == null) return;
-    await ref.read(eventRepositoryProvider).updateRSVP(eventId, userId, status);
+    await ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, status);
+  }
+
+  Future<void> _handleRemoveRsvp(String? userId) async {
+    if (userId == null) return;
+    await ref.read(eventRepositoryProvider).removeRSVP(widget.eventId, userId);
   }
 }
 
@@ -211,15 +371,10 @@ class _RsvpButton extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: isDisabled ? null : onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.white.withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          color: Colors.transparent,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -230,7 +385,7 @@ class _RsvpButton extends StatelessWidget {
                 color: isDisabled 
                     ? Colors.white.withValues(alpha: 0.2)
                     : isSelected
-                        ? Colors.white
+                        ? Colors.black
                         : Colors.white.withValues(alpha: 0.6),
               ),
               const SizedBox(height: 4),
@@ -241,10 +396,10 @@ class _RsvpButton extends StatelessWidget {
                   color: isDisabled 
                       ? Colors.white.withValues(alpha: 0.2)
                       : isSelected
-                          ? Colors.white
+                          ? const Color(0xFF4B5563)
                           : Colors.white.withValues(alpha: 0.6),
                   fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],

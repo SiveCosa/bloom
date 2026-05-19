@@ -1,9 +1,13 @@
+import 'dart:ui';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
 import 'package:bloom/domain/event/event_providers.dart';
+import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
@@ -16,13 +20,24 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   int _selectedFilterIndex = 0;
+
+  late final ScrollController _scrollController;
+  late final AnimationController _spinController;
+  double _dragOffset = 0.0;
+  bool _isRefreshing = false;
+  bool _showIndicator = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scrollController = ScrollController();
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(locationServiceProvider).updateUserLocation();
     });
@@ -30,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    _scrollController.dispose();
+    _spinController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -41,32 +58,211 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      if (!_isRefreshing) {
+        final double offset = _scrollController.offset;
+        if (offset < 0) {
+          setState(() {
+            _dragOffset = -offset;
+            _showIndicator = true;
+          });
+        } else {
+          if (_dragOffset != 0.0) {
+            setState(() {
+              _dragOffset = 0.0;
+              _showIndicator = false;
+            });
+          }
+        }
+      }
+    } else if (notification is UserScrollNotification &&
+        notification.direction == ScrollDirection.idle) {
+      if (!_isRefreshing && _scrollController.offset <= -90.0) {
+        _triggerRefresh();
+      } else if (!_isRefreshing && _dragOffset > 0.0) {
+        setState(() {
+          _dragOffset = 0.0;
+          _showIndicator = false;
+        });
+      }
+    }
+    return false;
+  }
+
+  Future<void> _triggerRefresh() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+      _showIndicator = true;
+      _dragOffset = 90.0;
+    });
+    _spinController.repeat();
+
+    try {
+      ref.invalidate(forYouRawFeedProvider);
+      await ref.read(forYouRawFeedProvider.future);
+    } catch (_) {}
+
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    if (mounted) {
+      setState(() {
+        _isRefreshing = false;
+        _showIndicator = false;
+        _dragOffset = 0.0;
+      });
+      _spinController.stop();
+    }
+  }
+
+  void _handleHomeTabTap() {
+    if (_isRefreshing) return;
+
+    if (_scrollController.hasClients) {
+      if (_scrollController.offset > 0) {
+        _scrollController
+            .animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutCubic,
+        )
+            .then((_) {
+          _triggerRefresh();
+        });
+      } else {
+        _triggerRefresh();
+      }
+    }
+  }
+
+  double _getIndicatorTop(double topPadding, double maskHeight) {
+    const double indicatorHeight = 42.0;
+    final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
+
+    if (_isRefreshing) {
+      return topPadding + maskHeight + 16.0;
+    }
+
+    final double dragAmount = _dragOffset.clamp(0.0, 120.0);
+    return hiddenPosition + dragAmount;
+  }
+
+  Widget _buildReloadIndicator(double topPadding, double maskHeight) {
+    if (!_showIndicator && !_isRefreshing) {
+      return const SizedBox.shrink();
+    }
+
+    final double pullProgress = (_dragOffset / 90.0).clamp(0.0, 1.0);
+
+    final double indicatorTop = _getIndicatorTop(topPadding, maskHeight);
+    final double opacity = _isRefreshing ? 1.0 : pullProgress;
+    final double scale = _isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
+
+    const Color iconColor = Colors.white;
+
+    return AnimatedPositioned(
+      duration: _isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
+      curve: Curves.easeOutCubic,
+      top: indicatorTop,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: opacity,
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF161A22).withValues(alpha: 0.85),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(21),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Center(
+                    child: _isRefreshing
+                        ? RotationTransition(
+                            turns: _spinController,
+                            child: const Icon(
+                              Icons.refresh_rounded,
+                              color: iconColor,
+                              size: 22,
+                            ),
+                          )
+                        : Transform.rotate(
+                            angle: pullProgress * 2 * math.pi,
+                            child: const Icon(
+                              Icons.refresh_rounded,
+                              color: iconColor,
+                              size: 22,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     const maskHeight = 120.0;
 
+    ref.listen(homeTabTapProvider, (previous, next) {
+      if (next > 0) {
+        _handleHomeTabTap();
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
           // 1. Scrollable Content
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.only(
-              top: topPadding + maskHeight + 20,
-              bottom: 56 + bottomPadding + 32, // Nav bar height (56) + bottom safe area + premium breathing room
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const CreateEventCTA(),
-                const SizedBox(height: 24),
-                _buildForYouSection(),
-              ],
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.only(
+                top: topPadding + maskHeight + 20,
+                bottom: 56 + bottomPadding + 32, // Nav bar height (56) + bottom safe area + premium breathing room
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const CreateEventCTA(),
+                  const SizedBox(height: 24),
+                  _buildForYouSection(),
+                ],
+              ),
             ),
           ),
+
+          // Custom Reload Indicator (Emerges from below the app header)
+          _buildReloadIndicator(topPadding, maskHeight),
 
           // 2. Solid Masking Layer (Sharp cut-off 5dp below pills)
           Positioned(

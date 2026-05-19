@@ -81,17 +81,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       ),
                     ),
                     centerTitle: false,
-                    actions: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 15.0),
-                        child: _buildTopIcon(
-                          icon: Icons.menu,
-                          onTap: () {
-                            // TODO: Report/Block actions
-                          },
-                        ),
-                      ),
-                    ],
                   ),
 
                   // Profile Header
@@ -448,50 +437,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopIcon({
-    IconData? icon,
-    String? assetPath,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.05),
-          border: Border.all(color: Colors.white24, width: 1),
-        ),
-        child: Center(
-          child: assetPath != null
-              ? assetPath.endsWith('.svg')
-                    ? SvgPicture.asset(
-                        assetPath,
-                        width: 22,
-                        height: 22,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      )
-                    : Image.asset(
-                        assetPath,
-                        width: 20,
-                        height: 20,
-                        color: Colors.white,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          icon ?? Icons.error,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      )
-              : Icon(icon ?? Icons.error, color: Colors.white, size: 22),
         ),
       ),
     );

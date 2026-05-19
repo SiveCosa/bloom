@@ -11,3 +11,16 @@ class MainShellIndexNotifier extends Notifier<int> {
 final mainShellIndexProvider = NotifierProvider<MainShellIndexNotifier, int>(() {
   return MainShellIndexNotifier();
 });
+
+class HomeTabTapNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
+/// Tracks taps on the active Home tab to trigger page refresh
+final homeTabTapProvider = NotifierProvider<HomeTabTapNotifier, int>(() {
+  return HomeTabTapNotifier();
+});
+

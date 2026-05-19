@@ -47,29 +47,41 @@ final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
 
 final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  final hostedEventsAsync = ref.watch(hostedEventsProvider);
+  final hostedIds = hostedEventsAsync.value?.map((e) => e.id).toSet() ?? {};
+
   return rawFeedAsync.when(
     data: (rawList) {
-      return rawList.map((map) {
-        final startTimeMillis = map['start_time'] as int?;
-        final start = startTimeMillis != null 
-            ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
-            : null;
-        
-        return ScheduledEvent(
-          id: map['id'] as String? ?? '',
-          title: map['title'] as String? ?? '',
-          posterUrl: map['poster_url'] as String?,
-          startTime: start,
-          endTime: start != null 
-              ? DateTime(start.year, start.month, start.day, 23, 59, 59)
-              : DateTime.now(),
-          hostName: map['host_username'] as String? ?? '',
-          hostId: '',
-          hostImageUrl: map['host_avatar_url'] as String?,
-          auroraColors: List<String>.from(map['aurora_colors'] ?? []),
-          locationName: map['location_name'] as String? ?? '',
-        );
-      }).toList();
+      return rawList
+          .where((map) {
+            final id = map['id'] as String? ?? '';
+            final hostId = map['host_id'] as String? ?? '';
+            if (hostedIds.contains(id)) return false;
+            if (user != null && hostId == user.uid) return false;
+            return true;
+          })
+          .map((map) {
+            final startTimeMillis = map['start_time'] as int?;
+            final start = startTimeMillis != null 
+                ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+                : null;
+            
+            return ScheduledEvent(
+              id: map['id'] as String? ?? '',
+              title: map['title'] as String? ?? '',
+              posterUrl: map['poster_url'] as String?,
+              startTime: start,
+              endTime: start != null 
+                  ? DateTime(start.year, start.month, start.day, 23, 59, 59)
+                  : DateTime.now(),
+              hostName: map['host_username'] as String? ?? '',
+              hostId: map['host_id'] as String? ?? '',
+              hostImageUrl: map['host_avatar_url'] as String?,
+              auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+              locationName: map['location_name'] as String? ?? '',
+            );
+          }).toList();
     },
     loading: () => [],
     error: (err, stack) => [],
@@ -78,50 +90,62 @@ final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
 
 final forYouEventsProvider = Provider<List<Event>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  final hostedEventsAsync = ref.watch(hostedEventsProvider);
+  final hostedIds = hostedEventsAsync.value?.map((e) => e.id).toSet() ?? {};
+
   return rawFeedAsync.when(
     data: (rawList) {
-      return rawList.map((map) {
-        final startTimeMillis = map['start_time'] as int?;
-        final start = startTimeMillis != null 
-            ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
-            : null;
+      return rawList
+          .where((map) {
+            final id = map['id'] as String? ?? '';
+            final hostId = map['host_id'] as String? ?? '';
+            if (hostedIds.contains(id)) return false;
+            if (user != null && hostId == user.uid) return false;
+            return true;
+          })
+          .map((map) {
+            final startTimeMillis = map['start_time'] as int?;
+            final start = startTimeMillis != null 
+                ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+                : null;
 
-        return Event(
-          id: map['id'] as String? ?? '',
-          title: map['title'] as String? ?? '',
-          description: '',
-          tags: const [],
-          visuals: EventVisuals(
-            posterUrl: map['poster_url'] as String?,
-            aspectRatio: 1.0,
-            auroraColors: List<String>.from(map['aurora_colors'] ?? []),
-          ),
-          timing: EventTiming(
-            startDate: start,
-            startTimeTbd: start == null,
-          ),
-          location: EventLocation(
-            displayName: map['location_name'] as String? ?? '',
-            formattedAddress: map['location_name'] as String? ?? '',
-            latitude: 0.0,
-            longitude: 0.0,
-            geohash: '',
-          ),
-          audience: const EventAudience(
-            visibility: EventVisibility.public,
-          ),
-          extras: const [],
-          rsvpReminders: const [],
-          liveCounts: const EventLiveCounts(),
-          previewGuests: const [],
-          metadata: EventMetadata(
-            hostId: '',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            status: EventStatus.active,
-          ),
-        );
-      }).toList();
+            return Event(
+              id: map['id'] as String? ?? '',
+              title: map['title'] as String? ?? '',
+              description: '',
+              tags: const [],
+              visuals: EventVisuals(
+                posterUrl: map['poster_url'] as String?,
+                aspectRatio: 1.0,
+                auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+              ),
+              timing: EventTiming(
+                startDate: start,
+                startTimeTbd: start == null,
+              ),
+              location: EventLocation(
+                displayName: map['location_name'] as String? ?? '',
+                formattedAddress: map['location_name'] as String? ?? '',
+                latitude: 0.0,
+                longitude: 0.0,
+                geohash: '',
+              ),
+              audience: const EventAudience(
+                visibility: EventVisibility.public,
+              ),
+              extras: const [],
+              rsvpReminders: const [],
+              liveCounts: const EventLiveCounts(),
+              previewGuests: const [],
+              metadata: EventMetadata(
+                hostId: map['host_id'] as String? ?? '',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                status: EventStatus.active,
+              ),
+            );
+          }).toList();
     },
     loading: () => [],
     error: (err, stack) => [],
