@@ -48,6 +48,7 @@ flutter:
     - assets/icons/nav/
     - assets/icons/profile/
     - assets/icons/home/
+    - assets/icons/discover/
     - assets/logos/
     - assets/images/home-posters/
 
