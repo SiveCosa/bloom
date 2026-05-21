@@ -82,7 +82,7 @@ class UpcomingEventsSection extends ConsumerWidget {
             children: [
               if (todayEvents.isNotEmpty) ...[
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.symmetric(vertical: 10.0),
                   child: Text(
                     'Today',
                     style: TextStyle(
