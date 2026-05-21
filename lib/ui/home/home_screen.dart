@@ -11,6 +11,7 @@ import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
+import 'upcoming_events.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -254,6 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const CreateEventCTA(),
+                  const UpcomingEventsSection(),
                   const SizedBox(height: 24),
                   _buildForYouSection(),
                 ],

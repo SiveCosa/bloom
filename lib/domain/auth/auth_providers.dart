@@ -37,6 +37,7 @@ final currentUserProfileProvider = StreamProvider<Map<String, dynamic>?>((ref) {
 /// Fetch any user's profile by UID
 final userProfileFutureProvider =
     FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
+      if (uid.trim().isEmpty) return null;
       final snap = await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -47,6 +48,7 @@ final userProfileFutureProvider =
 /// Stream any user's profile by UID (real-time updates)
 final userProfileStreamProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
+      if (uid.trim().isEmpty) return Stream.value(null);
       return FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
