@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../domain/calendar/calendar_providers.dart';
 import '../../domain/auth/auth_providers.dart';
-import 'scheduled_event_card.dart';
+import '../widgets/scheduled_event_card.dart';
 
 class UpcomingEventsSection extends ConsumerWidget {
   const UpcomingEventsSection({super.key});
@@ -34,60 +35,73 @@ class UpcomingEventsSection extends ConsumerWidget {
           return eventDate.isAfter(today) && eventDate.isBefore(nextWeek.add(const Duration(days: 1)));
         }).toList();
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (todayEvents.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'Today',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+        if (todayEvents.isEmpty && thisWeekEvents.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (todayEvents.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Today',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: todayEvents.length,
-                itemBuilder: (context, index) {
-                  final event = todayEvents[index];
-                  return ScheduledEvent_card(
-                    event: event,
-                    isHost: event.hostId == currentUser?.uid,
-                  );
-                },
-              ),
-            ],
-            if (thisWeekEvents.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  'This Week',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: todayEvents.length,
+                  itemBuilder: (context, index) {
+                    final event = todayEvents[index];
+                    return ScheduledEventCard(
+                      event: event,
+                      isHost: event.hostId == currentUser?.uid,
+                      onTap: () => context.push('/event/${event.id}'),
+                    );
+                  },
+                ),
+              ],
+              if (thisWeekEvents.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'This Week',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
-              ),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: thisWeekEvents.length,
-                itemBuilder: (context, index) {
-                  final event = thisWeekEvents[index];
-                  return ScheduledEventCard(
-                    event: event,
-                    isHost: event.hostId == currentUser?.uid,
-                  );
-                },
-              ),
+                ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: thisWeekEvents.length,
+                  itemBuilder: (context, index) {
+                    final event = thisWeekEvents[index];
+                    return ScheduledEventCard(
+                      event: event,
+                      isHost: event.hostId == currentUser?.uid,
+                      onTap: () => context.push('/event/${event.id}'),
+                    );
+                  },
+                ),
+              ],
             ],
-          ],
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

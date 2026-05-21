@@ -38,6 +38,7 @@ final scheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
 });
 
 final publicScheduleStreamProvider = StreamProvider.family<List<ScheduledEvent>, String>((ref, userId) {
+  if (userId.trim().isEmpty) return Stream.value([]);
   final repository = ref.watch(eventRepositoryProvider);
   return repository.getScheduleStream(userId).map((list) {
     return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
