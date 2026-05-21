@@ -4,7 +4,6 @@ const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
-const functions = require("firebase-functions/v1");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
@@ -81,9 +80,6 @@ exports.requestOtp = onCall(
       otp: otp,
       expiresAt: expiration,
     });
-
-    // [TESTING MODE] 
-    console.log(`[TESTING] The OTP for ${normalized} is: ${otp}`);
 
     return { success: true };
   }
@@ -839,20 +835,6 @@ exports.getFriendRecommendations = onCall({ region: "africa-south1" }, async (re
              }
           }
         }
-      }
-    }
-
-    // --- STEP 4: Testing Fallback ---
-    // For testing purposes: display all new users up to 10 if we still haven't hit the limit
-    if (recommendations.length < limit) {
-      const anyUsersSnap = await db.collection("users")
-        .orderBy("created_at", "desc")
-        .limit(limit * 3)
-        .get();
-        
-      for (const userDoc of anyUsersSnap.docs) {
-        if (recommendations.length >= limit) break;
-        await addUser(userDoc.id, "New on Bloom (Testing)");
       }
     }
 

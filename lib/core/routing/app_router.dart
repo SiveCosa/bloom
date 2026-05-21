@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Shell and Auth Providers
 import '../../domain/auth/auth_providers.dart';
-// import '../../ui/main_shell/shell_screen.dart'; // Uncomment when ShellScreen is ready
 
 // Import Login UI screens
 import '../../ui/auth/login/email_screen.dart' as login;
@@ -102,7 +101,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           '/auth/signup/avatar',
           '/auth/signup/interests',
           '/auth/signup/permissions',
-          '/auth/signup/loading',
           '/auth/login/confirm',
         };
 
@@ -161,10 +159,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'permissions',
             builder: (context, state) => const PermissionsScreen(),
           ),
-          // GoRoute(
-          //   path: 'loading',
-          //   builder: (context, state) => const LoadingScreen(),
-          // ),
         ],
       ),
 

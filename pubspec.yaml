@@ -26,10 +26,8 @@ dependencies:
   image_picker: ^1.2.1
   cached_network_image: ^3.4.1
   palette_generator: ^0.3.3+7 # Members take note: This package has been discontinued. (Commented on 2026-05-09) Consider using an alternative package for color palette generation in the future.
-  readmore: ^3.0.0
   url_launcher: ^6.3.2
   geolocator: ^14.0.2
-  http: ^1.6.0
   shared_preferences: ^2.5.5
   dart_geohash: ^2.1.0
   share_plus: ^10.1.4
