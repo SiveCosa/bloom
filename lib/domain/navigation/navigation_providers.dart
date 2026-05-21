@@ -24,3 +24,14 @@ final homeTabTapProvider = NotifierProvider<HomeTabTapNotifier, int>(() {
   return HomeTabTapNotifier();
 });
 
+class DiscoverTabTapNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
+/// Tracks taps on the active Discover tab to trigger page refresh
+final discoverTabTapProvider = NotifierProvider<DiscoverTabTapNotifier, int>(() {
+  return DiscoverTabTapNotifier();
+});

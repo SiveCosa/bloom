@@ -143,8 +143,12 @@ class _MainShellState extends ConsumerState<MainShell> {
     return Expanded(
       child: InkWell(
         onTap: () {
-          if (isActive && actualIndex == 0) {
-            ref.read(homeTabTapProvider.notifier).increment();
+          if (isActive) {
+            if (actualIndex == 0) {
+              ref.read(homeTabTapProvider.notifier).increment();
+            } else if (actualIndex == 1) {
+              ref.read(discoverTabTapProvider.notifier).increment();
+            }
           } else {
             ref.read(mainShellIndexProvider.notifier).setIndex(actualIndex);
           }
