@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:bloom/core/routing/event_navigation.dart';
 import '../../domain/calendar/calendar_providers.dart';
 import '../../domain/auth/auth_providers.dart';
+import '../shared/widgets/bloom_loading_indicator.dart';
 import '../widgets/scheduled_event_card.dart';
 
 class UpcomingEventsSection extends ConsumerWidget {
@@ -67,7 +68,7 @@ class UpcomingEventsSection extends ConsumerWidget {
                     return ScheduledEventCard(
                       event: event,
                       isHost: event.hostId == currentUser?.uid,
-                      onTap: () => context.push('/event/${event.id}'),
+                      onTap: () => pushEventDetail(context, event.id),
                     );
                   },
                 ),
@@ -95,7 +96,7 @@ class UpcomingEventsSection extends ConsumerWidget {
                     return ScheduledEventCard(
                       event: event,
                       isHost: event.hostId == currentUser?.uid,
-                      onTap: () => context.push('/event/${event.id}'),
+                      onTap: () => pushEventDetail(context, event.id),
                     );
                   },
                 ),
@@ -104,7 +105,10 @@ class UpcomingEventsSection extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(child: BloomLoadingIndicator(size: 40)),
+      ),
       error: (err, stack) => const SizedBox.shrink(),
     );
   }

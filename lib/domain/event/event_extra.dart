@@ -97,12 +97,12 @@ class EventExtra {
 
   factory EventExtra.fromMap(Map<String, dynamic> map) {
     return EventExtra(
-      id: map['id'] as String,
+      id: map['id'] as String? ?? '',
       type: ExtraType.values.firstWhere(
         (e) => e.name == map['type'],
         orElse: () => ExtraType.link,
       ),
-      displayText: map['displayText'] as String,
+      displayText: map['displayText'] as String? ?? map['display_text'] as String? ?? '',
       url: map['url'] as String?,
     );
   }

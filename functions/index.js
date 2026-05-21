@@ -33,6 +33,251 @@ async function emailDomainAllowed(email, institutionId = DEFAULT_INSTITUTION_ID)
   return allowed.some((d) => String(d).trim().toLowerCase() === domain);
 }
 
+// --- Discover feed helpers ---
+const DISCOVER_TABS = new Set(["All", "Community", "Music", "Film", "Arts", "Fitness", "Food"]);
+const DISCOVER_TAG_BY_TAB = {
+  Community: "community",
+  Music: "music",
+  Film: "film",
+  Arts: "arts",
+  Fitness: "fitness",
+  Food: "food",
+};
+
+function parseFirestoreDate(field) {
+  if (!field) return null;
+  if (typeof field.toDate === "function") return field.toDate();
+  return new Date(field);
+}
+
+function isEventUpcoming(eventData, now) {
+  const startDate = parseFirestoreDate(eventData.timing?.startDate);
+  const endDate = parseFirestoreDate(eventData.timing?.endDate);
+  const effectiveEndDate =
+    endDate || (startDate ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000) : null);
+  if (effectiveEndDate && effectiveEndDate < now) return false;
+  return true;
+}
+
+async function loadUserDiscoverContext(uid) {
+  const [userSnap, connectionsSnap, invitesSnap] = await Promise.all([
+    db.collection("users").doc(uid).get(),
+    db.collection("users").doc(uid).collection("connections").where("status", "==", "connected").get(),
+    db.collection("users").doc(uid).collection("invites").get(),
+  ]);
+
+  const friendsSet = new Set();
+  connectionsSnap.docs.forEach((doc) => friendsSet.add(doc.id));
+
+  const invitesSet = new Set();
+  invitesSnap.docs.forEach((doc) => invitesSet.add(doc.id));
+
+  let gender = null;
+  if (userSnap.exists) {
+    const raw = userSnap.data().gender;
+    if (raw && typeof raw === "string") {
+      const normalized = raw.trim().toLowerCase();
+      if (normalized === "male" || normalized === "female") {
+        gender = normalized;
+      }
+    }
+  }
+
+  return { gender, friendsSet, invitesSet };
+}
+
+async function getHostFriendsSet(hostId, cache) {
+  if (cache.has(hostId)) return cache.get(hostId);
+  const hostFriends = new Set();
+  const snap = await db
+    .collection("users")
+    .doc(hostId)
+    .collection("connections")
+    .where("status", "==", "connected")
+    .get();
+  snap.docs.forEach((doc) => hostFriends.add(doc.id));
+  cache.set(hostId, hostFriends);
+  return hostFriends;
+}
+
+function getCoHostIds(eventData) {
+  const ids = eventData.co_host_ids || eventData.coHostIds || [];
+  return Array.isArray(ids) ? ids.filter((id) => typeof id === "string" && id.length > 0) : [];
+}
+
+function isDirectFriendOfHostOrCohosts(friendsSet, hostId, coHostIds) {
+  if (friendsSet.has(hostId)) return true;
+  for (const coId of coHostIds) {
+    if (friendsSet.has(coId)) return true;
+  }
+  return false;
+}
+
+function setsIntersect(setA, setB) {
+  for (const id of setA) {
+    if (setB.has(id)) return true;
+  }
+  return false;
+}
+
+async function passesVisibilityFilter(eventData, eventId, ctx, hostFriendsCache) {
+  const visibility = eventData.audience?.visibility || "public";
+  const hostId = eventData.metadata?.hostId;
+  if (!hostId) return false;
+
+  if (visibility === "public") return true;
+
+  if (visibility === "private") {
+    const invitedUserIds =
+      eventData.invitedUserIds ||
+      eventData.invited_user_ids ||
+      eventData.invitations ||
+      eventData.audience?.invitedUserIds ||
+      eventData.audience?.invited_user_ids ||
+      [];
+    const explicitlyInvited =
+      Array.isArray(invitedUserIds) && invitedUserIds.includes(ctx.currentUserId);
+    return ctx.invitesSet.has(eventId) || explicitlyInvited;
+  }
+
+  const coHostIds = getCoHostIds(eventData);
+
+  if (visibility === "friendsOnly" || visibility === "friends_only") {
+    return isDirectFriendOfHostOrCohosts(ctx.friendsSet, hostId, coHostIds);
+  }
+
+  if (visibility === "friendsOfFriends" || visibility === "friends_of_friends") {
+    if (isDirectFriendOfHostOrCohosts(ctx.friendsSet, hostId, coHostIds)) {
+      return true;
+    }
+
+    const idsToCheck = [...new Set([hostId, ...coHostIds])];
+    const friendSets = await Promise.all(
+      idsToCheck.map((id) => getHostFriendsSet(id, hostFriendsCache))
+    );
+    for (const hostFriends of friendSets) {
+      if (setsIntersect(ctx.friendsSet, hostFriends)) return true;
+    }
+    return false;
+  }
+
+  if (visibility === "maleOnly" || visibility === "male_only") {
+    return ctx.gender === "male";
+  }
+
+  if (visibility === "femaleOnly" || visibility === "female_only") {
+    return ctx.gender === "female";
+  }
+
+  return false;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function eventMatchesTab(eventData, tab) {
+  if (tab === "All") return true;
+  const tag = DISCOVER_TAG_BY_TAB[tab];
+  if (!tag) return false;
+  const tags = (eventData.tags || []).map((t) => String(t).toLowerCase());
+  const category = eventData.category ? String(eventData.category).toLowerCase() : null;
+  return tags.includes(tag) || category === tag;
+}
+
+function isWeekendEvent(eventData, now) {
+  const startDate = parseFirestoreDate(eventData.timing?.startDate);
+  if (!startDate) return false;
+
+  const jsDay = now.getDay();
+  const dartWeekday = jsDay === 0 ? 7 : jsDay;
+  let daysToFriday = 5 - dartWeekday;
+  if (dartWeekday === 6) daysToFriday = -1;
+  if (dartWeekday === 7) daysToFriday = -2;
+
+  const weekendStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  weekendStart.setDate(weekendStart.getDate() + daysToFriday);
+  const weekendEnd = new Date(weekendStart);
+  weekendEnd.setDate(weekendEnd.getDate() + 2);
+  weekendEnd.setHours(23, 59, 59, 999);
+
+  const end =
+    parseFirestoreDate(eventData.timing?.endDate) ||
+    new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+
+  return startDate < weekendEnd && end > weekendStart;
+}
+
+function eventHasTag(eventData, tag) {
+  const tags = (eventData.tags || []).map((t) => String(t).toLowerCase());
+  const category = eventData.category ? String(eventData.category).toLowerCase() : null;
+  return tags.includes(tag) || category === tag;
+}
+
+async function resolveHostProfiles(hostIds, hostDataCache) {
+  const unique = [...new Set(hostIds.filter(Boolean))];
+  await Promise.all(
+    unique.map(async (hostId) => {
+      if (hostDataCache.has(hostId)) return;
+      const hSnap = await db.collection("users").doc(hostId).get();
+      if (hSnap.exists) {
+        const hData = hSnap.data();
+        hostDataCache.set(hostId, {
+          username: hData.username || hData.name || "",
+          avatar: hData.profile_image_url || hData.avatar_url || "",
+        });
+      } else {
+        hostDataCache.set(hostId, { username: "", avatar: "" });
+      }
+    })
+  );
+}
+
+function formatDiscoverCard(eventDoc, distanceKm, hostDataCache) {
+  const eventData = eventDoc.data();
+  const hostId = eventData.metadata?.hostId || "";
+  const cached = hostDataCache.get(hostId) || { username: "", avatar: "" };
+  const startDate = parseFirestoreDate(eventData.timing?.startDate);
+
+  return {
+    id: eventDoc.id,
+    title: eventData.title || "",
+    poster_url: eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "",
+    start_time: startDate ? startDate.getTime() : null,
+    location_name: eventData.location?.displayName || eventData.location?.display_name || "",
+    distance_km: Math.round(distanceKm * 100) / 100,
+    aurora_colors: eventData.visuals?.auroraColors || eventData.visuals?.aurora_colors || [],
+    host_id: hostId,
+    host_username: cached.username,
+    host_avatar_url: cached.avatar,
+    _eventData: eventData,
+  };
+}
+
+function stripInternalFields(card) {
+  const { _eventData, ...rest } = card;
+  return {
+    ...rest,
+    tags: Array.isArray(_eventData?.tags) ? _eventData.tags : [],
+  };
+}
+
+function sortByDistance(cards) {
+  return cards.sort((a, b) => a.distance_km - b.distance_km);
+}
+
+function takeTopNByDistance(cards, n) {
+  return sortByDistance([...cards]).slice(0, n);
+}
+
 // 1. Request OTP Function (Locked to JHB)
 exports.requestOtp = onCall(
   { region: "africa-south1" },
@@ -1140,5 +1385,124 @@ exports.getForYouFeed = onCall(
     }
 
     return payload;
+  }
+);
+
+// 14. Discover feed (geospatial + visibility + social graph)
+exports.getDiscoverFeed = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "The function must be called while authenticated.");
+    }
+
+    const currentUserId = request.auth.uid;
+    const latitude = request.data?.latitude;
+    const longitude = request.data?.longitude;
+    const tab = request.data?.tab ?? "All";
+
+    if (typeof latitude !== "number" || typeof longitude !== "number") {
+      throw new HttpsError("invalid-argument", "latitude and longitude are required.");
+    }
+    if (!DISCOVER_TABS.has(tab)) {
+      throw new HttpsError("invalid-argument", "Invalid tab.");
+    }
+
+    const ctxBase = await loadUserDiscoverContext(currentUserId);
+    const ctx = {
+      currentUserId,
+      gender: ctxBase.gender,
+      friendsSet: ctxBase.friendsSet,
+      invitesSet: ctxBase.invitesSet,
+    };
+
+    const activeEventsSnap = await db
+      .collection("events")
+      .where("metadata.status", "==", "active")
+      .limit(500)
+      .get();
+
+    const now = new Date();
+    const hostFriendsCache = new Map();
+    const hostDataCache = new Map();
+    const candidates = [];
+
+    for (const eventDoc of activeEventsSnap.docs) {
+      const eventData = eventDoc.data();
+
+      if (!isEventUpcoming(eventData, now)) continue;
+
+      const lat = eventData.location?.latitude;
+      const lng = eventData.location?.longitude;
+      if (typeof lat !== "number" || typeof lng !== "number") continue;
+
+      const visible = await passesVisibilityFilter(
+        eventData,
+        eventDoc.id,
+        ctx,
+        hostFriendsCache
+      );
+      if (!visible) continue;
+
+      const distanceKm = haversineKm(latitude, longitude, lat, lng);
+      candidates.push({ eventDoc, distanceKm, eventData });
+    }
+
+    candidates.sort((a, b) => a.distanceKm - b.distanceKm);
+
+    const hostIds = candidates.map((c) => c.eventData.metadata?.hostId).filter(Boolean);
+    await resolveHostProfiles(hostIds, hostDataCache);
+
+    let cards = candidates.map((c) =>
+      formatDiscoverCard(c.eventDoc, c.distanceKm, hostDataCache)
+    );
+
+    if (tab !== "All") {
+      cards = cards.filter((card) => eventMatchesTab(card._eventData, tab));
+      return cards.map(stripInternalFields);
+    }
+
+    const allCards = cards;
+    const weekendCards = allCards.filter(
+      (card) => isWeekendEvent(card._eventData, now) && card.distance_km <= 100
+    );
+
+    const feed = allCards.map(stripInternalFields);
+    const weekend_forecast = weekendCards.map(stripInternalFields);
+    const meet_new_people = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "community")),
+      10
+    ).map(stripInternalFields);
+    const soundcheck = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "music")),
+      10
+    ).map(stripInternalFields);
+    const modern_renaissance = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "arts")),
+      10
+    ).map(stripInternalFields);
+    const not_for_the_weak = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "fitness")),
+      10
+    ).map(stripInternalFields);
+    const foodie_frenzy = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "food")),
+      10
+    ).map(stripInternalFields);
+    const silver_screening = takeTopNByDistance(
+      allCards.filter((c) => eventHasTag(c._eventData, "film")),
+      10
+    ).map(stripInternalFields);
+
+    return {
+      weekend_forecast,
+      meet_new_people,
+      soundcheck,
+      modern_renaissance,
+      not_for_the_weak,
+      foodie_frenzy,
+      silver_screening,
+      feed,
+    };
   }
 );

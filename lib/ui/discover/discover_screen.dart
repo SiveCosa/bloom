@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/routing/event_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/discover/discover_providers.dart';
 import '../../domain/calendar/scheduled_event.dart';
@@ -89,10 +90,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
     _spinController.repeat();
 
     try {
-      ref.invalidate(discoverActiveEventsStreamProvider);
       ref.invalidate(userLocationProvider);
-      await ref.read(discoverActiveEventsStreamProvider.future);
       await ref.read(userLocationProvider.future);
+      await ref.read(discoverFeedCacheProvider.notifier).refresh();
     } catch (_) {}
 
     await Future.delayed(const Duration(milliseconds: 600));
@@ -375,7 +375,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: EventMediumCard(
                           event: event,
-                          onTap: () => context.push('/event/${event.id}'),
+                          onTap: () => pushEventDetail(context, event.id),
                         ),
                       );
                     },
@@ -648,15 +648,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
             separatorBuilder: (context, index) => const SizedBox(width: 8.0),
             itemBuilder: (context, index) {
               final event = events[index];
+              final card = ref.watch(discoverFeedCardMapProvider)[event.id];
               final scheduledEvent = ScheduledEvent(
                 id: event.id,
                 title: event.title,
                 posterUrl: event.visuals.posterUrl,
                 startTime: event.timing.startDate ?? DateTime.now(),
                 endTime: event.timing.effectiveEndDate ?? (event.timing.startDate ?? DateTime.now()).add(const Duration(hours: 3)),
-                hostName: '',
+                hostName: card?.hostUsername ?? '',
                 hostId: event.metadata.hostId,
-                hostImageUrl: null,
+                hostImageUrl: card?.hostAvatarUrl,
                 auroraColors: event.visuals.auroraColors,
                 locationName: event.location?.displayName ?? 'Bloom Event',
               );

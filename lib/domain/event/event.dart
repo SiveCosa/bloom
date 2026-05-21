@@ -3,6 +3,23 @@ import 'event_visibility.dart';
 import 'event_location.dart';
 import 'event_extra.dart';
 
+DateTime? _parseEventTimestamp(dynamic value) {
+  if (value is Timestamp) return value.toDate();
+  if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+  return null;
+}
+
+List<String> _parseStringList(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+}
+
+int _parseInt(dynamic raw, {int fallback = 0}) {
+  if (raw is int) return raw;
+  if (raw is num) return raw.round();
+  return fallback;
+}
+
 enum EventStatus {
   active,
   cancelled,
@@ -100,18 +117,41 @@ class Event {
       id: id,
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
-      tags: List<String>.from(map['tags'] ?? []),
+      tags: _parseStringList(map['tags']),
       visuals: EventVisuals.fromMap(map['visuals'] ?? {}),
       timing: EventTiming.fromMap(map['timing'] ?? {}),
-      location: map['location'] != null ? EventLocation.fromMap(map['location']) : null,
+      location: _parseLocation(map['location']),
       audience: EventAudience.fromMap(map['audience'] ?? {}),
-      liveCounts: EventLiveCounts.fromMap(map['live_counts'] ?? {}),
-      previewGuests: List<String>.from(map['preview_guests'] ?? []),
-      extras: (map['extras'] as List? ?? []).map((e) => EventExtra.fromMap(e)).toList(),
-      rsvpReminders: List<String>.from(map['rsvpReminders'] ?? []),
+      liveCounts: EventLiveCounts.fromMap(map['live_counts'] ?? map['liveCounts'] ?? {}),
+      previewGuests: _parseStringList(map['preview_guests'] ?? map['previewGuests']),
+      extras: _parseExtras(map['extras']),
+      rsvpReminders: _parseStringList(map['rsvpReminders'] ?? map['rsvp_reminders']),
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
-      coHostIds: List<String>.from(map['co_host_ids'] ?? []),
+      coHostIds: _parseStringList(map['co_host_ids'] ?? map['coHostIds']),
     );
+  }
+
+  static EventLocation? _parseLocation(dynamic raw) {
+    if (raw is! Map) return null;
+    try {
+      return EventLocation.fromMap(Map<String, dynamic>.from(raw));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static List<EventExtra> _parseExtras(dynamic raw) {
+    if (raw is! List) return const [];
+    final extras = <EventExtra>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      try {
+        extras.add(EventExtra.fromMap(Map<String, dynamic>.from(item)));
+      } catch (_) {
+        // Skip malformed extra rows instead of failing the whole event.
+      }
+    }
+    return extras;
   }
 
   EventStatus get computedStatus {
@@ -172,9 +212,9 @@ class EventLiveCounts {
 
   factory EventLiveCounts.fromMap(Map<String, dynamic> map) {
     return EventLiveCounts(
-      going: map['going'] as int? ?? 0,
-      maybe: map['maybe'] as int? ?? 0,
-      interested: map['interested'] as int? ?? 0,
+      going: _parseInt(map['going']),
+      maybe: _parseInt(map['maybe']),
+      interested: _parseInt(map['interested']),
     );
   }
 }
@@ -212,9 +252,11 @@ class EventVisuals {
 
   factory EventVisuals.fromMap(Map<String, dynamic> map) {
     return EventVisuals(
-      posterUrl: map['posterUrl'] as String?,
-      aspectRatio: (map['aspectRatio'] as num?)?.toDouble() ?? 1.0,
-      auroraColors: List<String>.from(map['auroraColors'] ?? []),
+      posterUrl: map['posterUrl'] as String? ?? map['poster_url'] as String?,
+      aspectRatio: (map['aspectRatio'] as num?)?.toDouble() ??
+          (map['aspect_ratio'] as num?)?.toDouble() ??
+          1.0,
+      auroraColors: _parseStringList(map['auroraColors'] ?? map['aurora_colors']),
     );
   }
 }
@@ -268,10 +310,10 @@ class EventTiming {
 
   factory EventTiming.fromMap(Map<String, dynamic> map) {
     return EventTiming(
-      startDate: (map['startDate'] as Timestamp?)?.toDate(),
-      startTimeTbd: map['startTimeTbd'] as bool? ?? true,
-      endDate: (map['endDate'] as Timestamp?)?.toDate(),
-      endTimeTbd: map['endTimeTbd'] as bool? ?? true,
+      startDate: _parseEventTimestamp(map['startDate']) ?? _parseEventTimestamp(map['start_time']),
+      startTimeTbd: map['startTimeTbd'] as bool? ?? map['start_time_tbd'] as bool? ?? true,
+      endDate: _parseEventTimestamp(map['endDate']) ?? _parseEventTimestamp(map['end_time']),
+      endTimeTbd: map['endTimeTbd'] as bool? ?? map['end_time_tbd'] as bool? ?? true,
     );
   }
 }
@@ -329,16 +371,13 @@ class EventAudience {
 
   factory EventAudience.fromMap(Map<String, dynamic> map) {
     return EventAudience(
-      visibility: EventVisibility.values.firstWhere(
-        (e) => e.name == map['visibility'],
-        orElse: () => EventVisibility.public,
-      ),
-      capacity: map['capacity'] as int?,
-      waitlistEnabled: map['waitlistEnabled'] as bool? ?? false,
-      maxPlusOnes: map['maxPlusOnes'] as int? ?? 0,
-      requireApproval: map['requireApproval'] as bool? ?? false,
-      allowMaybe: map['allowMaybe'] as bool? ?? true,
-      rsvpDeadline: (map['rsvpDeadline'] as Timestamp?)?.toDate(),
+      visibility: _parseVisibility(map['visibility']),
+      capacity: map['capacity'] is int ? map['capacity'] as int : (map['capacity'] as num?)?.toInt(),
+      waitlistEnabled: map['waitlistEnabled'] as bool? ?? map['waitlist_enabled'] as bool? ?? false,
+      maxPlusOnes: _parseInt(map['maxPlusOnes'] ?? map['max_plus_ones']),
+      requireApproval: map['requireApproval'] as bool? ?? map['require_approval'] as bool? ?? false,
+      allowMaybe: map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
+      rsvpDeadline: _parseEventTimestamp(map['rsvpDeadline']) ?? _parseEventTimestamp(map['rsvp_deadline']),
     );
   }
 }
@@ -381,15 +420,35 @@ class EventMetadata {
 
   factory EventMetadata.fromMap(Map<String, dynamic> map) {
     return EventMetadata(
-      hostId: map['hostId'] as String? ?? '',
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      hostId: map['hostId'] as String? ?? map['host_id'] as String? ?? '',
+      createdAt: _parseEventTimestamp(map['createdAt']) ??
+          _parseEventTimestamp(map['created_at']) ??
+          DateTime.now(),
+      updatedAt: _parseEventTimestamp(map['updatedAt']) ??
+          _parseEventTimestamp(map['updated_at']) ??
+          DateTime.now(),
       status: EventStatus.values.firstWhere(
-        (e) => e.name == map['status'],
+        (e) => e.name == (map['status'] as String?),
         orElse: () => EventStatus.active,
       ),
     );
   }
+}
+
+EventVisibility _parseVisibility(dynamic raw) {
+  final value = raw?.toString();
+  if (value == null || value.isEmpty) return EventVisibility.public;
+  const aliases = {
+    'friends_only': 'friendsOnly',
+    'friends_of_friends': 'friendsOfFriends',
+    'male_only': 'maleOnly',
+    'female_only': 'femaleOnly',
+  };
+  final normalized = aliases[value] ?? value;
+  return EventVisibility.values.firstWhere(
+    (e) => e.name == normalized,
+    orElse: () => EventVisibility.public,
+  );
 }
 
 const _undefined = Object();

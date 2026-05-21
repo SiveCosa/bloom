@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
+import 'package:bloom/domain/calendar/calendar_providers.dart';
 import 'package:bloom/domain/event/event_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
+import '../shared/widgets/bloom_loading_indicator.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
 import 'upcoming_events.dart';
@@ -237,6 +239,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
+    final forYouAsync = ref.watch(forYouRawFeedProvider);
+    final scheduleAsync = ref.watch(scheduleStreamProvider);
+    final isHomeFeedLoading =
+        forYouAsync.isLoading || scheduleAsync.isLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
@@ -255,9 +262,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const CreateEventCTA(),
-                  const UpcomingEventsSection(),
-                  const SizedBox(height: 24),
-                  _buildForYouSection(),
+                  if (isHomeFeedLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 80),
+                      child: Center(
+                        child: BloomLoadingIndicator(size: 40),
+                      ),
+                    )
+                  else ...[
+                    const UpcomingEventsSection(),
+                    const SizedBox(height: 24),
+                    _buildForYouSection(),
+                  ],
                 ],
               ),
             ),
@@ -476,14 +492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ],
         );
       },
-      loading: () => const SizedBox(
-        height: 394,
-        child: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFF04A9F),
-          ),
-        ),
-      ),
+      loading: () => const SizedBox.shrink(),
       error: (err, stack) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Center(

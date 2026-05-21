@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:bloom/core/routing/event_navigation.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/domain/event/create_event_state.dart';
 import 'package:bloom/domain/auth/auth_providers.dart';
@@ -103,7 +103,7 @@ class EventCardLarge extends ConsumerWidget {
 
     // 3. Structural Container & Clip
     return GestureDetector(
-      onTap: () => context.push('/event/${event.id}'),
+      onTap: () => pushEventDetail(context, event.id),
       child: Container(
         width: 250,
         height: 394,

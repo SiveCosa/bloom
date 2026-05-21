@@ -47,22 +47,18 @@ class ScheduledEventCard extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-            // Poster
-            Hero(
-              tag: 'event_poster_${event.id}',
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  image: event.posterUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(event.posterUrl!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                image: event.posterUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(event.posterUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
             const SizedBox(width: 10), // Preserved 10dp gap

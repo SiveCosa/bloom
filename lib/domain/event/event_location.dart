@@ -45,13 +45,22 @@ class EventLocation {
   }
 
   factory EventLocation.fromMap(Map<String, dynamic> map) {
+    final lat = map['latitude'] ?? map['lat'];
+    final lng = map['longitude'] ?? map['lng'];
+    if (lat is! num || lng is! num) {
+      throw const FormatException('EventLocation requires numeric latitude/longitude');
+    }
     return EventLocation(
-      latitude: (map['latitude'] as num).toDouble(),
-      longitude: (map['longitude'] as num).toDouble(),
+      latitude: lat.toDouble(),
+      longitude: lng.toDouble(),
       geohash: map['geohash'] as String? ?? '',
-      formattedAddress: map['formattedAddress'] as String,
-      displayName: map['displayName'] as String,
-      apartmentInfo: map['apartmentInfo'] as String?,
+      formattedAddress: map['formattedAddress'] as String? ??
+          map['formatted_address'] as String? ??
+          '',
+      displayName: map['displayName'] as String? ??
+          map['display_name'] as String? ??
+          '',
+      apartmentInfo: map['apartmentInfo'] as String? ?? map['apartment_info'] as String?,
     );
   }
 }

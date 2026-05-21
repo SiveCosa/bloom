@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/routing/event_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/auth/auth_providers.dart';
 import '../../domain/friendship/friendship_models.dart';
@@ -215,7 +216,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                                 child: ScheduledEventCard(
                                   event: scheduledEvent,
                                   isHost: false,
-                                  onTap: () => context.push('/event/${event.id}'),
+                                  onTap: () => pushEventDetail(context, event.id),
                                 ),
                               );
                             },

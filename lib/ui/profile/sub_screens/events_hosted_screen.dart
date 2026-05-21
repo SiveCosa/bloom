@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/routing/event_navigation.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/event/event_providers.dart';
 import '../../shared/widgets/event_medium_card.dart';
@@ -102,7 +103,7 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: upcoming[index],
-                                  onTap: () => context.push('/event/${upcoming[index].id}'),
+                                  onTap: () => pushEventDetail(context, upcoming[index].id),
                                 ),
                                 childCount: upcoming.length,
                               ),
@@ -140,7 +141,7 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: past[index],
-                                  onTap: () => context.push('/event/${past[index].id}'),
+                                  onTap: () => pushEventDetail(context, past[index].id),
                                 ),
                                 childCount: past.length,
                               ),

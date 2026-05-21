@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/routing/event_navigation.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import '../shared/widgets/event_medium_card.dart';
 import '../../domain/discover/discover_providers.dart';
@@ -148,15 +149,17 @@ class CategoryEventsScreen extends ConsumerWidget {
                             separatorBuilder: (context, index) => const SizedBox(width: 8.0),
                             itemBuilder: (context, index) {
                               final event = carouselEvents[index];
+                              final card =
+                                  ref.watch(discoverFeedCardMapForRouteProvider(category))[event.id];
                               final scheduledEvent = ScheduledEvent(
                                 id: event.id,
                                 title: event.title,
                                 posterUrl: event.visuals.posterUrl,
                                 startTime: event.timing.startDate ?? DateTime.now(),
                                 endTime: event.timing.effectiveEndDate ?? (event.timing.startDate ?? DateTime.now()).add(const Duration(hours: 3)),
-                                hostName: '',
+                                hostName: card?.hostUsername ?? '',
                                 hostId: event.metadata.hostId,
-                                hostImageUrl: null,
+                                hostImageUrl: card?.hostAvatarUrl,
                                 auroraColors: event.visuals.auroraColors,
                                 locationName: event.location?.displayName ?? 'Bloom Event',
                               );
@@ -196,7 +199,7 @@ class CategoryEventsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: EventMediumCard(
                           event: event,
-                          onTap: () => context.push('/event/${event.id}'),
+                          onTap: () => pushEventDetail(context, event.id),
                         ),
                       );
                     },

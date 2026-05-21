@@ -141,7 +141,12 @@ class EventRepository {
     if (id.trim().isEmpty) return null;
     final doc = await _firestore.collection('events').doc(id).get();
     if (!doc.exists) return null;
-    return Event.fromMap(doc.data()!, doc.id);
+    try {
+      return Event.fromMap(doc.data()!, doc.id);
+    } catch (e, stack) {
+      debugPrint('Failed to parse event ${doc.id}: $e\n$stack');
+      return null;
+    }
   }
 
   Stream<List<Event>> getHostedEventsStream(String userId) {
@@ -151,7 +156,14 @@ class EventRepository {
         .where('metadata.hostId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-      final events = snapshot.docs.map((doc) => Event.fromMap(doc.data(), doc.id)).toList();
+      final events = <Event>[];
+      for (final doc in snapshot.docs) {
+        try {
+          events.add(Event.fromMap(doc.data(), doc.id));
+        } catch (e, stack) {
+          debugPrint('Failed to parse hosted event ${doc.id}: $e\n$stack');
+        }
+      }
       // Sort in memory to avoid needing a composite index
       events.sort((a, b) => (b.metadata.createdAt).compareTo(a.metadata.createdAt));
       return events;
@@ -187,7 +199,12 @@ class EventRepository {
     if (id.trim().isEmpty) return Stream.value(null);
     return _firestore.collection('events').doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;
-      return Event.fromMap(doc.data()!, doc.id);
+      try {
+        return Event.fromMap(doc.data()!, doc.id);
+      } catch (e, stack) {
+        debugPrint('Failed to parse event ${doc.id}: $e\n$stack');
+        return null;
+      }
     });
   }
 

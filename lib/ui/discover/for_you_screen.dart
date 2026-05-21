@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/routing/event_navigation.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import '../shared/widgets/event_medium_card.dart';
 import '../../domain/event/event_providers.dart';
@@ -94,7 +95,7 @@ class ForYouScreen extends ConsumerWidget {
                     final event = events[index];
                     return EventMediumCard(
                       event: event,
-                      onTap: () => context.push('/event/${event.id}'),
+                      onTap: () => pushEventDetail(context, event.id),
                     );
                   },
                 );

@@ -1,10 +1,12 @@
+import 'dart:math' as math;
+
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../data/firebase_provider.dart';
+import 'discover_feed.dart';
 import '../event/event.dart';
-import '../event/event_visibility.dart';
+import '../navigation/navigation_providers.dart';
 
-// List of Discover Categories
 const List<String> discoverCategories = [
   'All',
   'Community',
@@ -15,6 +17,15 @@ const List<String> discoverCategories = [
   'Food',
 ];
 
+const double kDiscoverDefaultLatitude = -26.2041;
+const double kDiscoverDefaultLongitude = 28.0473;
+
+/// How long a successful `tab: All` fetch is reused before refetching.
+const Duration kDiscoverFeedCacheTtl = Duration(minutes: 10);
+
+/// Refetch when the user moves more than this many km from the cached coords.
+const double kDiscoverLocationRefreshKm = 3.0;
+
 class DiscoverCategoryFilterNotifier extends Notifier<String> {
   @override
   String build() => 'All';
@@ -22,189 +33,354 @@ class DiscoverCategoryFilterNotifier extends Notifier<String> {
   void setCategory(String category) => state = category;
 }
 
-// Discover category filter state provider
-final discoverCategoryFilterProvider = NotifierProvider<DiscoverCategoryFilterNotifier, String>(() {
+final discoverCategoryFilterProvider =
+    NotifierProvider<DiscoverCategoryFilterNotifier, String>(() {
   return DiscoverCategoryFilterNotifier();
 });
 
-// Stream provider to fetch active public events from Firestore
-final discoverActiveEventsStreamProvider = StreamProvider<List<Event>>((ref) {
-  final firestore = ref.watch(firestoreProvider);
-  return firestore
-      .collection('events')
-      .where('metadata.status', isEqualTo: 'active')
-      .snapshots()
-      .map((snapshot) {
-    return snapshot.docs
-        .map((doc) => Event.fromMap(doc.data(), doc.id))
-        .where((event) => event.audience.visibility == EventVisibility.public)
-        .toList();
-  });
-});
-
-// Provider for all Discover events
-final allDiscoverEventsProvider = Provider<List<Event>>((ref) {
-  final activeEventsAsync = ref.watch(discoverActiveEventsStreamProvider);
-  return activeEventsAsync.value ?? [];
-});
-
-// Provider for user location coordinates
 final userLocationProvider = FutureProvider<Position?>((ref) async {
   try {
     LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       return null;
     }
-    return await Geolocator.getLastKnownPosition() ?? await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.low,
-        timeLimit: Duration(seconds: 3),
-      ),
-    );
+    return await Geolocator.getLastKnownPosition() ??
+        await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+            timeLimit: Duration(seconds: 3),
+          ),
+        );
   } catch (e) {
     return null;
   }
 });
 
-// Special Filter: Weekend Forecast (Friday 00:00:00 to Sunday 23:59:59, within 100km of user location)
-final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  final userLoc = ref.watch(userLocationProvider).value;
+/// Cached `getDiscoverFeed` (`tab: All`) payload + fetch metadata.
+class DiscoverFeedCache {
+  final DiscoverFeedAllResponse allResponse;
+  final double latitude;
+  final double longitude;
+  final DateTime fetchedAt;
 
-  final now = DateTime.now();
-  int daysToFriday = 5 - now.weekday;
-  if (now.weekday == 6) daysToFriday = -1;
-  if (now.weekday == 7) daysToFriday = -2;
+  const DiscoverFeedCache({
+    required this.allResponse,
+    required this.latitude,
+    required this.longitude,
+    required this.fetchedAt,
+  });
 
-  final weekendStart = DateTime(now.year, now.month, now.day).add(Duration(days: daysToFriday));
-  final weekendEnd = weekendStart.add(const Duration(days: 2, hours: 23, minutes: 59, seconds: 59));
+  bool isExpired(DateTime now) => now.difference(fetchedAt) > kDiscoverFeedCacheTtl;
 
-  return allEvents.where((event) {
-    if (event.timing.startDate == null) return false;
-    final start = event.timing.startDate!;
-    final end = event.timing.effectiveEndDate ?? start;
+  bool locationMovedFar(double lat, double lng) {
+    return _haversineKm(latitude, longitude, lat, lng) > kDiscoverLocationRefreshKm;
+  }
+}
 
-    final isInWeekend = start.isBefore(weekendEnd) && end.isAfter(weekendStart);
-    if (!isInWeekend) return false;
-
-    if (userLoc != null && event.location != null) {
-      final distance = Geolocator.distanceBetween(
-        userLoc.latitude,
-        userLoc.longitude,
-        event.location!.latitude,
-        event.location!.longitude,
-      );
-      if (distance > 100000) return false; // 100km limit
+class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
+  @override
+  Future<DiscoverFeedCache?> build() async {
+    ref.keepAlive();
+    // IndexedStack mounts Discover early; defer network until that tab is visible.
+    final shellIndex = ref.watch(mainShellIndexProvider);
+    if (shellIndex != 1 && state.value == null) {
+      return null;
     }
-    return true;
-  }).toList();
+    return _load(force: false);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _load(force: true));
+  }
+
+  Future<DiscoverFeedCache?> _load({required bool force}) async {
+    final coords = await ref.read(userLocationProvider.future);
+    final lat = coords?.latitude ?? kDiscoverDefaultLatitude;
+    final lng = coords?.longitude ?? kDiscoverDefaultLongitude;
+    final now = DateTime.now();
+
+    final existing = state.value;
+    if (!force &&
+        existing != null &&
+        !existing.isExpired(now) &&
+        !existing.locationMovedFar(lat, lng)) {
+      return existing;
+    }
+
+    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+    final result = await functions.httpsCallable('getDiscoverFeed').call({
+      'latitude': lat,
+      'longitude': lng,
+      'tab': 'All',
+    });
+
+    final data = result.data;
+    DiscoverFeedAllResponse allResponse;
+    if (data is Map) {
+      allResponse =
+          DiscoverFeedAllResponse.fromMap(Map<String, dynamic>.from(data));
+    } else {
+      allResponse = const DiscoverFeedAllResponse(
+        weekendForecast: [],
+        meetNewPeople: [],
+        soundcheck: [],
+        modernRenaissance: [],
+        notForTheWeak: [],
+        foodieFrenzy: [],
+        silverScreening: [],
+        feed: [],
+      );
+    }
+
+    return DiscoverFeedCache(
+      allResponse: allResponse,
+      latitude: lat,
+      longitude: lng,
+      fetchedAt: now,
+    );
+  }
+}
+
+final discoverFeedCacheProvider =
+    AsyncNotifierProvider<DiscoverFeedCacheNotifier, DiscoverFeedCache?>(() {
+  return DiscoverFeedCacheNotifier();
 });
 
-// Category Filter Providers
+/// View of the cache for the active category chip (no extra network calls).
+final discoverFeedProvider = Provider<AsyncValue<DiscoverFeedResult>>((ref) {
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  final filter = ref.watch(discoverCategoryFilterProvider);
+
+  return cacheAsync.when(
+    data: (cache) {
+      if (cache == null) {
+        return const AsyncData(DiscoverFeedResult.category([]));
+      }
+      if (filter == 'All') {
+        return AsyncData(DiscoverFeedResult.all(cache.allResponse));
+      }
+      return AsyncData(
+        DiscoverFeedResult.category(
+          categoryCardsFromAll(cache.allResponse, filter),
+        ),
+      );
+    },
+    loading: () => const AsyncLoading(),
+    error: (error, stack) => AsyncError(error, stack),
+  );
+});
+
+List<DiscoverFeedCard> categoryCardsFromAll(
+  DiscoverFeedAllResponse all,
+  String category,
+) {
+  if (category == 'All') return all.feed;
+  return all.feed.where((c) => c.matchesCategory(category)).toList();
+}
+
+List<DiscoverFeedCard> spotlightCardsForFilter(
+  DiscoverFeedAllResponse all,
+  String filter,
+) {
+  switch (filter) {
+    case 'Community':
+      return all.meetNewPeople;
+    case 'Music':
+      return all.soundcheck;
+    case 'Film':
+      return all.silverScreening;
+    case 'Arts':
+      return all.modernRenaissance;
+    case 'Fitness':
+      return all.notForTheWeak;
+    case 'Food':
+      return all.foodieFrenzy;
+    default:
+      return [];
+  }
+}
+
+List<DiscoverFeedCard> cardsForRouteCategory(
+  DiscoverFeedAllResponse all,
+  String routeCategory,
+) {
+  final c = routeCategory.toLowerCase().trim();
+  if (c == 'weekend-forecast' || c == 'weekend forecast') {
+    return all.weekendForecast;
+  }
+  if (c == 'music' || c == 'after hours' || c == 'after-hours') {
+    return categoryCardsFromAll(all, 'Music');
+  }
+  if (c == 'community' || c == 'meet new people' || c == 'meet-new-people') {
+    return categoryCardsFromAll(all, 'Community');
+  }
+  if (c == 'arts' || c == 'modern renaissance' || c == 'modern-renaissance') {
+    return categoryCardsFromAll(all, 'Arts');
+  }
+  if (c == 'film' || c == 'silver screen' || c == 'silver-screen') {
+    return categoryCardsFromAll(all, 'Film');
+  }
+  if (c == 'fitness' || c == 'peak performance' || c == 'peak-performance') {
+    return categoryCardsFromAll(all, 'Fitness');
+  }
+  if (c == 'food' || c == 'feast & flavor' || c == 'feast-&-flavor') {
+    return categoryCardsFromAll(all, 'Food');
+  }
+  if (discoverCategories.contains(routeCategory)) {
+    return categoryCardsFromAll(all, routeCategory);
+  }
+  return all.feed;
+}
+
+List<Event> _cardsToEvents(List<DiscoverFeedCard> cards) =>
+    cards.map((c) => c.toEvent()).toList();
+
+Map<String, DiscoverFeedCard> _cardMapFromAll(DiscoverFeedAllResponse all) {
+  final cards = <DiscoverFeedCard>[
+    ...all.feed,
+    ...all.carouselLists.expand((list) => list),
+  ];
+  return {for (final c in cards) c.id: c};
+}
+
+final discoverFeedCardMapProvider = Provider<Map<String, DiscoverFeedCard>>((ref) {
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) => cache == null ? {} : _cardMapFromAll(cache.allResponse),
+    loading: () => {},
+    error: (_, _) => {},
+  );
+});
+
+final discoverFeedCardMapForRouteProvider =
+    Provider.family<Map<String, DiscoverFeedCard>, String>((ref, routeCategory) {
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) {
+      if (cache == null) return {};
+      final cards = cardsForRouteCategory(cache.allResponse, routeCategory);
+      return {for (final c in cards) c.id: c};
+    },
+    loading: () => {},
+    error: (_, _) => {},
+  );
+});
+
+final allDiscoverEventsProvider = Provider<List<Event>>((ref) {
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) =>
+        cache == null ? [] : _cardsToEvents(cache.allResponse.feed),
+    loading: () => [],
+    error: (_, _) => [],
+  );
+});
+
+List<Event> _carouselFromCache(
+  Ref ref,
+  List<DiscoverFeedCard> Function(DiscoverFeedAllResponse) pick,
+) {
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) =>
+        cache == null ? [] : _cardsToEvents(pick(cache.allResponse)),
+    loading: () => [],
+    error: (_, _) => [],
+  );
+}
+
+final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
+  return _carouselFromCache(ref, (r) => r.weekendForecast);
+});
+
 final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'music')).toList();
+  return _carouselFromCache(ref, (r) => r.soundcheck);
 });
 
 final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'film')).toList();
+  return _carouselFromCache(ref, (r) => r.silverScreening);
 });
 
 final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'arts')).toList();
+  return _carouselFromCache(ref, (r) => r.modernRenaissance);
 });
 
 final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'fitness')).toList();
+  return _carouselFromCache(ref, (r) => r.notForTheWeak);
 });
 
 final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'food')).toList();
+  return _carouselFromCache(ref, (r) => r.foodieFrenzy);
 });
 
 final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == 'community')).toList();
+  return _carouselFromCache(ref, (r) => r.meetNewPeople);
 });
 
-// Popularity sorting helpers
-List<Event> sortByPopularity(List<Event> events) {
-  final list = List<Event>.from(events);
-  list.sort((a, b) {
-    final scoreA = a.liveCounts.going + a.liveCounts.interested;
-    final scoreB = b.liveCounts.going + b.liveCounts.interested;
-    return scoreB.compareTo(scoreA);
-  });
-  return list;
-}
+List<Event> getTop10Popular(List<Event> events) => events.take(10).toList();
 
-List<Event> getTop10Popular(List<Event> events) {
-  return sortByPopularity(events).take(10).toList();
-}
+List<Event> sortByPopularity(List<Event> events) => events;
 
-// Provider for specific category/filter pages
 final categoryEventsProvider = Provider.family<List<Event>, String>((ref, category) {
-  final allEvents = ref.watch(allDiscoverEventsProvider);
-  final cleanCategory = category.toLowerCase().trim();
-
-  if (cleanCategory == 'all') {
-    return allEvents;
-  } else if (cleanCategory == 'weekend-forecast' || cleanCategory == 'weekend forecast') {
-    return ref.watch(discoverWeekendForecastEventsProvider);
-  } else if (cleanCategory == 'music' || cleanCategory == 'after hours' || cleanCategory == 'after-hours') {
-    return ref.watch(discoverMusicEventsProvider);
-  } else if (cleanCategory == 'community' || cleanCategory == 'meet new people' || cleanCategory == 'meet-new-people') {
-    return ref.watch(discoverCommunityEventsProvider);
-  } else if (cleanCategory == 'arts' || cleanCategory == 'modern renaissance' || cleanCategory == 'modern-renaissance') {
-    return ref.watch(discoverArtsEventsProvider);
-  } else if (cleanCategory == 'film' || cleanCategory == 'silver screen' || cleanCategory == 'silver-screen') {
-    return ref.watch(discoverFilmEventsProvider);
-  } else if (cleanCategory == 'fitness' || cleanCategory == 'peak performance' || cleanCategory == 'peak-performance') {
-    return ref.watch(discoverFitnessEventsProvider);
-  } else if (cleanCategory == 'food' || cleanCategory == 'feast & flavor' || cleanCategory == 'feast-&-flavor') {
-    return ref.watch(discoverFoodEventsProvider);
-  } else {
-    return allEvents.where((e) => e.tags.any((t) => t.toLowerCase() == cleanCategory)).toList();
-  }
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) {
+      if (cache == null) return [];
+      return _cardsToEvents(
+        cardsForRouteCategory(cache.allResponse, category),
+      );
+    },
+    loading: () => [],
+    error: (_, _) => [],
+  );
 });
 
-// Provider for Vertical Feed events that reacts to selected chip filter and prevents duplication
 final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
   final activeFilter = ref.watch(discoverCategoryFilterProvider);
-  final allEvents = ref.watch(allDiscoverEventsProvider);
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
 
-  if (activeFilter == 'All') {
-    final weekendEvents = ref.watch(discoverWeekendForecastEventsProvider);
-    final weekendPopular = getTop10Popular(weekendEvents);
-    
-    final musicPopular = getTop10Popular(ref.watch(discoverMusicEventsProvider));
-    final communityPopular = getTop10Popular(ref.watch(discoverCommunityEventsProvider));
-    final artsPopular = getTop10Popular(ref.watch(discoverArtsEventsProvider));
-    final filmPopular = getTop10Popular(ref.watch(discoverFilmEventsProvider));
-    final fitnessPopular = getTop10Popular(ref.watch(discoverFitnessEventsProvider));
-    final foodPopular = getTop10Popular(ref.watch(discoverFoodEventsProvider));
+  return cacheAsync.when(
+    data: (cache) {
+      if (cache == null) return [];
+      final all = cache.allResponse;
 
-    final shownIds = <String>{};
-    if (weekendEvents.isNotEmpty) shownIds.addAll(weekendPopular.map((e) => e.id));
-    if (musicPopular.isNotEmpty) shownIds.addAll(musicPopular.map((e) => e.id));
-    if (communityPopular.isNotEmpty) shownIds.addAll(communityPopular.map((e) => e.id));
-    if (artsPopular.isNotEmpty) shownIds.addAll(artsPopular.map((e) => e.id));
-    if (filmPopular.isNotEmpty) shownIds.addAll(filmPopular.map((e) => e.id));
-    if (fitnessPopular.isNotEmpty) shownIds.addAll(fitnessPopular.map((e) => e.id));
-    if (foodPopular.isNotEmpty) shownIds.addAll(foodPopular.map((e) => e.id));
+      if (activeFilter == 'All') {
+        final shownIds = <String>{};
+        for (final list in all.carouselLists) {
+          for (final card in list) {
+            shownIds.add(card.id);
+          }
+        }
+        return _cardsToEvents(
+          all.feed.where((c) => !shownIds.contains(c.id)).toList(),
+        );
+      }
 
-    return allEvents.where((e) => !shownIds.contains(e.id)).toList();
-  } else {
-    final categoryEvents = ref.watch(categoryEventsProvider(activeFilter));
-    final top10 = getTop10Popular(categoryEvents);
-    final top10Ids = top10.map((e) => e.id).toSet();
-
-    return categoryEvents.where((e) => !top10Ids.contains(e.id)).toList();
-  }
+      final categoryCards = categoryCardsFromAll(all, activeFilter);
+      final spotlightIds =
+          spotlightCardsForFilter(all, activeFilter).map((c) => c.id).toSet();
+      return _cardsToEvents(
+        categoryCards.where((c) => !spotlightIds.contains(c.id)).toList(),
+      );
+    },
+    loading: () => [],
+    error: (_, _) => [],
+  );
 });
 
+double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+  const r = 6371.0;
+  final dLat = _toRad(lat2 - lat1);
+  final dLon = _toRad(lon2 - lon1);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(_toRad(lat1)) *
+          math.cos(_toRad(lat2)) *
+          math.sin(dLon / 2) *
+          math.sin(dLon / 2);
+  final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  return r * c;
+}
 
+double _toRad(double deg) => deg * math.pi / 180.0;

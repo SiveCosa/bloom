@@ -12,6 +12,7 @@ import 'package:bloom/domain/event/event.dart';
 import 'package:bloom/domain/event/event_providers.dart';
 import 'package:bloom/domain/auth/auth_providers.dart';
 import 'package:bloom/ui/create_event/widgets/aurora_background.dart';
+import 'package:bloom/ui/shared/widgets/bloom_loading_indicator.dart';
 import 'package:bloom/ui/shared/widgets/event_weather_card.dart';
 import 'package:bloom/domain/event/event_visibility.dart';
 import 'package:bloom/domain/event/event_extra.dart';
@@ -179,6 +180,20 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                     ? Image.network(
                                         event.visuals.posterUrl!,
                                         fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return Stack(
+                                            fit: StackFit.expand,
+                                            children: [
+                                              Container(color: Colors.grey[900]),
+                                              const Center(
+                                                child: BloomLoadingIndicator(size: 36),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Container(color: Colors.grey[900]),
                                       )
                                     : Container(color: Colors.grey[900]),
                               ),
