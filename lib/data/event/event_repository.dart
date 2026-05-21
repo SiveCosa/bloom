@@ -138,12 +138,14 @@ class EventRepository {
   }
 
   Future<Event?> getEvent(String id) async {
+    if (id.trim().isEmpty) return null;
     final doc = await _firestore.collection('events').doc(id).get();
     if (!doc.exists) return null;
     return Event.fromMap(doc.data()!, doc.id);
   }
 
   Stream<List<Event>> getHostedEventsStream(String userId) {
+    if (userId.trim().isEmpty) return Stream.value([]);
     return _firestore
         .collection('events')
         .where('metadata.hostId', isEqualTo: userId)
@@ -157,6 +159,7 @@ class EventRepository {
   }
 
   Stream<List<Map<String, dynamic>>> getScheduleStream(String userId) {
+    if (userId.trim().isEmpty) return Stream.value([]);
     return _firestore
         .collection('users')
         .doc(userId)
@@ -167,6 +170,7 @@ class EventRepository {
   }
 
   Stream<List<Map<String, dynamic>>> getUpcomingScheduleStream(String userId) {
+    if (userId.trim().isEmpty) return Stream.value([]);
     final now = DateTime.now();
     return _firestore
         .collection('users')
@@ -180,6 +184,7 @@ class EventRepository {
   }
 
   Stream<Event?> getEventStream(String id) {
+    if (id.trim().isEmpty) return Stream.value(null);
     return _firestore.collection('events').doc(id).snapshots().map((doc) {
       if (!doc.exists) return null;
       return Event.fromMap(doc.data()!, doc.id);
@@ -187,12 +192,14 @@ class EventRepository {
   }
 
   Future<void> updateRSVPReminders(String eventId, List<String> reminders) async {
+    if (eventId.trim().isEmpty) return;
     await _firestore.collection('events').doc(eventId).update({
       'rsvpReminders': reminders,
     });
   }
 
   Future<void> updateRSVP(String eventId, String userId, String status) async {
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) return;
     await _firestore
         .collection('events')
         .doc(eventId)
@@ -205,6 +212,7 @@ class EventRepository {
   }
 
   Future<void> removeRSVP(String eventId, String userId) async {
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) return;
     await _firestore
         .collection('events')
         .doc(eventId)
@@ -214,6 +222,7 @@ class EventRepository {
   }
 
   Stream<String?> getUserRSVPStream(String eventId, String userId) {
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) return Stream.value(null);
     return _firestore
         .collection('events')
         .doc(eventId)
@@ -224,6 +233,7 @@ class EventRepository {
   }
 
   Stream<List<Map<String, dynamic>>> getEventGuestsStream(String eventId) {
+    if (eventId.trim().isEmpty) return Stream.value([]);
     return _firestore
         .collection('events')
         .doc(eventId)

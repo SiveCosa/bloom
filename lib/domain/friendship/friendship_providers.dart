@@ -7,7 +7,9 @@ import 'friendship_models.dart';
 
 final connectionStateProvider = StreamProvider.family<FriendshipState, String>((ref, targetUid) {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
-  if (currentUid == null) return Stream.value(FriendshipState.none);
+  if (currentUid == null || currentUid.trim().isEmpty || targetUid.trim().isEmpty) {
+    return Stream.value(FriendshipState.none);
+  }
 
   return FirebaseFirestore.instance
       .collection('users')
@@ -34,6 +36,7 @@ final connectionStateProvider = StreamProvider.family<FriendshipState, String>((
 });
 
 final userFriendsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, targetUid) {
+  if (targetUid.trim().isEmpty) return Stream.value([]);
   return FirebaseFirestore.instance
       .collection('users')
       .doc(targetUid)
@@ -75,7 +78,7 @@ final dismissedRecommendationsProvider = NotifierProvider<DismissedRecommendatio
 
 final recommendedFriendAffinityProvider = FutureProvider.family<String, String>((ref, targetUid) async {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
-  if (currentUid == null) return '';
+  if (currentUid == null || currentUid.trim().isEmpty || targetUid.trim().isEmpty) return '';
 
   final firestore = FirebaseFirestore.instance;
 
