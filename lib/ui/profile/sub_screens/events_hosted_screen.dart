@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/routing/event_navigation.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/event/event_providers.dart';
+import '../../shared/widgets/past_events_divider.dart';
 import '../../shared/widgets/event_medium_card.dart';
 import 'dart:ui' as ui;
 
@@ -111,29 +112,7 @@ class EventsHostedScreen extends ConsumerWidget {
 
                           // Past Events Section Divider
                           if (past.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        "Past events",
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.4),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            const SliverToBoxAdapter(child: PastEventsDivider()),
 
                           // Past Events List
                           if (past.isNotEmpty)

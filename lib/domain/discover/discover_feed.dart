@@ -1,3 +1,4 @@
+﻿import 'package:flutter/foundation.dart';
 import '../calendar/scheduled_event.dart';
 import '../event/event.dart';
 import '../event/event_location.dart';
@@ -51,7 +52,7 @@ class DiscoverFeedCard {
     if (category == 'All') return true;
     final tag = DiscoverFeedCard.categoryTagFor(category);
     if (tag == null) return false;
-    final normalized = tags.map((t) => t.toLowerCase()).toList();
+    final normalized = tags.map((t) => t.toLowerCase().trim()).toList();
     return normalized.contains(tag);
   }
 
@@ -158,9 +159,18 @@ class DiscoverFeedAllResponse {
     List<DiscoverFeedCard> parseList(String key) {
       final raw = map[key];
       if (raw is! List) return [];
-      return raw
-          .map((e) => DiscoverFeedCard.fromMap(Map<String, dynamic>.from(e as Map)))
-          .toList();
+      final cards = <DiscoverFeedCard>[];
+      for (final item in raw) {
+        if (item is! Map) continue;
+        try {
+          cards.add(
+            DiscoverFeedCard.fromMap(Map<String, dynamic>.from(item)),
+          );
+        } catch (e) {
+          debugPrint('DiscoverFeedCard parse skip: $e');
+        }
+      }
+      return cards;
     }
 
     return DiscoverFeedAllResponse(

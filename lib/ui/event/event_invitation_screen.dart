@@ -117,7 +117,35 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFF0B0E12),
-          body: Stack(
+          body: ValueListenableBuilder<double>(
+            valueListenable: _sheetSize,
+            builder: (context, sheetSize, child) {
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  if (sheetSize <= 0.32 && _sheetController.isAttached) {
+                    _sheetController.animateTo(
+                      0.55,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  }
+                },
+                onVerticalDragEnd: (details) {
+                  if (sheetSize <= 0.32 &&
+                      _sheetController.isAttached &&
+                      (details.primaryVelocity ?? 0) < -200) {
+                    _sheetController.animateTo(
+                      0.55,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  }
+                },
+                child: child!,
+              );
+            },
+            child: Stack(
             children: [
               // 2. Poster Image + Glow (Reactive)
               ValueListenableBuilder<double>(
@@ -301,7 +329,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                 valueListenable: _sheetSize,
                                                 builder: (context, size, child) {
                                                   final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                                  return SizedBox(height: ui.lerpDouble(12, 40, minimizedProgress) ?? 12);
+                                                  return SizedBox(height: ui.lerpDouble(10, 40, minimizedProgress) ?? 10);
                                                 },
                                               ),
                                               _buildVisibilityPill(event),
@@ -360,6 +388,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
+                                                  _buildAudienceInfoCard(event),
+                                                  const SizedBox(height: 16),
                                                   if (event.description.isNotEmpty || event.tags.isNotEmpty || event.extras.isNotEmpty) ...[
                                                     _buildDescriptionCard(event),
                                                     const SizedBox(height: 16),
@@ -456,11 +486,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 child: ValueListenableBuilder<double>(
                   valueListenable: _sheetSize,
                   builder: (context, size, child) {
-                    // Calculate opacity: fade out as it approaches min size (0.35)
-                    // For hosts, hide when minimized. For guests, we keep it visible for now unless specified.
-                    final double opacity = isHost ? ((size - 0.28) / (0.45 - 0.28)).clamp(0.0, 1.0) : 1.0;
-                    
-                    if (opacity <= 0 && isHost) return const SizedBox.shrink();
+                    final double opacity = ((size - 0.28) / (0.45 - 0.28)).clamp(0.0, 1.0);
+
+                    if (opacity <= 0) return const SizedBox.shrink();
 
                     return Opacity(
                       opacity: opacity,
@@ -489,6 +517,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 ),
               ),
             ],
+          ),
           ),
         );
       },
@@ -839,8 +868,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   const SizedBox(height: 25),
                 ],
                 
-                _buildAudienceInfo(event),
-                
                 if (hasExtras) ...[
                   const SizedBox(height: 25),
                   ...(() {
@@ -1048,6 +1075,27 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildAudienceInfoCard(Event event) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: _buildAudienceInfo(event),
+          ),
+        ),
+      ),
     );
   }
 

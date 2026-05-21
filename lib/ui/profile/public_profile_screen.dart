@@ -7,7 +7,6 @@ import '../../domain/auth/auth_providers.dart';
 import '../../domain/friendship/friendship_models.dart';
 import '../../domain/friendship/friendship_providers.dart';
 import '../../domain/event/event_providers.dart';
-import '../../domain/calendar/scheduled_event.dart';
 import '../../data/connection_repository.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../shared/widgets/gradient_top_bar.dart';
@@ -26,66 +25,147 @@ class PublicProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
+  static const Color _scaffoldColor = Color(0xFF0B0E12);
+
+  static const double _cutoffBelowUsername = 10;
+
+  /// Bottom edge of the username bar (safe area + toolbar).
+  double _usernameBarBottom(BuildContext context) =>
+      MediaQuery.paddingOf(context).top + kToolbarHeight;
+
+  /// Content is fully clipped above this line (bar bottom + 10dp).
+  double _contentCutoff(BuildContext context) =>
+      _usernameBarBottom(context) + _cutoffBelowUsername;
+
+  Widget _fadeScrollContent(BuildContext context, Widget child) {
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) {
+        final cutoffPx = _contentCutoff(context);
+        const fadeHeightPx = 6.0;
+        final cutoff = (cutoffPx / bounds.height).clamp(0.0, 1.0);
+        final fadeEnd =
+            ((cutoffPx + fadeHeightPx) / bounds.height).clamp(cutoff, 1.0);
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [
+            Colors.transparent,
+            Colors.transparent,
+            Colors.black,
+          ],
+          stops: [0.0, cutoff, fadeEnd],
+        ).createShader(bounds);
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildTransparentAppBar(BuildContext context, String username) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          bottom: false,
+          child: SizedBox(
+            height: kToolbarHeight,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () => context.pop(),
+                ),
+                Expanded(
+                  child: Text(
+                    username,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final userId = widget.userId;
-    final profileAsync = ref.watch(userProfileStreamProvider(userId));
-    final connectionState = ref.watch(connectionStateProvider(userId)).value ?? FriendshipState.none;
-    final hostedEventsAsync = ref.watch(publicHostedEventsProvider(userId));
-    final friendsListAsync = ref.watch(userFriendsProvider(userId));
+    final profileUserId = widget.userId;
+    final profileAsync = ref.watch(userProfileStreamProvider(profileUserId));
+    final connectionState =
+        ref.watch(connectionStateProvider(profileUserId)).value ?? FriendshipState.none;
+    final upcomingEventsAsync =
+        ref.watch(publicProfileUpcomingEventsProvider(profileUserId));
+    final friendsListAsync = ref.watch(userFriendsProvider(profileUserId));
+    final contentCutoff = _contentCutoff(context);
+
+    final appBarUsername = profileAsync.when(
+      data: (doc) => doc?['username']?.toString() ?? '—',
+      loading: () => '',
+      error: (error, stackTrace) => '',
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0E12),
+      backgroundColor: _scaffoldColor,
       body: Stack(
         children: [
-          // Background Gradient
           const GradientTopBar(height: 120, showDarkOverlay: false),
-          
-          profileAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF0086D8))),
-            error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white70))),
-            data: (doc) {
-              if (doc == null) return const Center(child: Text('User not found', style: TextStyle(color: Colors.white)));
-              
-              final username = doc['username']?.toString() ?? '—';
-              final name = doc['name']?.toString() ?? 'Anonymous';
-              final bio = doc['bio']?.toString() ?? 'No bio yet.';
-              final imageUrl = doc['profile_image_url']?.toString();
-
-              final counts = doc['counts'] as Map<String, dynamic>?;
-              final friendsCount = (friendsListAsync.value?.length ?? counts?['friends'] ?? 0).toString();
-              final hostedCount = (counts?['hosted'] ?? 0).toString();
-              final joinedCount = (counts?['joined'] ?? 0).toString();
-
-              final socialLinks = doc['social_links'] as Map<String, dynamic>?;
-
-              return CustomScrollView(
-                slivers: [
-                  // Task 2: SliverAppBar
-                  SliverAppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    pinned: true,
-                    titleSpacing: 5,
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-                      onPressed: () => context.pop(),
+          _fadeScrollContent(
+            context,
+            profileAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Color(0xFF0086D8)),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Error: $e',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+              data: (doc) {
+                if (doc == null) {
+                  return const Center(
+                    child: Text(
+                      'User not found',
+                      style: TextStyle(color: Colors.white),
                     ),
-                    title: Text(
-                      username,
-                      style: const TextStyle(
-                        fontSize: 24, // Username font size
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    centerTitle: false,
-                  ),
+                  );
+                }
 
-                  // Profile Header
-                  SliverToBoxAdapter(
+                final name = doc['name']?.toString() ?? 'Anonymous';
+                final bio = doc['bio']?.toString() ?? 'No bio yet.';
+                final imageUrl = doc['profile_image_url']?.toString();
+
+                final counts = doc['counts'] as Map<String, dynamic>?;
+                final friendsCount =
+                    (friendsListAsync.value?.length ?? counts?['friends'] ?? 0)
+                        .toString();
+                final hostedCount =
+                    ref.watch(publicProfileHostedCountProvider(profileUserId)).toString();
+                final joinedCount =
+                    ref.watch(publicProfileJoinedCountProvider(profileUserId)).toString();
+
+                final socialLinks = doc['social_links'] as Map<String, dynamic>?;
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(child: SizedBox(height: contentCutoff)),
+                    SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 15.0),
                       child: Column(
@@ -118,15 +198,15 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           Row(
                             children: [
                               Expanded(child: _buildStatItem('Friends made', friendsCount, () {
-                                context.push('/profile/$userId/friends', extra: name);
+                                context.push('/profile/$profileUserId/friends', extra: name);
                               })),
                               _buildDivider(),
                               Expanded(child: _buildStatItem('Hosted events', hostedCount, () {
-                                context.push('/profile/$userId/hosted', extra: name);
+                                context.push('/profile/$profileUserId/hosted', extra: name);
                               })),
                               _buildDivider(),
                               Expanded(child: _buildStatItem('Joined events', joinedCount, () {
-                                context.push('/profile/$userId/joined', extra: name);
+                                context.push('/profile/$profileUserId/joined', extra: name);
                               })),
                             ],
                           ),
@@ -154,14 +234,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           _buildConnectionActionBar(context, ref, connectionState),
                           const SizedBox(height: 30),
                           
-                          // "Hosted Events" Section Title
-                          const Text(
-                            'HOSTED EVENTS',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
+                          Text(
+                            "$name's Schedule",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 15),
@@ -170,53 +248,54 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                     ),
                   ),
 
-                  // Task 4: Hosted Events Feed
-                  hostedEventsAsync.when(
+                  upcomingEventsAsync.when(
                     loading: () => const SliverToBoxAdapter(
-                      child: Center(child: Padding(
-                        padding: EdgeInsets.all(40.0),
-                        child: CircularProgressIndicator(color: Color(0xFF0086D8)),
-                      )),
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40.0),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF0086D8),
+                          ),
+                        ),
+                      ),
                     ),
                     error: (e, _) => SliverToBoxAdapter(
-                      child: Center(child: Text('Error loading events: $e', style: const TextStyle(color: Colors.white70))),
+                      child: Center(
+                        child: Text(
+                          'Error loading events: $e',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ),
                     ),
                     data: (events) {
                       if (events.isEmpty) {
                         return const SliverToBoxAdapter(
-                          child: Center(child: Padding(
-                            padding: EdgeInsets.all(40.0),
-                            child: Text('No public events hosted yet.', style: TextStyle(color: Colors.white38)),
-                          )),
+                          child: Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40.0),
+                              child: Text(
+                                'No upcoming joining events yet.',
+                                style: TextStyle(color: Colors.white38),
+                              ),
+                            ),
+                          ),
                         );
                       }
-                      
+
                       return SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 15.0),
                         sliver: SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                               final event = events[index];
-                              
-                              // Map Event to ScheduledEvent
-                              final scheduledEvent = ScheduledEvent(
-                                id: event.id,
-                                title: event.title,
-                                posterUrl: event.visuals.posterUrl,
-                                startTime: event.timing.startDate ?? DateTime.now(),
-                                endTime: event.timing.effectiveEndDate ?? DateTime.now(),
-                                hostName: name, // We use the name from profile doc
-                                hostId: event.metadata.hostId,
-                                auroraColors: event.visuals.auroraColors,
-                                locationName: event.location?.displayName ?? 'Bloom Event',
-                              );
-
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: ScheduledEventCard(
-                                  event: scheduledEvent,
-                                  isHost: false,
-                                  onTap: () => pushEventDetail(context, event.id),
+                                  event: event,
+                                  isHost: event.hostId == profileUserId ||
+                                      event.coHostIds.contains(profileUserId),
+                                  onTap: () =>
+                                      pushEventDetail(context, event.id),
                                 ),
                               );
                             },
@@ -227,12 +306,13 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                     },
                   ),
                   
-                  // Bottom Padding
-                  const SliverToBoxAdapter(child: SizedBox(height: 50)),
-                ],
-              );
-            },
+                    const SliverToBoxAdapter(child: SizedBox(height: 50)),
+                  ],
+                );
+              },
+            ),
           ),
+          _buildTransparentAppBar(context, appBarUsername),
         ],
       ),
     );

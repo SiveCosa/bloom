@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
 import 'package:bloom/domain/calendar/calendar_providers.dart';
 import 'package:bloom/domain/event/event_providers.dart';
+import 'package:bloom/domain/home/home_schedule_filter.dart';
+import 'package:bloom/domain/home/home_schedule_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/bloom_loading_indicator.dart';
@@ -24,8 +26,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  int _selectedFilterIndex = 0;
-
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
   double _dragOffset = 0.0;
@@ -352,29 +352,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildFilterChips() {
-    final chips = [
-      {'label': 'Upcoming', 'count': '0'},
-      {'label': 'Hosting', 'count': '0'},
-      {'label': 'Invites', 'count': '0'},
-      {'label': 'Attending', 'count': '0'},
-    ];
+    const filters = HomeScheduleFilter.values;
+    const labels = ['Upcoming', 'Hosting', 'Invites', 'Attending'];
+    final counts = ref.watch(homeFilterCountsProvider);
+    final activeFilter = ref.watch(homeScheduleFilterProvider);
 
     return SizedBox(
       height: 35,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
-        itemCount: chips.length,
+        itemCount: filters.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final chip = chips[index];
-          final isActive = _selectedFilterIndex == index;
+          final filter = filters[index];
+          final isActive = activeFilter == filter;
+          final count = counts[filter] ?? 0;
 
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedFilterIndex = index;
-              });
+              ref.read(homeScheduleFilterProvider.notifier).setFilter(filter);
             },
              child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -395,10 +392,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   ),
                   children: [
-                    TextSpan(text: chip['label']),
+                    TextSpan(text: labels[index]),
                     const TextSpan(text: ' '),
                     TextSpan(
-                      text: chip['count'],
+                      text: '$count',
                       style: const TextStyle(color: Colors.white),
                     ),
                   ],
@@ -473,7 +470,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 394,
+              height: EventCardLarge.carouselHeight,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,

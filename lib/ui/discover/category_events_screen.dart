@@ -39,7 +39,7 @@ class CategoryEventsScreen extends ConsumerWidget {
       displayTitle = 'Weekend Forecast';
     }
 
-    final carouselEvents = getTop10Popular(events);
+    final carouselEvents = eventsForCarousel(events);
     final carouselIds = carouselEvents.map((e) => e.id).toSet();
     final remainingEvents = events.where((e) => !carouselIds.contains(e.id)).toList();
 
@@ -140,7 +140,7 @@ class CategoryEventsScreen extends ConsumerWidget {
                           ),
                         ),
                         SizedBox(
-                          height: 394,
+                          height: EventCardLarge.carouselHeight,
                           child: ListView.separated(
                             physics: const BouncingScrollPhysics(),
                             scrollDirection: Axis.horizontal,
@@ -162,6 +162,7 @@ class CategoryEventsScreen extends ConsumerWidget {
                                 hostImageUrl: card?.hostAvatarUrl,
                                 auroraColors: event.visuals.auroraColors,
                                 locationName: event.location?.displayName ?? 'Bloom Event',
+                                coHostIds: event.coHostIds,
                               );
                               return EventCardLarge(
                                 event: scheduledEvent,

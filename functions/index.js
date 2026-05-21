@@ -34,6 +34,8 @@ async function emailDomainAllowed(email, institutionId = DEFAULT_INSTITUTION_ID)
 }
 
 // --- Discover feed helpers ---
+/** Sort events without map coords after located events (must be finite for JSON). */
+const DISCOVER_NO_COORD_DISTANCE_KM = 99999;
 const DISCOVER_TABS = new Set(["All", "Community", "Music", "Film", "Arts", "Fitness", "Food"]);
 const DISCOVER_TAG_BY_TAB = {
   Community: "community",
@@ -122,7 +124,7 @@ function setsIntersect(setA, setB) {
 
 async function passesVisibilityFilter(eventData, eventId, ctx, hostFriendsCache) {
   const visibility = eventData.audience?.visibility || "public";
-  const hostId = eventData.metadata?.hostId;
+  const hostId = eventData.metadata?.hostId || eventData.metadata?.host_id;
   if (!hostId) return false;
 
   if (visibility === "public") return true;
@@ -241,9 +243,17 @@ async function resolveHostProfiles(hostIds, hostDataCache) {
   );
 }
 
+function sanitizeDistanceKm(distanceKm) {
+  if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm)) {
+    return DISCOVER_NO_COORD_DISTANCE_KM;
+  }
+  return Math.round(distanceKm * 100) / 100;
+}
+
 function formatDiscoverCard(eventDoc, distanceKm, hostDataCache) {
   const eventData = eventDoc.data();
-  const hostId = eventData.metadata?.hostId || "";
+  const hostId =
+    eventData.metadata?.hostId || eventData.metadata?.host_id || "";
   const cached = hostDataCache.get(hostId) || { username: "", avatar: "" };
   const startDate = parseFirestoreDate(eventData.timing?.startDate);
 
@@ -253,7 +263,7 @@ function formatDiscoverCard(eventDoc, distanceKm, hostDataCache) {
     poster_url: eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "",
     start_time: startDate ? startDate.getTime() : null,
     location_name: eventData.location?.displayName || eventData.location?.display_name || "",
-    distance_km: Math.round(distanceKm * 100) / 100,
+    distance_km: sanitizeDistanceKm(distanceKm),
     aurora_colors: eventData.visuals?.auroraColors || eventData.visuals?.aurora_colors || [],
     host_id: hostId,
     host_username: cached.username,
@@ -262,11 +272,24 @@ function formatDiscoverCard(eventDoc, distanceKm, hostDataCache) {
   };
 }
 
+function normalizedEventTags(eventData) {
+  const tags = Array.isArray(eventData?.tags)
+    ? eventData.tags.map((t) => String(t).toLowerCase())
+    : [];
+  const category = eventData?.category
+    ? String(eventData.category).toLowerCase()
+    : null;
+  if (category && !tags.includes(category)) {
+    tags.push(category);
+  }
+  return tags;
+}
+
 function stripInternalFields(card) {
   const { _eventData, ...rest } = card;
   return {
     ...rest,
-    tags: Array.isArray(_eventData?.tags) ? _eventData.tags : [],
+    tags: normalizedEventTags(_eventData),
   };
 }
 
@@ -720,21 +743,23 @@ exports.syncUserSchedule = onDocumentWritten(
     const previousData = beforeSnap.exists ? beforeSnap.data() : null;
 
     const scheduleRef = db.collection("users").doc(userId).collection("schedule").doc(eventId);
+    const syncStatuses = ["going", "maybe", "interested"];
+    const status = data?.status;
+    const prevStatus = previousData?.status;
 
-    // Case 1: RSVP is removed or status is no longer "going"
-    if (!afterSnap.exists || data.status !== "going") {
-      // Only delete if it was previously "going" or if it exists in schedule
-      if (beforeSnap.exists && previousData.status === "going") {
+    // Case 1: RSVP removed or status should not appear on calendar schedule
+    if (!afterSnap.exists || !syncStatuses.includes(status)) {
+      if (beforeSnap.exists && syncStatuses.includes(prevStatus)) {
         await scheduleRef.delete();
         console.log(`Removed event ${eventId} from user ${userId} schedule (status: ${data ? data.status : 'deleted'})`);
-        
-        // AUTOMATION: Try to promote someone from the waitlist
-        await promoteFromWaitlist(eventId);
+        if (prevStatus === "going") {
+          await promoteFromWaitlist(eventId);
+        }
       }
       return;
     }
 
-    // Case 2: RSVP status is "going" (New or Update)
+    // Case 2: RSVP status is going, maybe, or interested
     // Fetch parent event details to denormalize
     const eventSnap = await db.collection("events").doc(eventId).get();
     if (!eventSnap.exists) {
@@ -781,10 +806,14 @@ exports.syncUserSchedule = onDocumentWritten(
       hostImageUrl: hostImageUrl,
       aurora_colors: eventData.visuals.auroraColors || [],
       auroraColors: eventData.visuals.auroraColors || [],
+      co_host_ids: eventData.co_host_ids || eventData.coHostIds || [],
+      coHostIds: eventData.co_host_ids || eventData.coHostIds || [],
+      rsvp_status: status,
+      rsvpStatus: status,
       updated_at: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.log(`Synced event ${eventId} to user ${userId} schedule`);
+    console.log(`Synced event ${eventId} to user ${userId} schedule (${status})`);
   }
 );
 
@@ -849,8 +878,38 @@ async function promoteFromWaitlist(eventId) {
   }
 }
 
+function buildSchedulePatchFromEvent(eventData, eventId, hostName, hostImageUrl, extra = {}) {
+  const hostId = eventData.metadata?.hostId || "";
+  const coHostIds = getCoHostIds(eventData);
+  return {
+    event_id: eventId,
+    eventId: eventId,
+    title: eventData.title,
+    start_time: eventData.timing?.startDate,
+    startTime: eventData.timing?.startDate,
+    end_time: eventData.timing?.endDate || null,
+    endTime: eventData.timing?.endDate || null,
+    poster_url: eventData.visuals?.posterUrl || "",
+    posterUrl: eventData.visuals?.posterUrl || "",
+    subtitle_info: eventData.location?.displayName || eventData.title,
+    locationName: eventData.location?.displayName || "",
+    host_id: hostId,
+    hostId: hostId,
+    host_name: hostName,
+    hostName: hostName,
+    host_image_url: hostImageUrl,
+    hostImageUrl: hostImageUrl,
+    aurora_colors: eventData.visuals?.auroraColors || [],
+    auroraColors: eventData.visuals?.auroraColors || [],
+    co_host_ids: coHostIds,
+    coHostIds: coHostIds,
+    updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    ...extra,
+  };
+}
+
 // 9. Update Propagation Trigger
-// When event details change, update all guest schedules to ensure consistency
+// When event details change, update host/cohost and guest schedules
 exports.onEventUpdate = onDocumentWritten(
   {
     document: "events/{eventId}",
@@ -866,59 +925,77 @@ exports.onEventUpdate = onDocumentWritten(
     const after = afterSnap.data();
     const before = beforeSnap.data();
 
-    // Check if core details changed to avoid unnecessary writes
     const titleChanged = after.title !== before.title;
     const timingChanged = JSON.stringify(after.timing) !== JSON.stringify(before.timing);
     const posterChanged = after.visuals?.posterUrl !== before.visuals?.posterUrl;
     const locationChanged = after.location?.displayName !== before.location?.displayName;
+    const coHostChanged =
+      JSON.stringify(getCoHostIds(before).sort()) !== JSON.stringify(getCoHostIds(after).sort());
 
-    if (!titleChanged && !timingChanged && !posterChanged && !locationChanged) {
+    if (!titleChanged && !timingChanged && !posterChanged && !locationChanged && !coHostChanged) {
       return;
     }
 
-    console.log(`Event ${eventId} core details changed. Propagating updates...`);
+    console.log(`Event ${eventId} changed. Propagating schedule updates...`);
 
-    // Find all guests who are "going"
-    const guestsSnap = await db.collection("events").doc(eventId)
-      .collection("guests")
-      .where("status", "==", "going")
-      .get();
+    const hostId = after.metadata?.hostId || "";
+    let hostName = "Host";
+    let hostImageUrl = "";
+    try {
+      const hostSnap = await db.collection("users").doc(hostId).get();
+      if (hostSnap.exists) {
+        const hostData = hostSnap.data();
+        hostName = hostData.name || hostData.username || "Host";
+        hostImageUrl = hostData.profile_image_url || hostData.avatar_url || "";
+      }
+    } catch (err) {
+      console.error(`Error loading host profile for schedule propagation: ${err}`);
+    }
 
-    if (guestsSnap.empty) return;
+    const schedulePatch = buildSchedulePatchFromEvent(after, eventId, hostName, hostImageUrl);
+    const batch = db.batch();
+    let opCount = 0;
 
-    // Use chunked batching for efficiency and to respect Firestore's 500-op limit
-    const docs = guestsSnap.docs;
-    const chunkSize = 400; // Safe margin below 500
-    let updatedCount = 0;
+    const afterCoHosts = getCoHostIds(after);
+    const hostAndCoHostIds = new Set([hostId, ...afterCoHosts].filter((id) => id));
 
-    for (let i = 0; i < docs.length; i += chunkSize) {
-      const batch = db.batch();
-      const chunk = docs.slice(i, i + chunkSize);
+    for (const uid of hostAndCoHostIds) {
+      const scheduleRef = db.collection("users").doc(uid).collection("schedule").doc(eventId);
+      batch.set(scheduleRef, schedulePatch, { merge: true });
+      opCount++;
+    }
 
-      chunk.forEach((guestDoc) => {
-        const userId = guestDoc.id;
-        const scheduleRef = db.collection("users").doc(userId).collection("schedule").doc(eventId);
-        
-        batch.set(scheduleRef, {
-          title: after.title,
-          start_time: after.timing.startDate,
-          startTime: after.timing.startDate,
-          end_time: after.timing.endDate || null,
-          endTime: after.timing.endDate || null,
-          poster_url: after.visuals?.posterUrl || "",
-          posterUrl: after.visuals?.posterUrl || "",
-          subtitle_info: after.location?.displayName || after.title,
-          locationName: after.location?.displayName || "",
-          updated_at: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-        
-        updatedCount++;
-      });
+    const beforeCoHosts = new Set(getCoHostIds(before));
+    for (const uid of beforeCoHosts) {
+      if (!afterCoHosts.includes(uid) && uid !== hostId) {
+        batch.delete(db.collection("users").doc(uid).collection("schedule").doc(eventId));
+        opCount++;
+      }
+    }
 
+    const guestsSnap = await db.collection("events").doc(eventId).collection("guests").get();
+    const syncStatuses = ["going", "maybe", "interested"];
+
+    guestsSnap.docs.forEach((guestDoc) => {
+      const status = guestDoc.data()?.status;
+      if (!syncStatuses.includes(status)) return;
+      const scheduleRef = db.collection("users").doc(guestDoc.id).collection("schedule").doc(eventId);
+      batch.set(
+        scheduleRef,
+        buildSchedulePatchFromEvent(after, eventId, hostName, hostImageUrl, {
+          rsvp_status: status,
+          rsvpStatus: status,
+        }),
+        { merge: true }
+      );
+      opCount++;
+    });
+
+    if (opCount > 0) {
       await batch.commit();
     }
 
-    console.log(`Successfully propagated updates to ${updatedCount} guest schedules for event ${eventId}`);
+    console.log(`Propagated schedule updates for event ${eventId} (${opCount} writes)`);
   }
 );
 
@@ -1251,56 +1328,25 @@ exports.getForYouFeed = onCall(
         continue; // Skip past/ended events
       }
 
-      // --- Privacy & Social Visibility ---
-      const visibility = eventData.audience?.visibility || "public";
-      const hostId = eventData.metadata?.hostId;
+      // --- Privacy & Social Visibility (shared with getDiscoverFeed) ---
+      const hostId = eventData.metadata?.hostId || eventData.metadata?.host_id;
 
       if (!hostId) continue; // Invalid event data
       if (hostId === currentUserId) continue; // Skip events hosted by the current user
 
-      if (visibility === "private") {
-        const invitedUserIds = eventData.invitedUserIds || eventData.invited_user_ids || eventData.invitations || eventData.audience?.invitedUserIds || eventData.audience?.invited_user_ids || [];
-        const explicitlyInvited = invitedUserIds.includes(currentUserId);
-        
-        if (!currentUserInvites.has(eventId) && !explicitlyInvited) {
-          continue; // Failed private checkpoint
-        }
-      } else if (visibility === "friendsOnly" || visibility === "friends_only") {
-        if (!currentUserFriends.has(hostId)) {
-          continue; // Failed friendsOnly checkpoint
-        }
-      } else if (visibility === "friendsOfFriends" || visibility === "friends_of_friends") {
-        if (!currentUserFriends.has(hostId)) {
-          // Check if there is a mutual friend
-          let hostFriends = hostFriendsCache.get(hostId);
-          if (!hostFriends) {
-            hostFriends = new Set();
-            const hFriendsSnap = await db.collection("users").doc(hostId).collection("connections").where("status", "==", "connected").get();
-            hFriendsSnap.docs.forEach(doc => hostFriends.add(doc.id));
-            hostFriendsCache.set(hostId, hostFriends);
-          }
-
-          let hasMutual = false;
-          for (const friendUid of currentUserFriends) {
-            if (hostFriends.has(friendUid)) {
-              hasMutual = true;
-              break;
-            }
-          }
-
-          if (!hasMutual) {
-            continue; // Failed friendsOfFriends checkpoint
-          }
-        }
-      } else if (visibility === "maleOnly" || visibility === "male_only") {
-        if (userGender !== "male") {
-          continue; // Failed maleOnly checkpoint
-        }
-      } else if (visibility === "femaleOnly" || visibility === "female_only") {
-        if (userGender !== "female") {
-          continue; // Failed femaleOnly checkpoint
-        }
-      }
+      const forYouCtx = {
+        currentUserId,
+        gender: userGender,
+        friendsSet: currentUserFriends,
+        invitesSet: currentUserInvites,
+      };
+      const visible = await passesVisibilityFilter(
+        eventData,
+        eventId,
+        forYouCtx,
+        hostFriendsCache
+      );
+      if (!visible) continue;
 
       // 4. Scoring
       // Match Score
@@ -1432,9 +1478,12 @@ exports.getDiscoverFeed = onCall(
 
       if (!isEventUpcoming(eventData, now)) continue;
 
-      const lat = eventData.location?.latitude;
-      const lng = eventData.location?.longitude;
-      if (typeof lat !== "number" || typeof lng !== "number") continue;
+      const hostId =
+        eventData.metadata?.hostId || eventData.metadata?.host_id;
+      if (hostId === currentUserId) continue;
+
+      const coHostIds = getCoHostIds(eventData);
+      if (coHostIds.includes(currentUserId)) continue;
 
       const visible = await passesVisibilityFilter(
         eventData,
@@ -1444,7 +1493,15 @@ exports.getDiscoverFeed = onCall(
       );
       if (!visible) continue;
 
-      const distanceKm = haversineKm(latitude, longitude, lat, lng);
+      const loc = eventData.location || {};
+      const lat = loc.latitude ?? loc.lat;
+      const lng = loc.longitude ?? loc.lng;
+      const hasCoords =
+        typeof lat === "number" && typeof lng === "number";
+      const distanceKm = hasCoords
+        ? haversineKm(latitude, longitude, lat, lng)
+        : DISCOVER_NO_COORD_DISTANCE_KM;
+
       candidates.push({ eventDoc, distanceKm, eventData });
     }
 

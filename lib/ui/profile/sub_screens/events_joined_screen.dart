@@ -5,6 +5,8 @@ import '../../../core/routing/event_navigation.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../../../domain/calendar/calendar_providers.dart';
+import '../../../domain/event/event_providers.dart';
+import '../../shared/widgets/past_events_divider.dart';
 import '../../widgets/scheduled_event_card.dart';
 import 'dart:ui' as ui;
 
@@ -80,8 +82,17 @@ class EventsJoinedScreen extends ConsumerWidget {
                 Expanded(
                   child: scheduleAsync.when(
                     data: (schedule) {
-                      // Filter out hosted events to get only joined events
-                      final joinedEvents = schedule.where((e) => e.hostId != fetchUserId).toList();
+                      final excludeIds = isPublic
+                          ? ref.watch(publicHostedEventsProvider(fetchUserId)).value?.map((e) => e.id).toSet() ?? {}
+                          : ref.watch(hostedOrCoHostedEventIdsProvider);
+                      final joinedEvents = schedule
+                          .where((e) => !excludeIds.contains(e.id))
+                          .where((e) {
+                            final status = e.rsvpStatus;
+                            if (status == 'maybe' || status == 'interested') return false;
+                            return status == null || status == 'going';
+                          })
+                          .toList();
                       
                       if (joinedEvents.isEmpty) {
                         return const Center(
@@ -131,29 +142,7 @@ class EventsJoinedScreen extends ConsumerWidget {
                             ),
                           
                           if (past.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        "Past events",
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.4),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            const SliverToBoxAdapter(child: PastEventsDivider()),
 
                           if (past.isNotEmpty)
                             SliverPadding(

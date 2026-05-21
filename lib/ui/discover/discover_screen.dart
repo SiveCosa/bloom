@@ -15,6 +15,18 @@ import '../shared/widgets/event_medium_card.dart';
 import '../event/widgets/event_card_large.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../shared/widgets/bloom_button.dart';
+import '../shared/widgets/bloom_loading_indicator.dart';
+
+String _discoverErrorMessage(Object? error) {
+  final text = error?.toString() ?? '';
+  if (text.contains('firebase_functions/internal')) {
+    return 'The server had trouble loading events. Pull to refresh or try again.';
+  }
+  if (text.contains('unauthenticated')) {
+    return 'Sign in again to load events.';
+  }
+  return 'Check your connection and try again.';
+}
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -217,8 +229,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     final activeFilter = ref.watch(discoverCategoryFilterProvider);
+    final cacheAsync = ref.watch(discoverFeedCacheProvider);
     final verticalFeedEvents = ref.watch(discoverVerticalFeedProvider);
     final topPadding = MediaQuery.of(context).padding.top;
+    final isDiscoverTab = ref.watch(mainShellIndexProvider) == 1;
 
     ref.listen(discoverTabTapProvider, (previous, next) {
       if (next > 0) {
@@ -326,8 +340,59 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                 ),
               ],
 
-              // Infinite Vertical Feed
-              if (verticalFeedEvents.isEmpty)
+              // Vertical feed (loading / error / list / empty)
+              if (cacheAsync.isLoading && isDiscoverTab)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: BloomLoadingIndicator(size: 40)),
+                )
+              else if (cacheAsync.hasError && isDiscoverTab)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off_outlined,
+                            color: Colors.white38,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Could not load events',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _discoverErrorMessage(cacheAsync.error),
+                            textAlign: TextAlign.center,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          BloomButton(
+                            text: 'Try again',
+                            onPressed: () => ref
+                                .read(discoverFeedCacheProvider.notifier)
+                                .refresh(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (verticalFeedEvents.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
@@ -352,7 +417,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Try browsing another category!',
+                            'Try browsing another category or pull to refresh.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white38,
@@ -547,18 +612,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
     required Provider<List<Event>> eventsProvider,
   }) {
     final events = ref.watch(eventsProvider);
-    final popularEvents = getTop10Popular(events);
+    final carouselEvents = eventsForCarousel(events);
 
-    if (popularEvents.isEmpty) {
+    if (carouselEvents.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Column(
       children: [
         _buildSpotlightCarousel(
+          ref: ref,
           title: title,
           routeCategory: routeCategory,
-          events: popularEvents,
+          events: carouselEvents,
           showChevron: true,
         ),
         const SizedBox(height: 24),
@@ -575,19 +641,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
     if (activeFilter.toLowerCase() == 'fitness') title = 'Peak Performance';
     if (activeFilter.toLowerCase() == 'food') title = 'Feast & Flavor';
 
-    final events = ref.watch(categoryEventsProvider(activeFilter));
-    final popularEvents = getTop10Popular(events);
+    final carouselEvents =
+        ref.watch(discoverCategoryCarouselProvider(activeFilter));
+    final displayEvents = eventsForCarousel(carouselEvents);
 
-    if (popularEvents.isEmpty) {
+    if (displayEvents.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Column(
       children: [
         _buildSpotlightCarousel(
+          ref: ref,
           title: title,
           routeCategory: activeFilter,
-          events: popularEvents,
+          events: displayEvents,
           showChevron: false,
         ),
         const SizedBox(height: 24),
@@ -596,11 +664,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
   }
 
   Widget _buildSpotlightCarousel({
+    required WidgetRef ref,
     required String title,
     required String routeCategory,
     required List<Event> events,
     bool showChevron = true,
   }) {
+    final cardMap = ref.watch(discoverFeedCardMapProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -639,7 +710,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
           ),
         ),
         SizedBox(
-          height: 394,
+          height: EventCardLarge.carouselHeight,
           child: ListView.separated(
             physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
@@ -648,7 +719,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
             separatorBuilder: (context, index) => const SizedBox(width: 8.0),
             itemBuilder: (context, index) {
               final event = events[index];
-              final card = ref.watch(discoverFeedCardMapProvider)[event.id];
+              final card = cardMap[event.id];
               final scheduledEvent = ScheduledEvent(
                 id: event.id,
                 title: event.title,
@@ -660,6 +731,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                 hostImageUrl: card?.hostAvatarUrl,
                 auroraColors: event.visuals.auroraColors,
                 locationName: event.location?.displayName ?? 'Bloom Event',
+                coHostIds: event.coHostIds,
               );
               return EventCardLarge(
                 event: scheduledEvent,

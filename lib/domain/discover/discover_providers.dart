@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'discover_feed.dart';
@@ -79,20 +80,33 @@ class DiscoverFeedCache {
 }
 
 class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
+  DiscoverFeedCache? _persistedCache;
+
   @override
   Future<DiscoverFeedCache?> build() async {
     ref.keepAlive();
-    // IndexedStack mounts Discover early; defer network until that tab is visible.
+
+    ref.listen(mainShellIndexProvider, (previous, next) {
+      if (next == 1 && previous != 1) {
+        Future.microtask(() => ref.invalidateSelf());
+      }
+    });
+
     final shellIndex = ref.watch(mainShellIndexProvider);
-    if (shellIndex != 1 && state.value == null) {
-      return null;
+    if (shellIndex != 1) {
+      return _persistedCache;
     }
+
     return _load(force: false);
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _load(force: true));
+    state = await AsyncValue.guard(() async {
+      final loaded = await _load(force: true);
+      _persistedCache = loaded;
+      return loaded;
+    });
   }
 
   Future<DiscoverFeedCache?> _load({required bool force}) async {
@@ -101,7 +115,7 @@ class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
     final lng = coords?.longitude ?? kDiscoverDefaultLongitude;
     final now = DateTime.now();
 
-    final existing = state.value;
+    final existing = _persistedCache;
     if (!force &&
         existing != null &&
         !existing.isExpired(now) &&
@@ -109,37 +123,51 @@ class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
       return existing;
     }
 
-    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
-    final result = await functions.httpsCallable('getDiscoverFeed').call({
-      'latitude': lat,
-      'longitude': lng,
-      'tab': 'All',
-    });
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final result = await functions.httpsCallable('getDiscoverFeed').call({
+        'latitude': lat,
+        'longitude': lng,
+        'tab': 'All',
+      });
 
-    final data = result.data;
-    DiscoverFeedAllResponse allResponse;
-    if (data is Map) {
-      allResponse =
-          DiscoverFeedAllResponse.fromMap(Map<String, dynamic>.from(data));
-    } else {
-      allResponse = const DiscoverFeedAllResponse(
-        weekendForecast: [],
-        meetNewPeople: [],
-        soundcheck: [],
-        modernRenaissance: [],
-        notForTheWeak: [],
-        foodieFrenzy: [],
-        silverScreening: [],
-        feed: [],
+      final data = result.data;
+      DiscoverFeedAllResponse allResponse;
+      if (data is Map) {
+        allResponse = DiscoverFeedAllResponse.fromMap(
+          Map<String, dynamic>.from(data),
+        );
+      } else {
+        debugPrint(
+          'getDiscoverFeed: unexpected response type ${data.runtimeType}',
+        );
+        allResponse = const DiscoverFeedAllResponse(
+          weekendForecast: [],
+          meetNewPeople: [],
+          soundcheck: [],
+          modernRenaissance: [],
+          notForTheWeak: [],
+          foodieFrenzy: [],
+          silverScreening: [],
+          feed: [],
+        );
+      }
+
+      final cache = DiscoverFeedCache(
+        allResponse: allResponse,
+        latitude: lat,
+        longitude: lng,
+        fetchedAt: now,
       );
+      _persistedCache = cache;
+      return cache;
+    } on FirebaseFunctionsException catch (e, stack) {
+      debugPrint('getDiscoverFeed failed: ${e.code} ${e.message}\n$stack');
+      rethrow;
+    } catch (e, stack) {
+      debugPrint('getDiscoverFeed failed: $e\n$stack');
+      rethrow;
     }
-
-    return DiscoverFeedCache(
-      allResponse: allResponse,
-      latitude: lat,
-      longitude: lng,
-      fetchedAt: now,
-    );
   }
 }
 
@@ -278,14 +306,29 @@ final allDiscoverEventsProvider = Provider<List<Event>>((ref) {
   );
 });
 
+/// Up to 10 carousel cards; UI shows the carousel when this list is non-empty (1+).
+List<Event> eventsForCarousel(List<Event> events) => events.take(10).toList();
+
 List<Event> _carouselFromCache(
   Ref ref,
-  List<DiscoverFeedCard> Function(DiscoverFeedAllResponse) pick,
-) {
+  List<DiscoverFeedCard> Function(DiscoverFeedAllResponse) pick, {
+  String? fallbackCategory,
+}) {
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
   return cacheAsync.when(
-    data: (cache) =>
-        cache == null ? [] : _cardsToEvents(pick(cache.allResponse)),
+    data: (cache) {
+      if (cache == null) return [];
+      final picked = pick(cache.allResponse);
+      if (picked.isNotEmpty) {
+        return _cardsToEvents(picked);
+      }
+      if (fallbackCategory != null) {
+        return _cardsToEvents(
+          categoryCardsFromAll(cache.allResponse, fallbackCategory),
+        );
+      }
+      return [];
+    },
     loading: () => [],
     error: (_, _) => [],
   );
@@ -296,30 +339,59 @@ final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
 });
 
 final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.soundcheck);
+  return _carouselFromCache(ref, (r) => r.soundcheck, fallbackCategory: 'Music');
 });
 
 final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.silverScreening);
+  return _carouselFromCache(ref, (r) => r.silverScreening, fallbackCategory: 'Film');
 });
 
 final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.modernRenaissance);
+  return _carouselFromCache(
+    ref,
+    (r) => r.modernRenaissance,
+    fallbackCategory: 'Arts',
+  );
 });
 
 final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.notForTheWeak);
+  return _carouselFromCache(
+    ref,
+    (r) => r.notForTheWeak,
+    fallbackCategory: 'Fitness',
+  );
 });
 
 final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.foodieFrenzy);
+  return _carouselFromCache(ref, (r) => r.foodieFrenzy, fallbackCategory: 'Food');
 });
 
 final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.meetNewPeople);
+  return _carouselFromCache(
+    ref,
+    (r) => r.meetNewPeople,
+    fallbackCategory: 'Community',
+  );
 });
 
-List<Event> getTop10Popular(List<Event> events) => events.take(10).toList();
+/// Spotlight carousel for a category chip (1+ events is enough to show).
+final discoverCategoryCarouselProvider =
+    Provider.family<List<Event>, String>((ref, category) {
+  if (category == 'All') return [];
+  final cacheAsync = ref.watch(discoverFeedCacheProvider);
+  return cacheAsync.when(
+    data: (cache) {
+      if (cache == null) return [];
+      final spotlight = spotlightCardsForFilter(cache.allResponse, category);
+      if (spotlight.isNotEmpty) {
+        return _cardsToEvents(spotlight);
+      }
+      return _cardsToEvents(categoryCardsFromAll(cache.allResponse, category));
+    },
+    loading: () => [],
+    error: (_, _) => [],
+  );
+});
 
 List<Event> sortByPopularity(List<Event> events) => events;
 
@@ -353,9 +425,9 @@ final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
             shownIds.add(card.id);
           }
         }
-        return _cardsToEvents(
-          all.feed.where((c) => !shownIds.contains(c.id)).toList(),
-        );
+        final explore = all.feed.where((c) => !shownIds.contains(c.id)).toList();
+        // If every event appears in a carousel, still show the full feed below.
+        return _cardsToEvents(explore.isNotEmpty ? explore : all.feed);
       }
 
       final categoryCards = categoryCardsFromAll(all, activeFilter);

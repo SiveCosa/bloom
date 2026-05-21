@@ -20,23 +20,23 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
   bool _shouldAnimate = false;
   bool _isInitialized = false;
 
-  int? _getIndexForStatus(String? status) {
+  int? _getIndexForStatus(String? status, {required bool allowMaybe}) {
     if (status == 'going' || status == 'waitlisted') {
       return 0;
     }
-    if (status == 'maybe') {
+    if (status == 'maybe' && allowMaybe) {
       return 1;
     }
     if (status == 'declined') {
-      return 2;
+      return allowMaybe ? 2 : 1;
     }
     return null;
   }
 
-  void _initializeIfNeeded(String? initialStatus) {
+  void _initializeIfNeeded(String? initialStatus, bool allowMaybe) {
     if (_isInitialized) return;
     _isInitialized = true;
-    final initialIndex = _getIndexForStatus(initialStatus);
+    final initialIndex = _getIndexForStatus(initialStatus, allowMaybe: allowMaybe);
     if (initialIndex != null) {
       _hasActiveSelection = true;
       _lastNonNullActiveIndex = initialIndex;
@@ -50,8 +50,10 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
       final prevStatus = prevVal?.value;
       final nextStatus = nextVal.value;
 
-      final prevIndex = _getIndexForStatus(prevStatus);
-      final nextIndex = _getIndexForStatus(nextStatus);
+      final allowMaybe =
+          ref.read(eventStreamProvider(widget.eventId)).value?.audience.allowMaybe ?? true;
+      final prevIndex = _getIndexForStatus(prevStatus, allowMaybe: allowMaybe);
+      final nextIndex = _getIndexForStatus(nextStatus, allowMaybe: allowMaybe);
 
       setState(() {
         if (nextIndex != null) {
@@ -78,7 +80,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
         if (event == null) return const SizedBox.shrink();
         return rsvpStatusAsync.when(
           data: (status) {
-            _initializeIfNeeded(status);
+            _initializeIfNeeded(status, event.audience.allowMaybe);
             return _buildBar(context, userId, status, event);
           },
           loading: () => _buildLoadingBar(),
@@ -127,8 +129,9 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     final double barHeight = requireApproval ? 50 : 75;
     final double borderRadiusVal = requireApproval ? 25 : 37.5;
 
-    final activeIndex = _getIndexForStatus(currentStatus);
+    final activeIndex = _getIndexForStatus(currentStatus, allowMaybe: allowMaybe);
     final displayIndex = _lastNonNullActiveIndex ?? 0;
+    final buttonCount = allowMaybe ? 3 : 2;
 
     return Container(
       height: barHeight,
@@ -192,7 +195,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                           ? 'Requested'
                           : (isFull && !isAlreadyGoing)
                               ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
-                              : 'Get on the list',
+                              : 'Get on List',
                       style: TextStyle(
                         color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
                             ? const Color(0xFF4B5563)
@@ -207,7 +210,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
             )
           : LayoutBuilder(
               builder: (context, constraints) {
-                final buttonWidth = (constraints.maxWidth - 2) / 3;
+                final buttonWidth = (constraints.maxWidth - 2) / buttonCount;
                 final leftOffset = displayIndex * (buttonWidth + 1);
 
                 return Stack(
@@ -275,30 +278,34 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                               }
                             },
                           ),
-                        
-                        _buildRSVPDivider(),
-                        _RsvpButton(
-                          label: 'Maybe',
-                          icon: currentStatus == 'maybe'
-                              ? Icons.help
-                              : Icons.help_outline,
-                          isSelected: activeIndex == 1,
-                          isDisabled: !allowMaybe || (isFull && !isAlreadyGoing && !isAlreadyWaitlisted && currentStatus != 'maybe'),
-                          onPressed: () {
-                            if (currentStatus == 'maybe') {
-                              _handleRemoveRsvp(userId);
-                            } else {
-                              _handleRsvp(userId, 'maybe');
-                            }
-                          },
-                        ),
+                        if (allowMaybe) ...[
+                          _buildRSVPDivider(),
+                          _RsvpButton(
+                            label: 'Maybe',
+                            icon: currentStatus == 'maybe'
+                                ? Icons.help
+                                : Icons.help_outline,
+                            isSelected: activeIndex == 1,
+                            isDisabled: isFull &&
+                                !isAlreadyGoing &&
+                                !isAlreadyWaitlisted &&
+                                currentStatus != 'maybe',
+                            onPressed: () {
+                              if (currentStatus == 'maybe') {
+                                _handleRemoveRsvp(userId);
+                              } else {
+                                _handleRsvp(userId, 'maybe');
+                              }
+                            },
+                          ),
+                        ],
                         _buildRSVPDivider(),
                         _RsvpButton(
                           label: 'Decline',
                           icon: currentStatus == 'declined'
                               ? Icons.highlight_off_rounded
                               : Icons.highlight_off,
-                          isSelected: activeIndex == 2,
+                          isSelected: activeIndex == (allowMaybe ? 2 : 1),
                           onPressed: () {
                             if (currentStatus == 'declined') {
                               _handleRemoveRsvp(userId);

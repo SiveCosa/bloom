@@ -11,9 +11,9 @@ import '../../core/theme/app_theme.dart';
 import './widgets/month_year_picker_modal.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/navigation/navigation_providers.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/routing/event_navigation.dart';
 import '../widgets/scheduled_event_card.dart';
+import '../shared/widgets/past_events_divider.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -436,6 +436,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       error: (err, stack) => <ScheduledEvent>[],
     );
 
+    final showQuestionMark = events.any((e) {
+      final status = e.rsvpStatus;
+      return status == 'maybe' || status == 'interested';
+    });
+
     if (isOtherMonth) {
       return const SizedBox.shrink();
     }
@@ -457,7 +462,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               borderRadius: BorderRadius.circular(isSelected ? 10 : 12),
               child: Stack(
                 children: [
-                  _buildEventBackground(events),
+                  _buildEventBackground(events, showQuestionMark: showQuestionMark),
                   if (isToday)
                     Center(
                       child: Container(
@@ -474,27 +479,40 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       width: 34,
                       height: 34,
                       alignment: Alignment.center,
-                      child: Text(
-                        DateFormat('dd').format(day),
-                        style: TextStyle(
-                          color: isSelected || isToday || events.isNotEmpty
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.8),
-                          fontSize: 16,
-                          fontWeight: isSelected || isToday || events.isNotEmpty
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          shadows: events.isNotEmpty && !isToday
-                              ? [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.8),
-                                    offset: const Offset(0, 1),
-                                    blurRadius: 4,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                      ),
+                      child: showQuestionMark
+                          ? Icon(
+                              Icons.question_mark,
+                              color: Colors.white.withValues(alpha: 1.0),
+                              size: 18,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withValues(alpha: 0.85),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            )
+                          : Text(
+                              DateFormat('dd').format(day),
+                              style: TextStyle(
+                                color: isSelected || isToday || events.isNotEmpty
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.8),
+                                fontSize: 16,
+                                fontWeight: isSelected || isToday || events.isNotEmpty
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                shadows: events.isNotEmpty && !isToday
+                                    ? [
+                                        Shadow(
+                                          color: Colors.black.withValues(alpha: 0.8),
+                                          offset: const Offset(0, 1),
+                                          blurRadius: 4,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -508,7 +526,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
 
 
-  Widget _buildEventBackground(List<ScheduledEvent> events) {
+  Widget _buildEventBackground(List<ScheduledEvent> events, {bool showQuestionMark = false}) {
     if (events.isEmpty) return Container();
 
     if (events.length == 1) {
@@ -574,6 +592,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               ),
             ),
           ),
+          if (showQuestionMark)
+            Center(
+              child: Icon(
+                Icons.question_mark,
+                color: Colors.white.withValues(alpha: 1.0),
+                size: 20,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.85),
+                    offset: const Offset(0, 1),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -693,7 +726,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
                                 final event = filteredEvents[index];
-                                final isHost = currentUserId != null && currentUserId == event.hostId;
+                                final isHost = currentUserId != null &&
+                    (currentUserId == event.hostId ||
+                        event.coHostIds.contains(currentUserId));
                                 return ScheduledEventCard(
                                   event: event,
                                   isHost: isHost,
@@ -771,27 +806,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                 // Task 3: Past Events Divider
                 if (past.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                      child: Row(
-                        children: [
-                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              "Past events",
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.2))),
-                        ],
-                      ),
-                    ),
-                  ),
+                  const SliverToBoxAdapter(child: PastEventsDivider()),
 
                 // Past Events List
                 ..._buildEventList(pastGrouped, currentUserId, "Past"),
@@ -848,7 +863,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final event = events[index];
-                final isHost = currentUserId != null && currentUserId == event.hostId;
+                final isHost = currentUserId != null &&
+                    (currentUserId == event.hostId ||
+                        event.coHostIds.contains(currentUserId));
                 return ScheduledEventCard(
                   event: event,
                   isHost: isHost,

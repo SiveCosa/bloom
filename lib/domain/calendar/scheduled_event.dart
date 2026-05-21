@@ -11,7 +11,9 @@ class ScheduledEvent {
   final String? hostImageUrl;
   final List<String> auroraColors;
   final String locationName;
-  
+  final List<String> coHostIds;
+  final String? rsvpStatus;
+
   bool get isOngoing {
     if (startTime == null) return false;
     final now = DateTime.now();
@@ -31,6 +33,8 @@ class ScheduledEvent {
     this.hostImageUrl,
     required this.auroraColors,
     required this.locationName,
+    this.coHostIds = const [],
+    this.rsvpStatus,
   });
 
   factory ScheduledEvent.fromMap(Map<String, dynamic> map, String id) {
@@ -49,6 +53,8 @@ class ScheduledEvent {
       hostImageUrl: map['hostImageUrl'] as String? ?? map['host_image_url'] as String?,
       auroraColors: List<String>.from(map['auroraColors'] ?? map['aurora_colors'] ?? []),
       locationName: location,
+      coHostIds: List<String>.from(map['coHostIds'] ?? map['co_host_ids'] ?? []),
+      rsvpStatus: map['rsvpStatus'] as String? ?? map['rsvp_status'] as String?,
     );
   }
 
@@ -63,6 +69,8 @@ class ScheduledEvent {
       if (hostImageUrl != null) 'hostImageUrl': hostImageUrl,
       'auroraColors': auroraColors,
       'locationName': locationName,
+      if (coHostIds.isNotEmpty) 'coHostIds': coHostIds,
+      if (rsvpStatus != null) 'rsvpStatus': rsvpStatus,
     };
   }
 }
