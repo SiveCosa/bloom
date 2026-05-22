@@ -5,6 +5,8 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const functions = require("firebase-functions/v1");
+const { geohashQueryBounds, distanceBetween } = require("geofire-common");
+
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
@@ -1158,5 +1160,104 @@ exports.getForYouFeed = onCall(
     }
 
     return payload;
+  }
+);
+//  Get Events In Area
+// Returns active events within a 40km radius of the user's last known location
+exports.getEventsInArea = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    //  Check if the user is logged in
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in to get events in area.");
+    }
+
+    const uid = request.auth.uid;
+
+    try {
+      // Get the user's last known location from Firestore
+      const userSnap = await db.collection("users").doc(uid).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User profile not found.");
+      }
+
+      const userData = userSnap.data();
+      const userLocation = userData.location;
+
+      // Make sure the user has a location saved
+      if (!userLocation) {
+        throw new HttpsError("failed-precondition", "User location not found.");
+      }
+
+      // Extract latitude and longitude from the GeoPoint
+      const lat = userLocation.latitude;
+      const lng = userLocation.longitude;
+
+      // Calculate geohash bounds for a 40km radius
+      const radiusInMeters = 40 * 1000; // 40km converted to meters
+      const bounds = geohashQueryBounds([lat, lng], radiusInMeters);
+
+      // Query events within each geohash bound
+      const eventPromises = [];
+      for (const bound of bounds) {
+        const query = db.collection("events")
+          .where("metadata.status", "==", "active")
+          .orderBy("location.geohash")
+          .startAt(bound[0])
+          .endAt(bound[1]);
+        eventPromises.push(query.get());
+      }
+
+      // Wait for all queries to complete
+      const snapshots = await Promise.all(eventPromises);
+
+      // Filter results and remove duplicates
+      const now = new Date();
+      const seenIds = new Set();
+      const nearbyEvents = [];
+
+      for (const snap of snapshots) {
+        for (const doc of snap.docs) {
+          // Skip duplicates
+          if (seenIds.has(doc.id)) continue;
+          seenIds.add(doc.id);
+
+          const eventData = doc.data();
+
+          // Skip events that have already ended
+          const startDate = eventData.timing?.startDate?.toDate?.() || null;
+          const endDate = eventData.timing?.endDate?.toDate?.() || null;
+          const effectiveEndDate = endDate || (startDate ? new Date(startDate.getTime() + 24 * 60 * 60 * 1000) : null);
+          if (effectiveEndDate && effectiveEndDate < now) continue;
+
+          // Verify the event is actually within 40km (geohash bounds can include false positives)
+          const eventLat = eventData.location?.latitude;
+          const eventLng = eventData.location?.longitude;
+          if (!eventLat || !eventLng) continue;
+
+          const distanceInKm = distanceBetween([lat, lng], [eventLat, eventLng]);
+          if (distanceInKm > 40) continue;
+
+          nearbyEvents.push({
+            id: doc.id,
+            title: eventData.title || "",
+            poster_url: eventData.visuals?.posterUrl || "",
+            start_time: eventData.timing?.startDate?.toMillis?.() || null,
+            location_name: eventData.location?.displayName || "",
+            aurora_colors: eventData.visuals?.auroraColors || [],
+            distance_km: Math.round(distanceInKm * 10) / 10,
+          });
+        }
+      }
+
+      // Sort by start date, soonest first
+      nearbyEvents.sort((a, b) => (a.start_time || 0) - (b.start_time || 0));
+
+      return nearbyEvents;
+
+    } catch (error) {
+      console.error("Get Events In Area Error:", error);
+      throw new HttpsError("internal", "Failed to get events in area.");
+    }
   }
 );
