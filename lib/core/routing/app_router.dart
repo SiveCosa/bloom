@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Shell and Auth Providers
 import '../../domain/auth/auth_providers.dart';
-// import '../../ui/main_shell/shell_screen.dart'; // Uncomment when ShellScreen is ready
 
 // Import Login UI screens
 import '../../ui/auth/login/email_screen.dart' as login;
@@ -39,7 +38,9 @@ import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
 import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
 import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 import '../../ui/discover/for_you_screen.dart';
-// import '../../ui/auth/signup/loading_screen.dart'; // Keep if using a separate loading sequence
+import '../../ui/discover/in_your_area_screen.dart';
+import '../../ui/discover/category_events_screen.dart';
+
 
 // No longer using PlaceholderScreen
 
@@ -101,7 +102,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           '/auth/signup/avatar',
           '/auth/signup/interests',
           '/auth/signup/permissions',
-          '/auth/signup/loading',
           '/auth/login/confirm',
         };
 
@@ -160,10 +160,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'permissions',
             builder: (context, state) => const PermissionsScreen(),
           ),
-          // GoRoute(
-          //   path: 'loading',
-          //   builder: (context, state) => const LoadingScreen(),
-          // ),
         ],
       ),
 
@@ -284,6 +280,23 @@ final routerProvider = Provider<GoRouter>((ref) {
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
+      ),
+      GoRoute(
+        path: '/home/in-your-area',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const InYourAreaScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
+      ),
+      GoRoute(
+        path: '/discover/category/:category',
+        builder: (context, state) {
+          final category = state.pathParameters['category']!;
+          return CategoryEventsScreen(category: category);
+        },
       ),
       GoRoute(
         path: '/messages',

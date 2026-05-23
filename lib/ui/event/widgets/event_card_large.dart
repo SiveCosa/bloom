@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:bloom/core/routing/event_navigation.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/domain/event/create_event_state.dart';
 import 'package:bloom/domain/auth/auth_providers.dart';
 
 class EventCardLarge extends ConsumerWidget {
+  static const double hostBarHeight = 45;
+  static const double posterSize = 250;
+
+  /// Details block: padding (24) + title (~22) + rows + Interested control.
+  static const double detailsSectionHeight = 154;
+
+  /// ListView viewport — must fit host + poster + details (no vertical overflow).
+  static const double carouselHeight =
+      hostBarHeight + posterSize + detailsSectionHeight;
+
   final ScheduledEvent event;
   final VoidCallback? onOptionTap;
   final VoidCallback? onInterestedTap;
@@ -55,26 +66,43 @@ class EventCardLarge extends ConsumerWidget {
     return '$datePart • $timePart';
   }
 
+  /// Discover (and other feeds) often embed host fields from the server; skip
+  /// per-card Firestore listeners to avoid dozens of streams on one screen.
+  bool get _useEmbeddedHostInfo => event.hostName.trim().isNotEmpty;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch real-time host profile info
-    final hostProfileAsync = ref.watch(userProfileStreamProvider(event.hostId));
+    final String hostImageUrl;
+    final String hostName;
 
-    final hostImageUrl = hostProfileAsync.when(
-      data: (profile) => profile?['profile_image_url']?.toString() ??
-          profile?['avatar_url']?.toString() ??
-          event.hostImageUrl,
-      loading: () => event.hostImageUrl,
-      error: (err, st) => event.hostImageUrl,
-    );
+    if (_useEmbeddedHostInfo) {
+      hostImageUrl = event.hostImageUrl ?? '';
+      hostName = event.hostName;
+    } else {
+      final hostProfileAsync =
+          ref.watch(userProfileStreamProvider(event.hostId));
 
-    final hostName = hostProfileAsync.when(
-      data: (profile) => profile?['name']?.toString() ??
-          profile?['username']?.toString() ??
-          event.hostName,
-      loading: () => event.hostName,
-      error: (err, st) => event.hostName,
-    );
+      hostImageUrl = hostProfileAsync.when(
+        data: (profile) => profile?['profile_image_url']?.toString() ??
+            profile?['avatar_url']?.toString() ??
+            event.hostImageUrl ??
+            '',
+        loading: () => event.hostImageUrl ?? '',
+        error: (err, st) => event.hostImageUrl ?? '',
+      );
+
+      hostName = hostProfileAsync.when(
+        data: (profile) => profile?['name']?.toString() ??
+            profile?['username']?.toString() ??
+            event.hostName,
+        loading: () => event.hostName,
+        error: (err, st) => event.hostName,
+      );
+    }
+
+    final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+    final isCoHost =
+        currentUserId != null && event.coHostIds.contains(currentUserId);
 
     // 1. Extract and process color palette
     final colors = _parseAuroraColors(event.auroraColors);
@@ -103,10 +131,9 @@ class EventCardLarge extends ConsumerWidget {
 
     // 3. Structural Container & Clip
     return GestureDetector(
-      onTap: () => context.push('/event/${event.id}'),
+      onTap: () => pushEventDetail(context, event.id),
       child: Container(
         width: 250,
-        height: 394,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
@@ -120,221 +147,245 @@ class EventCardLarge extends ConsumerWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(15), // Fit cleanly inside border
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 0,
             children: [
-            // 1. Top Item: Host Bar (Height 45, 100% opaque gradient)
-            Container(
-              height: 45,
-              padding: const EdgeInsets.only(left: 12, right: 0),
-              decoration: BoxDecoration(
-                gradient: hostBarGradient,
+              // Host bar
+              Container(
+                height: hostBarHeight,
+                padding: const EdgeInsets.only(left: 12, right: 0),
+                decoration: BoxDecoration(
+                  gradient: hostBarGradient,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: event.hostId.isNotEmpty
+                              ? () => context.push('/profile/${event.hostId}')
+                              : null,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 4,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 14,
+                                  backgroundImage: hostImageUrl.isNotEmpty
+                                      ? NetworkImage(hostImageUrl)
+                                      : null,
+                                  backgroundColor:
+                                      Colors.white.withValues(alpha: 0.2),
+                                  child: hostImageUrl.isEmpty
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 14,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    hostName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: onOptionTap,
+                      icon: const Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                      style: IconButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(32, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundImage: hostImageUrl != null
-                        ? NetworkImage(hostImageUrl)
-                        : null,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    child: hostImageUrl == null
-                        ? const Icon(Icons.person, size: 14, color: Colors.white)
-                        : null,
+
+              // Square poster (250×250), flush below host bar
+              SizedBox(
+                width: posterSize,
+                height: posterSize,
+                child: event.posterUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: event.posterUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.white30,
+                            size: 32,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        child: const Icon(
+                          Icons.image,
+                          color: Colors.white30,
+                          size: 32,
+                        ),
+                      ),
+              ),
+
+              // Details container, flush below poster
+              Container(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  bottom: 12,
+                ),
+                decoration: BoxDecoration(
+                  gradient: infoGradient,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(15),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      hostName,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      event.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: const Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                    onPressed: onOptionTap,
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. Remaining Area: Stack containing Poster Image (base) and Info Container (bottom)
-            Expanded(
-              child: Stack(
-                children: [
-                  // Poster Image (starts exactly below the Host Bar, shown at 100% opacity)
-                  Positioned.fill(
-                    child: event.posterUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: event.posterUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              child: const Icon(
-                                Icons.image_not_supported,
-                                color: Colors.white30,
-                                size: 32,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            child: const Icon(
-                              Icons.image,
-                              color: Colors.white30,
-                              size: 32,
-                            ),
-                          ),
-                  ),
-
-                  // Bottom Item: Info Container (100% opaque gradient, zero bottom padding, rounded top corners)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        top: 12,
-                        bottom: 0,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: infoGradient,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(15),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_month,
+                          size: 18,
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Event Title
-                          Text(
-                            event.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _formatDateTime(event.startTime),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
-
-                          // Date Row
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_month,
-                                size: 14,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _formatDateTime(event.startTime),
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 18,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event.locationName.trim().isEmpty
+                                ? 'Location TBD'
+                                : event.locationName,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
-
-                          // Location Row
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 14,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  event.locationName.trim().isEmpty
-                                      ? 'Location TBD'
-                                      : event.locationName,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // "Interested" Button (Clear background text style)
-                          Center(
-                            child: SizedBox(
-                              height: 36,
-                              child: TextButton.icon(
-                                onPressed: onInterestedTap,
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  backgroundColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                ),
-                                icon: const Icon(
-                                  Icons.star_border,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                                label: const Text(
-                                  'Interested',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
+                        ),
+                      ],
+                    ),
+                    if (!isCoHost) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: onInterestedTap,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.transparent,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            minimumSize: Size.zero,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                        ],
+                          icon: const Icon(
+                            Icons.star_border,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Interested',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

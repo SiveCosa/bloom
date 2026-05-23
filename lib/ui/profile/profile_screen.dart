@@ -14,6 +14,7 @@ import '../../domain/auth/auth_providers.dart';
 import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
+import '../../domain/event/event_providers.dart';
 import '../../domain/friendship/friendship_providers.dart';
 import '../../domain/navigation/navigation_providers.dart';
 import './widgets/recommended_friend_card.dart';
@@ -204,8 +205,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
               final counts = doc?['counts'] as Map<String, dynamic>?;
               final friendsCount = (friendsAsync.value?.length ?? counts?['friends'] ?? 0).toString();
-              final hostedCount = (counts?['hosted'] ?? 0).toString();
-              final joinedCount = (counts?['joined'] ?? 0).toString();
+              final hostedCount = ref.watch(profileHostedCountProvider).toString();
+              final joinedCount = ref.watch(profileJoinedCountProvider).toString();
 
               final socialLinks = doc?['social_links'] as Map<String, dynamic>?;
               final instagram = socialLinks?['instagram']?.toString() ?? '';

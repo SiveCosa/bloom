@@ -6,9 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
+import 'package:bloom/domain/calendar/calendar_providers.dart';
 import 'package:bloom/domain/event/event_providers.dart';
+import 'package:bloom/domain/home/home_schedule_filter.dart';
+import 'package:bloom/domain/home/home_schedule_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
+import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
+import '../shared/widgets/bloom_loading_indicator.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
 import 'upcoming_events.dart';
@@ -22,8 +27,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
-  int _selectedFilterIndex = 0;
-
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
   double _dragOffset = 0.0;
@@ -102,8 +105,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _spinController.repeat();
 
     try {
+      await ref.read(locationServiceProvider).updateUserLocation();
       ref.invalidate(forYouRawFeedProvider);
-      await ref.read(forYouRawFeedProvider.future);
+      ref.invalidate(eventsInAreaRawFeedProvider);
+      await Future.wait([
+        ref.read(forYouRawFeedProvider.future),
+        ref.read(eventsInAreaRawFeedProvider.future),
+      ]);
     } catch (_) {}
 
     await Future.delayed(const Duration(milliseconds: 600));
@@ -237,6 +245,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
+    final forYouAsync = ref.watch(forYouRawFeedProvider);
+    final inAreaAsync = ref.watch(eventsInAreaRawFeedProvider);
+    final scheduleAsync = ref.watch(scheduleStreamProvider);
+    final isHomeFeedLoading = forYouAsync.isLoading ||
+        inAreaAsync.isLoading ||
+        scheduleAsync.isLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
@@ -255,9 +270,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const CreateEventCTA(),
-                  const UpcomingEventsSection(),
-                  const SizedBox(height: 24),
-                  _buildForYouSection(),
+                  if (isHomeFeedLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 80),
+                      child: Center(
+                        child: BloomLoadingIndicator(size: 40),
+                      ),
+                    )
+                  else ...[
+                    const UpcomingEventsSection(),
+                    const SizedBox(height: 24),
+                    HomeFeedCarouselSection(
+                      title: 'For You',
+                      subtitle: 'Your social life curated',
+                      iconAsset: 'assets/icons/home/fyp_icon.svg',
+                      detailRoute: '/home/for-you',
+                      rawFeedProvider: forYouRawFeedProvider,
+                      scheduledEventsProvider: forYouScheduledEventsProvider,
+                      errorPrefix: 'Error loading For You feed',
+                    ),
+                    const SizedBox(height: 24),
+                    HomeFeedCarouselSection(
+                      title: 'In your Area',
+                      subtitle: 'The Streets are calling',
+                      iconAsset: 'assets/icons/home/area_icon.svg',
+                      detailRoute: '/home/in-your-area',
+                      rawFeedProvider: eventsInAreaRawFeedProvider,
+                      scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
+                      errorPrefix: 'Error loading In your Area feed',
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -336,34 +378,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildFilterChips() {
-    final chips = [
-      {'label': 'Upcoming', 'count': '0'},
-      {'label': 'Hosting', 'count': '0'},
-      {'label': 'Invites', 'count': '0'},
-      {'label': 'Attending', 'count': '0'},
-    ];
+    const filters = HomeScheduleFilter.values;
+    const labels = ['Upcoming', 'Hosting', 'Invites', 'Attending'];
+    final counts = ref.watch(homeFilterCountsProvider);
+    final activeFilter = ref.watch(homeScheduleFilterProvider);
 
     return SizedBox(
       height: 35,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
-        itemCount: chips.length,
+        itemCount: filters.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final chip = chips[index];
-          final isActive = _selectedFilterIndex == index;
+          final filter = filters[index];
+          final isActive = activeFilter == filter;
+          final count = counts[filter] ?? 0;
 
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedFilterIndex = index;
-              });
+              ref.read(homeScheduleFilterProvider.notifier).setFilter(filter);
             },
-            child: Container(
+             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: isActive ? 0.12 : 0.08),
+                color: Colors.white.withValues(alpha: isActive ? 0.30 : 0.08),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.07),
@@ -379,11 +418,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   ),
                   children: [
-                    TextSpan(text: chip['label']),
+                    TextSpan(text: labels[index]),
                     const TextSpan(text: ' '),
                     TextSpan(
-                      text: chip['count'],
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                      text: '$count',
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ],
                 ),
@@ -395,8 +434,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildForYouSection() {
-    final rawFeedAsync = ref.watch(forYouRawFeedProvider);
+}
+
+class HomeFeedCarouselSection extends ConsumerWidget {
+  final String title;
+  final String subtitle;
+  final String iconAsset;
+  final String detailRoute;
+  final FutureProvider<List<Map<String, dynamic>>> rawFeedProvider;
+  final Provider<List<ScheduledEvent>> scheduledEventsProvider;
+  final String errorPrefix;
+
+  const HomeFeedCarouselSection({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.iconAsset,
+    required this.detailRoute,
+    required this.rawFeedProvider,
+    required this.scheduledEventsProvider,
+    required this.errorPrefix,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rawFeedAsync = ref.watch(rawFeedProvider);
 
     return rawFeedAsync.when(
       data: (rawList) {
@@ -404,7 +466,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           return const SizedBox.shrink();
         }
 
-        final events = ref.read(forYouScheduledEventsProvider);
+        final events = ref.watch(scheduledEventsProvider);
+        if (events.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,33 +477,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: GestureDetector(
-                onTap: () => context.push('/home/for-you'),
+                onTap: () => context.push(detailRoute),
                 behavior: HitTestBehavior.opaque,
                 child: Row(
                   children: [
                     SvgPicture.asset(
-                      'assets/icons/home/fyp_icon.svg',
+                      iconAsset,
                       width: 30,
                       height: 30,
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'For You',
-                            style: TextStyle(
+                            title,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Your social life curated',
-                            style: TextStyle(
+                            subtitle,
+                            style: const TextStyle(
                               color: Colors.white60,
                               fontSize: 14,
                             ),
@@ -457,7 +522,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 394,
+              height: EventCardLarge.carouselHeight,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,
@@ -476,24 +541,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ],
         );
       },
-      loading: () => const SizedBox(
-        height: 394,
-        child: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFFF04A9F),
-          ),
-        ),
-      ),
+      loading: () => const SizedBox.shrink(),
       error: (err, stack) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Center(
           child: Text(
-            'Error loading For You feed: $err',
+            '$errorPrefix: $err',
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
       ),
     );
   }
-
 }

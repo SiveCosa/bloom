@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/routing/event_navigation.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/event/event_providers.dart';
+import '../../shared/widgets/past_events_divider.dart';
 import '../../shared/widgets/event_medium_card.dart';
 import 'dart:ui' as ui;
 
@@ -102,7 +104,7 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: upcoming[index],
-                                  onTap: () => context.push('/event/${upcoming[index].id}'),
+                                  onTap: () => pushEventDetail(context, upcoming[index].id),
                                 ),
                                 childCount: upcoming.length,
                               ),
@@ -110,29 +112,7 @@ class EventsHostedScreen extends ConsumerWidget {
 
                           // Past Events Section Divider
                           if (past.isNotEmpty)
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                                child: Row(
-                                  children: [
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        "Past events",
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.4),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            const SliverToBoxAdapter(child: PastEventsDivider()),
 
                           // Past Events List
                           if (past.isNotEmpty)
@@ -140,7 +120,7 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: past[index],
-                                  onTap: () => context.push('/event/${past[index].id}'),
+                                  onTap: () => pushEventDetail(context, past[index].id),
                                 ),
                                 childCount: past.length,
                               ),
