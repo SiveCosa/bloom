@@ -4,6 +4,7 @@ const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const { geohashQueryBounds, distanceBetween } = require("geofire-common");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
@@ -1561,5 +1562,153 @@ exports.getDiscoverFeed = onCall(
       silver_screening,
       feed,
     };
+  }
+);
+
+// 15. Events in user's area (geohash query + visibility)
+const EVENTS_IN_AREA_RADIUS_KM = 40;
+const EVENTS_IN_AREA_MAX_RESULTS = 50;
+
+exports.getEventsInArea = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in to get events in area.");
+    }
+
+    const currentUserId = request.auth.uid;
+
+    try {
+      const userSnap = await db.collection("users").doc(currentUserId).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User profile not found.");
+      }
+
+      const userLocation = userSnap.data().location;
+      if (!userLocation) {
+        throw new HttpsError("failed-precondition", "User location not found.");
+      }
+
+      const lat = userLocation.latitude;
+      const lng = userLocation.longitude;
+
+      const ctxBase = await loadUserDiscoverContext(currentUserId);
+      const ctx = {
+        currentUserId,
+        gender: ctxBase.gender,
+        friendsSet: ctxBase.friendsSet,
+        invitesSet: ctxBase.invitesSet,
+      };
+
+      const radiusInMeters = EVENTS_IN_AREA_RADIUS_KM * 1000;
+      const bounds = geohashQueryBounds([lat, lng], radiusInMeters);
+
+      const eventPromises = bounds.map((bound) =>
+        db
+          .collection("events")
+          .where("metadata.status", "==", "active")
+          .orderBy("location.geohash")
+          .startAt(bound[0])
+          .endAt(bound[1])
+          .get()
+      );
+
+      const snapshots = await Promise.all(eventPromises);
+
+      const now = new Date();
+      const seenIds = new Set();
+      const hostFriendsCache = new Map();
+      const hostDataCache = new Map();
+      const candidates = [];
+
+      for (const snap of snapshots) {
+        for (const doc of snap.docs) {
+          if (seenIds.has(doc.id)) continue;
+          seenIds.add(doc.id);
+
+          const eventData = doc.data();
+          if (!isEventUpcoming(eventData, now)) continue;
+
+          const hostId =
+            eventData.metadata?.hostId || eventData.metadata?.host_id;
+          if (!hostId) continue;
+          if (hostId === currentUserId) continue;
+
+          const coHostIds = getCoHostIds(eventData);
+          if (coHostIds.includes(currentUserId)) continue;
+
+          const visible = await passesVisibilityFilter(
+            eventData,
+            doc.id,
+            ctx,
+            hostFriendsCache
+          );
+          if (!visible) continue;
+
+          const loc = eventData.location || {};
+          const eventLat = loc.latitude ?? loc.lat;
+          const eventLng = loc.longitude ?? loc.lng;
+          if (typeof eventLat !== "number" || typeof eventLng !== "number") {
+            continue;
+          }
+
+          const distanceInKm = distanceBetween([lat, lng], [eventLat, eventLng]);
+          if (distanceInKm > EVENTS_IN_AREA_RADIUS_KM) continue;
+
+          const startDate = parseFirestoreDate(eventData.timing?.startDate);
+
+          candidates.push({
+            id: doc.id,
+            title: eventData.title || "",
+            poster_url:
+              eventData.visuals?.posterUrl ||
+              eventData.visuals?.poster_url ||
+              "",
+            start_time: startDate ? startDate.getTime() : null,
+            location_name:
+              eventData.location?.displayName ||
+              eventData.location?.display_name ||
+              "",
+            aurora_colors:
+              eventData.visuals?.auroraColors ||
+              eventData.visuals?.aurora_colors ||
+              [],
+            hostId,
+            distance_km: Math.round(distanceInKm * 10) / 10,
+          });
+        }
+      }
+
+      candidates.sort((a, b) => (a.start_time || 0) - (b.start_time || 0));
+      const topCandidates = candidates.slice(0, EVENTS_IN_AREA_MAX_RESULTS);
+
+      const hostIds = topCandidates.map((e) => e.hostId).filter(Boolean);
+      await resolveHostProfiles(hostIds, hostDataCache);
+
+      return topCandidates.map((event) => {
+        const cached = hostDataCache.get(event.hostId) || {
+          username: "",
+          avatar: "",
+        };
+        return {
+          id: event.id,
+          title: event.title,
+          poster_url: event.poster_url,
+          start_time: event.start_time,
+          location_name: event.location_name,
+          aurora_colors: event.aurora_colors,
+          distance_km: event.distance_km,
+          host_id: event.hostId,
+          host_username: cached.username,
+          host_avatar_url: cached.avatar,
+        };
+      });
+    } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+      console.error("Get Events In Area Error:", error);
+      throw new HttpsError("internal", "Failed to get events in area.");
+    }
   }
 );

@@ -38,6 +38,7 @@ import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
 import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
 import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 import '../../ui/discover/for_you_screen.dart';
+import '../../ui/discover/in_your_area_screen.dart';
 import '../../ui/discover/category_events_screen.dart';
 
 
@@ -275,6 +276,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const ForYouScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
+      ),
+      GoRoute(
+        path: '/home/in-your-area',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const InYourAreaScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,

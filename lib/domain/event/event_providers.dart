@@ -89,6 +89,101 @@ final publicProfileUpcomingEventsProvider =
       );
 });
 
+/// Max events shown in a home horizontal carousel (For You + In your Area).
+const int kHomeFeedCarouselLimit = 10;
+
+List<Map<String, dynamic>> _filterHostedFeedMaps(
+  List<Map<String, dynamic>> rawList,
+  Ref ref,
+) {
+  final user = ref.read(firebaseAuthProvider).currentUser;
+  final hostedIds = ref.read(hostedOrCoHostedEventIdsProvider);
+
+  return rawList.where((map) {
+    final id = map['id'] as String? ?? '';
+    final hostId = map['host_id'] as String? ?? '';
+    if (hostedIds.contains(id)) return false;
+    if (user != null && hostId == user.uid) return false;
+    return true;
+  }).toList();
+}
+
+ScheduledEvent _mapFeedToScheduledEvent(Map<String, dynamic> map) {
+  final startTimeMillis = map['start_time'] as int?;
+  final start = startTimeMillis != null
+      ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+      : null;
+
+  return ScheduledEvent(
+    id: map['id'] as String? ?? '',
+    title: map['title'] as String? ?? '',
+    posterUrl: map['poster_url'] as String?,
+    startTime: start,
+    endTime: start != null
+        ? DateTime(start.year, start.month, start.day, 23, 59, 59)
+        : DateTime.now(),
+    hostName: map['host_username'] as String? ?? '',
+    hostId: map['host_id'] as String? ?? '',
+    hostImageUrl: map['host_avatar_url'] as String?,
+    auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+    locationName: map['location_name'] as String? ?? '',
+  );
+}
+
+Event _mapFeedToEvent(Map<String, dynamic> map) {
+  final startTimeMillis = map['start_time'] as int?;
+  final start = startTimeMillis != null
+      ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
+      : null;
+
+  return Event(
+    id: map['id'] as String? ?? '',
+    title: map['title'] as String? ?? '',
+    description: '',
+    tags: const [],
+    visuals: EventVisuals(
+      posterUrl: map['poster_url'] as String?,
+      aspectRatio: 1.0,
+      auroraColors: List<String>.from(map['aurora_colors'] ?? []),
+    ),
+    timing: EventTiming(
+      startDate: start,
+      startTimeTbd: start == null,
+    ),
+    location: EventLocation(
+      displayName: map['location_name'] as String? ?? '',
+      formattedAddress: map['location_name'] as String? ?? '',
+      latitude: 0.0,
+      longitude: 0.0,
+      geohash: '',
+    ),
+    audience: const EventAudience(
+      visibility: EventVisibility.public,
+    ),
+    extras: const [],
+    rsvpReminders: const [],
+    liveCounts: const EventLiveCounts(),
+    previewGuests: const [],
+    metadata: EventMetadata(
+      hostId: map['host_id'] as String? ?? '',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      status: EventStatus.active,
+    ),
+  );
+}
+
+List<ScheduledEvent> _mapRawFeedToScheduledEvents(
+  List<Map<String, dynamic>> rawList,
+  Ref ref,
+) {
+  return _filterHostedFeedMaps(rawList, ref).map(_mapFeedToScheduledEvent).toList();
+}
+
+List<Event> _mapRawFeedToEvents(List<Map<String, dynamic>> rawList, Ref ref) {
+  return _filterHostedFeedMaps(rawList, ref).map(_mapFeedToEvent).toList();
+}
+
 final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
@@ -103,41 +198,9 @@ final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) a
 
 final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
-  final user = ref.watch(firebaseAuthProvider).currentUser;
-  final hostedIds = ref.watch(hostedOrCoHostedEventIdsProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) {
-      return rawList
-          .where((map) {
-            final id = map['id'] as String? ?? '';
-            final hostId = map['host_id'] as String? ?? '';
-            if (hostedIds.contains(id)) return false;
-            if (user != null && hostId == user.uid) return false;
-            return true;
-          })
-          .map((map) {
-            final startTimeMillis = map['start_time'] as int?;
-            final start = startTimeMillis != null 
-                ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
-                : null;
-            
-            return ScheduledEvent(
-              id: map['id'] as String? ?? '',
-              title: map['title'] as String? ?? '',
-              posterUrl: map['poster_url'] as String?,
-              startTime: start,
-              endTime: start != null 
-                  ? DateTime(start.year, start.month, start.day, 23, 59, 59)
-                  : DateTime.now(),
-              hostName: map['host_username'] as String? ?? '',
-              hostId: map['host_id'] as String? ?? '',
-              hostImageUrl: map['host_avatar_url'] as String?,
-              auroraColors: List<String>.from(map['aurora_colors'] ?? []),
-              locationName: map['location_name'] as String? ?? '',
-            );
-          }).toList();
-    },
+    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref),
     loading: () => [],
     error: (err, stack) => [],
   );
@@ -145,62 +208,43 @@ final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
 
 final forYouEventsProvider = Provider<List<Event>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
-  final user = ref.watch(firebaseAuthProvider).currentUser;
-  final hostedIds = ref.watch(hostedOrCoHostedEventIdsProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) {
-      return rawList
-          .where((map) {
-            final id = map['id'] as String? ?? '';
-            final hostId = map['host_id'] as String? ?? '';
-            if (hostedIds.contains(id)) return false;
-            if (user != null && hostId == user.uid) return false;
-            return true;
-          })
-          .map((map) {
-            final startTimeMillis = map['start_time'] as int?;
-            final start = startTimeMillis != null 
-                ? DateTime.fromMillisecondsSinceEpoch(startTimeMillis)
-                : null;
+    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});
 
-            return Event(
-              id: map['id'] as String? ?? '',
-              title: map['title'] as String? ?? '',
-              description: '',
-              tags: const [],
-              visuals: EventVisuals(
-                posterUrl: map['poster_url'] as String?,
-                aspectRatio: 1.0,
-                auroraColors: List<String>.from(map['aurora_colors'] ?? []),
-              ),
-              timing: EventTiming(
-                startDate: start,
-                startTimeTbd: start == null,
-              ),
-              location: EventLocation(
-                displayName: map['location_name'] as String? ?? '',
-                formattedAddress: map['location_name'] as String? ?? '',
-                latitude: 0.0,
-                longitude: 0.0,
-                geohash: '',
-              ),
-              audience: const EventAudience(
-                visibility: EventVisibility.public,
-              ),
-              extras: const [],
-              rsvpReminders: const [],
-              liveCounts: const EventLiveCounts(),
-              previewGuests: const [],
-              metadata: EventMetadata(
-                hostId: map['host_id'] as String? ?? '',
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-                status: EventStatus.active,
-              ),
-            );
-          }).toList();
-    },
+final eventsInAreaRawFeedProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+    final result = await functions.httpsCallable('getEventsInArea').call();
+    final data = result.data as List<dynamic>;
+    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  } catch (e) {
+    debugPrint('Error fetching events in area feed: $e');
+    return [];
+  }
+});
+
+final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
+  final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
+
+  return rawFeedAsync.when(
+    data: (rawList) =>
+        _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList(),
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});
+
+final eventsInAreaEventsProvider = Provider<List<Event>>((ref) {
+  final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
+
+  return rawFeedAsync.when(
+    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
     loading: () => [],
     error: (err, stack) => [],
   );
