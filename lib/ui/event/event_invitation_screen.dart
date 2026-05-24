@@ -324,14 +324,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                           padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
                                           child: Column(
                                             children: [
-                                              // Dynamic gap (Reactive)
-                                              ValueListenableBuilder<double>(
-                                                valueListenable: _sheetSize,
-                                                builder: (context, size, child) {
-                                                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                                  return SizedBox(height: ui.lerpDouble(10, 40, minimizedProgress) ?? 10);
-                                                },
-                                              ),
+                                              const SizedBox(height: 10),
                                               _buildVisibilityPill(event),
                                               const SizedBox(height: 16),
                                               // Event Title
@@ -388,12 +381,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  _buildAudienceInfoCard(event),
+                                                  _buildDescriptionCard(event),
                                                   const SizedBox(height: 16),
-                                                  if (event.description.isNotEmpty || event.tags.isNotEmpty || event.extras.isNotEmpty) ...[
-                                                    _buildDescriptionCard(event),
-                                                    const SizedBox(height: 16),
-                                                  ],
                                                   _buildGuestList(event),
                                                   const SizedBox(height: 16),
                                                    Consumer(
@@ -867,6 +856,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   _buildSeparator(),
                   const SizedBox(height: 25),
                 ],
+
+                _buildLogisticsSection(event),
                 
                 if (hasExtras) ...[
                   const SizedBox(height: 25),
@@ -1078,32 +1069,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     );
   }
 
-  Widget _buildAudienceInfoCard(Event event) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: _buildAudienceInfo(event),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAudienceInfo(Event event) {
+  Widget _buildLogisticsSection(Event event) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // RSVP Deadline
         if (event.audience.rsvpDeadline != null) ...[
           _buildAudienceRow(
             icon: Icons.hourglass_bottom_rounded,
@@ -1111,8 +1080,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           ),
           const SizedBox(height: 25),
         ],
-
-        // Capacity / Spots
         _buildAudienceRow(
           icon: Icons.groups_rounded,
           text: event.audience.capacity != null
@@ -1120,8 +1087,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               : 'Unlimited spots available',
         ),
         const SizedBox(height: 25),
-
-        // Plus Ones
         _buildAudienceRow(
           icon: Icons.person_add_rounded,
           text: event.audience.maxPlusOnes > 0 ? '+${event.audience.maxPlusOnes} guests allowed' : 'No plus ones allowed',

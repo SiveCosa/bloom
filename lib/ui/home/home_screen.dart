@@ -440,6 +440,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 }
 
 class HomeFeedCarouselSection extends ConsumerWidget {
+  static const double _carouselIconSize = 30;
+
   final String title;
   final String subtitle;
   final String iconAsset;
@@ -486,8 +488,9 @@ class HomeFeedCarouselSection extends ConsumerWidget {
                   children: [
                     SvgPicture.asset(
                       iconAsset,
-                      width: 30,
-                      height: 30,
+                      width: _carouselIconSize,
+                      height: _carouselIconSize,
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 12),
                     Expanded(

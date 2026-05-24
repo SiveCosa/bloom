@@ -1,3 +1,4 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -89,10 +90,14 @@ class CategoryEventsScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.explore_outlined,
-                            color: Colors.white24,
-                            size: 48,
+                          SvgPicture.asset(
+                            'assets/icons/nav/discover_line.svg',
+                            width: 48,
+                            height: 48,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white24,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -255,7 +260,7 @@ class DiscoverCreateEventCTA extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         BloomButton(
-          text: 'Host Event',
+          text: 'Create event',
           width: null,
           height: 35,
           backgroundColor: Colors.white,

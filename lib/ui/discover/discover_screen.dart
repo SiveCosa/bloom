@@ -401,10 +401,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.explore_outlined,
-                            color: Colors.white24,
-                            size: 48,
+                          SvgPicture.asset(
+                            'assets/icons/nav/discover_line.svg',
+                            width: 48,
+                            height: 48,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white24,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -779,7 +783,7 @@ class DiscoverCreateEventCTA extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         BloomButton(
-          text: 'Host Event',
+          text: 'Create event',
           width: null,
           height: 35,
           backgroundColor: Colors.white,
@@ -791,7 +795,7 @@ class DiscoverCreateEventCTA extends StatelessWidget {
           prefixIcon: const Icon(Icons.add, color: Colors.black, size: 18),
           onPressed: () => context.push('/create-event'),
         ),
-        const SizedBox(height: 48),
+        SizedBox(height: 56 + MediaQuery.of(context).padding.bottom + 32),
       ],
     );
   }
