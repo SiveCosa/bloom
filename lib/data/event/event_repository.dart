@@ -43,8 +43,8 @@ class EventRepository {
       if (event.location != null) 'subtitle_info': event.location!.displayName,
       'co_host_ids': event.coHostIds,
       'coHostIds': event.coHostIds,
-      if (rsvpStatus != null) 'rsvp_status': rsvpStatus,
-      if (rsvpStatus != null) 'rsvpStatus': rsvpStatus,
+      'rsvp_status': ?rsvpStatus,
+      'rsvpStatus': ?rsvpStatus,
     };
   }
 

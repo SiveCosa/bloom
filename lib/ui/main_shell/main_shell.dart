@@ -40,7 +40,7 @@ class _MainShellState extends ConsumerState<MainShell> {
           try {
             await user.delete();
           } catch (_) {}
-          await FirebaseAuth.instance.signOut();
+          await ref.read(authControllerProvider.notifier).signOut();
           ref.invalidate(authControllerProvider);
         }
       }

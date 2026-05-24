@@ -31,6 +31,10 @@ dependencies:
   shared_preferences: ^2.5.5
   dart_geohash: ^2.1.0
   share_plus: ^10.1.4
+  cometchat_sdk:
+    hosted:
+      url: https://dart.cloudsmith.io/cometchat/cometchat/
+    version: ^5.0.0-beta.3
 
 dev_dependencies:
   flutter_test:

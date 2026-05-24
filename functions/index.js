@@ -8,6 +8,69 @@ const { geohashQueryBounds, distanceBetween } = require("geofire-common");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
+const COMETCHAT_AUTH_KEY = defineSecret("COMETCHAT_AUTH_KEY");
+
+// Non-secret CometChat app config (must match lib/core/config/cometchat_config.dart).
+const COMETCHAT_APP_ID = "YOUR_APP_ID";
+const COMETCHAT_REGION = "us";
+
+function cometChatApiBase() {
+  return `https://${COMETCHAT_APP_ID}.api-${COMETCHAT_REGION}.cometchat.io/v3`;
+}
+
+async function cometChatCreateUserRest(uid, name, authKey) {
+  const response = await fetch(`${cometChatApiBase()}/users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: authKey,
+    },
+    body: JSON.stringify({ uid, name }),
+  });
+  if (response.ok) {
+    return;
+  }
+  const body = await response.json().catch(() => ({}));
+  const message = body?.error?.message || body?.message || response.statusText;
+  const alreadyExists =
+    response.status === 409 ||
+    (typeof message === "string" &&
+      /already\s*exist|duplicate|ERR_UID/i.test(message));
+  if (alreadyExists) {
+    return;
+  }
+  throw new HttpsError(
+    "internal",
+    `CometChat create user failed: ${message || response.status}`
+  );
+}
+
+async function cometChatCreateAuthTokenRest(uid, authKey) {
+  const response = await fetch(
+    `${cometChatApiBase()}/users/${encodeURIComponent(uid)}/auth_tokens`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: authKey,
+      },
+      body: JSON.stringify({}),
+    }
+  );
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = body?.error?.message || body?.message || response.statusText;
+    throw new HttpsError(
+      "internal",
+      `CometChat auth token failed: ${message || response.status}`
+    );
+  }
+  const authToken = body?.data?.authToken;
+  if (!authToken || typeof authToken !== "string") {
+    throw new HttpsError("internal", "CometChat auth token missing in response.");
+  }
+  return authToken;
+}
 
 // Initialize the Firebase Admin SDK
 admin.initializeApp();
@@ -51,6 +114,16 @@ function parseFirestoreDate(field) {
   if (!field) return null;
   if (typeof field.toDate === "function") return field.toDate();
   return new Date(field);
+}
+
+function readLatLngFromLocation(location) {
+  if (!location) return null;
+  const lat = location.latitude ?? location._latitude;
+  const lng = location.longitude ?? location._longitude;
+  if (typeof lat === "number" && typeof lng === "number") {
+    return { lat, lng };
+  }
+  return null;
 }
 
 function isEventUpcoming(eventData, now) {
@@ -1584,13 +1657,22 @@ exports.getEventsInArea = onCall(
         throw new HttpsError("not-found", "User profile not found.");
       }
 
-      const userLocation = userSnap.data().location;
-      if (!userLocation) {
-        throw new HttpsError("failed-precondition", "User location not found.");
-      }
+      const reqLat = request.data?.latitude;
+      const reqLng = request.data?.longitude;
+      let lat;
+      let lng;
 
-      const lat = userLocation.latitude;
-      const lng = userLocation.longitude;
+      if (typeof reqLat === "number" && typeof reqLng === "number") {
+        lat = reqLat;
+        lng = reqLng;
+      } else {
+        const coords = readLatLngFromLocation(userSnap.data().location);
+        if (!coords) {
+          return [];
+        }
+        lat = coords.lat;
+        lng = coords.lng;
+      }
 
       const ctxBase = await loadUserDiscoverContext(currentUserId);
       const ctx = {
@@ -1600,83 +1682,70 @@ exports.getEventsInArea = onCall(
         invitesSet: ctxBase.invitesSet,
       };
 
-      const radiusInMeters = EVENTS_IN_AREA_RADIUS_KM * 1000;
-      const bounds = geohashQueryBounds([lat, lng], radiusInMeters);
-
-      const eventPromises = bounds.map((bound) =>
-        db
-          .collection("events")
-          .where("metadata.status", "==", "active")
-          .orderBy("location.geohash")
-          .startAt(bound[0])
-          .endAt(bound[1])
-          .get()
-      );
-
-      const snapshots = await Promise.all(eventPromises);
+      const activeEventsSnap = await db
+        .collection("events")
+        .where("metadata.status", "==", "active")
+        .limit(500)
+        .get();
 
       const now = new Date();
-      const seenIds = new Set();
       const hostFriendsCache = new Map();
       const hostDataCache = new Map();
       const candidates = [];
 
-      for (const snap of snapshots) {
-        for (const doc of snap.docs) {
-          if (seenIds.has(doc.id)) continue;
-          seenIds.add(doc.id);
+      for (const eventDoc of activeEventsSnap.docs) {
+        const eventData = eventDoc.data();
+        if (!isEventUpcoming(eventData, now)) continue;
 
-          const eventData = doc.data();
-          if (!isEventUpcoming(eventData, now)) continue;
+        const hostId =
+          eventData.metadata?.hostId || eventData.metadata?.host_id;
+        if (!hostId) continue;
+        if (hostId === currentUserId) continue;
 
-          const hostId =
-            eventData.metadata?.hostId || eventData.metadata?.host_id;
-          if (!hostId) continue;
-          if (hostId === currentUserId) continue;
+        const coHostIds = getCoHostIds(eventData);
+        if (coHostIds.includes(currentUserId)) continue;
 
-          const coHostIds = getCoHostIds(eventData);
-          if (coHostIds.includes(currentUserId)) continue;
+        const visible = await passesVisibilityFilter(
+          eventData,
+          eventDoc.id,
+          ctx,
+          hostFriendsCache
+        );
+        if (!visible) continue;
 
-          const visible = await passesVisibilityFilter(
-            eventData,
-            doc.id,
-            ctx,
-            hostFriendsCache
-          );
-          if (!visible) continue;
-
-          const loc = eventData.location || {};
-          const eventLat = loc.latitude ?? loc.lat;
-          const eventLng = loc.longitude ?? loc.lng;
-          if (typeof eventLat !== "number" || typeof eventLng !== "number") {
-            continue;
-          }
-
-          const distanceInKm = distanceBetween([lat, lng], [eventLat, eventLng]);
-          if (distanceInKm > EVENTS_IN_AREA_RADIUS_KM) continue;
-
-          const startDate = parseFirestoreDate(eventData.timing?.startDate);
-
-          candidates.push({
-            id: doc.id,
-            title: eventData.title || "",
-            poster_url:
-              eventData.visuals?.posterUrl ||
-              eventData.visuals?.poster_url ||
-              "",
-            start_time: startDate ? startDate.getTime() : null,
-            location_name:
-              eventData.location?.displayName ||
-              eventData.location?.display_name ||
-              "",
-            aurora_colors:
-              eventData.visuals?.auroraColors ||
-              eventData.visuals?.aurora_colors ||
-              [],
-            hostId,
-            distance_km: Math.round(distanceInKm * 10) / 10,
-          });
+        const loc = eventData.location || {};
+        const eventLat = loc.latitude ?? loc.lat;
+        const eventLng = loc.longitude ?? loc.lng;
+        if (typeof eventLat !== "number" || typeof eventLng !== "number") {
+          continue;
         }
+
+        const distanceInKm = haversineKm(lat, lng, eventLat, eventLng);
+        if (distanceInKm > EVENTS_IN_AREA_RADIUS_KM) continue;
+
+        const startDate = parseFirestoreDate(eventData.timing?.startDate);
+
+        candidates.push({
+          id: eventDoc.id,
+          title: eventData.title || "",
+          poster_url:
+            eventData.visuals?.posterUrl ||
+            eventData.visuals?.poster_url ||
+            "",
+          start_time: startDate ? startDate.getTime() : null,
+          location_name:
+            eventData.location?.displayName ||
+            eventData.location?.display_name ||
+            eventData.location?.formattedAddress ||
+            eventData.location?.formatted_address ||
+            "",
+          aurora_colors:
+            eventData.visuals?.auroraColors ||
+            eventData.visuals?.aurora_colors ||
+            [],
+          hostId,
+          distance_km: Math.round(distanceInKm * 10) / 10,
+        });
       }
 
       candidates.sort((a, b) => (a.start_time || 0) - (b.start_time || 0));
@@ -1710,5 +1779,57 @@ exports.getEventsInArea = onCall(
       console.error("Get Events In Area Error:", error);
       throw new HttpsError("internal", "Failed to get events in area.");
     }
+  }
+);
+
+// CometChat: create user + auth token (signup). Auth key in Secret Manager only.
+// Set secret: firebase functions:secrets:set COMETCHAT_AUTH_KEY
+exports.cometChatCreateUser = onCall(
+  {
+    region: "africa-south1",
+    secrets: [COMETCHAT_AUTH_KEY],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "The function must be called while authenticated."
+      );
+    }
+
+    const name = request.data?.name;
+    if (!name || typeof name !== "string" || !name.trim()) {
+      throw new HttpsError("invalid-argument", "name is required.");
+    }
+
+    const uid = request.auth.uid;
+    const authKey = COMETCHAT_AUTH_KEY.value();
+
+    await cometChatCreateUserRest(uid, name.trim(), authKey);
+    const authToken = await cometChatCreateAuthTokenRest(uid, authKey);
+
+    return { authToken };
+  }
+);
+
+// CometChat: auth token for existing user (login).
+exports.cometChatGetAuthToken = onCall(
+  {
+    region: "africa-south1",
+    secrets: [COMETCHAT_AUTH_KEY],
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "The function must be called while authenticated."
+      );
+    }
+
+    const uid = request.auth.uid;
+    const authKey = COMETCHAT_AUTH_KEY.value();
+    const authToken = await cometChatCreateAuthTokenRest(uid, authKey);
+
+    return { authToken };
   }
 );

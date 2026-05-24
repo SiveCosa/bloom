@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/media/image_compression_helper.dart';
+import '../chat/cometchat_auth_service.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -377,6 +378,10 @@ class AuthController extends AsyncNotifier<void> {
 
       await FirebaseAuth.instance.signInWithCustomToken(token);
 
+      if (!isNewUser) {
+        await CometChatAuthService.loginWithFirebaseSession();
+      }
+
       state = const AsyncData(null);
       return isNewUser;
     } catch (e, st) {
@@ -482,10 +487,20 @@ class AuthController extends AsyncNotifier<void> {
         'created_at': FieldValue.serverTimestamp(),
       });
 
+      await CometChatAuthService.registerAndLogin(name: formData.name.trim());
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
+    }
+  }
+
+  Future<void> signOut({bool clearSignUpForm = true}) async {
+    await CometChatAuthService.logout();
+    await FirebaseAuth.instance.signOut();
+    if (clearSignUpForm) {
+      ref.read(signUpFormProvider.notifier).clearForm();
     }
   }
 
@@ -555,16 +570,14 @@ class AuthController extends AsyncNotifier<void> {
         final callable = functions.httpsCallable('deleteUserAccount');
         await callable.call();
 
-        // Also sign out locally to clear the session
-        await FirebaseAuth.instance.signOut();
+        await signOut();
+      } else {
+        await signOut();
       }
-      ref.read(signUpFormProvider.notifier).clearForm();
       state = const AsyncData(null);
     } catch (e) {
       debugPrint("Auth rollback failed: $e");
-      // Fallback: sign out to at least clear the local session
-      await FirebaseAuth.instance.signOut();
-      ref.read(signUpFormProvider.notifier).clearForm();
+      await signOut();
       state = const AsyncData(null);
     }
   }

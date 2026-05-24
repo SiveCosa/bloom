@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/event/event_repository.dart';
+import '../../data/firebase_provider.dart' hide firebaseAuthProvider;
 import '../auth/auth_providers.dart';
 import '../calendar/calendar_providers.dart';
+import '../location/location_service.dart';
 import 'event.dart';
 import '../calendar/scheduled_event.dart';
 import 'event_visibility.dart';
@@ -184,6 +187,26 @@ List<Event> _mapRawFeedToEvents(List<Map<String, dynamic>> rawList, Ref ref) {
   return _filterHostedFeedMaps(rawList, ref).map(_mapFeedToEvent).toList();
 }
 
+Future<GeoPoint?> _readUserGeoPoint(FirebaseFirestore firestore, String uid) async {
+  final snap = await firestore.collection('users').doc(uid).get();
+  final location = snap.data()?['location'];
+  if (location is GeoPoint) return location;
+  return null;
+}
+
+Future<GeoPoint?> _ensureUserGeoPoint(Ref ref) async {
+  final user = ref.read(firebaseAuthProvider).currentUser;
+  if (user == null) return null;
+
+  final firestore = ref.read(firestoreProvider);
+  var location = await _readUserGeoPoint(firestore, user.uid);
+  if (location != null) return location;
+
+  await ref.read(locationServiceProvider).updateUserLocation();
+  location = await _readUserGeoPoint(firestore, user.uid);
+  return location;
+}
+
 final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
@@ -200,7 +223,9 @@ final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref),
+    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref)
+        .take(kHomeFeedCarouselLimit)
+        .toList(),
     loading: () => [],
     error: (err, stack) => [],
   );
@@ -216,16 +241,62 @@ final forYouEventsProvider = Provider<List<Event>>((ref) {
   );
 });
 
+bool _isEligibleForInYourAreaCarousel(Map<String, dynamic> map) {
+  final name = (map['location_name'] as String? ?? '').trim();
+  if (name.isEmpty) return false;
+  final lower = name.toLowerCase();
+  return lower != 'location tbd' && lower != 'tbd';
+}
+
+List<Map<String, dynamic>> _mergeInAreaWithForYou(
+  List<Map<String, dynamic>> inArea,
+  List<Map<String, dynamic>> forYou,
+) {
+  final seen = <String>{};
+  final merged = <Map<String, dynamic>>[];
+
+  for (final map in inArea) {
+    if (!_isEligibleForInYourAreaCarousel(map)) continue;
+    final id = map['id'] as String? ?? '';
+    if (id.isEmpty || seen.contains(id)) continue;
+    seen.add(id);
+    merged.add(map);
+  }
+
+  for (final map in forYou) {
+    if (!_isEligibleForInYourAreaCarousel(map)) continue;
+    final id = map['id'] as String? ?? '';
+    if (id.isEmpty || seen.contains(id)) continue;
+    seen.add(id);
+    merged.add(map);
+  }
+
+  return merged;
+}
+
 final eventsInAreaRawFeedProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
-    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
-    final result = await functions.httpsCallable('getEventsInArea').call();
-    final data = result.data as List<dynamic>;
-    return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    List<Map<String, dynamic>> inArea = [];
+    final location = await _ensureUserGeoPoint(ref);
+    if (location != null) {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final result = await functions.httpsCallable('getEventsInArea').call({
+        'latitude': location.latitude,
+        'longitude': location.longitude,
+      });
+      final data = result.data as List<dynamic>;
+      inArea = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } else {
+      debugPrint('Events in area: no user location, using For You fallback');
+    }
+
+    final forYou = await ref.watch(forYouRawFeedProvider.future);
+    return _mergeInAreaWithForYou(inArea, forYou);
   } catch (e) {
     debugPrint('Error fetching events in area feed: $e');
-    return [];
+    final forYou = ref.read(forYouRawFeedProvider).value ?? [];
+    return forYou.where(_isEligibleForInYourAreaCarousel).toList();
   }
 });
 
@@ -233,8 +304,9 @@ final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref)
   final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) =>
-        _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList(),
+    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref)
+        .take(kHomeFeedCarouselLimit)
+        .toList(),
     loading: () => [],
     error: (err, stack) => [],
   );

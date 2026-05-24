@@ -32,7 +32,8 @@ import '../../ui/profile/public_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
 import '../../ui/event/event_invitation_screen.dart';
-import '../../ui/messages/messages_screen.dart';
+import '../../ui/messages/messages_list_screen.dart';
+import '../../ui/messages/chat_screen.dart';
 import '../../ui/notifications/notifications_screen.dart';
 import '../../ui/notifications/sub_screens/friend_requests_screen.dart';
 import '../../ui/notifications/sub_screens/event_invitations_screen.dart';
@@ -302,11 +303,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/messages',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const MessagesScreen(),
+          child: const MessagesListScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
+        routes: [
+          GoRoute(
+            path: 'chat/:uid',
+            pageBuilder: (context, state) {
+              final uid = state.pathParameters['uid']!;
+              final rawName = state.uri.queryParameters['name'] ?? 'Chat';
+              final name = Uri.decodeComponent(rawName);
+              return CustomTransitionPage(
+                key: state.pageKey,
+                child: ChatScreen(peerUid: uid, peerUsername: name),
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) => child,
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/notifications',

@@ -157,8 +157,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _logout() async {
-    await ref.read(firebaseAuthProvider).signOut();
-    ref.read(signUpFormProvider.notifier).clearForm();
+    await ref.read(authControllerProvider.notifier).signOut();
     if (mounted) {
       context.go('/auth/login');
     }

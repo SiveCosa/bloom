@@ -6,14 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:bloom/domain/location/location_service.dart';
-import 'package:bloom/domain/calendar/calendar_providers.dart';
 import 'package:bloom/domain/event/event_providers.dart';
 import 'package:bloom/domain/home/home_schedule_filter.dart';
 import 'package:bloom/domain/home/home_schedule_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
+import 'package:bloom/domain/chat/chat_providers.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
-import '../shared/widgets/bloom_loading_indicator.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
 import 'upcoming_events.dart';
@@ -42,8 +41,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       vsync: this,
       duration: const Duration(seconds: 1),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(locationServiceProvider).updateUserLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(locationServiceProvider).updateUserLocation();
+      if (mounted) {
+        ref.invalidate(eventsInAreaRawFeedProvider);
+      }
     });
   }
 
@@ -245,13 +247,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       }
     });
 
-    final forYouAsync = ref.watch(forYouRawFeedProvider);
-    final inAreaAsync = ref.watch(eventsInAreaRawFeedProvider);
-    final scheduleAsync = ref.watch(scheduleStreamProvider);
-    final isHomeFeedLoading = forYouAsync.isLoading ||
-        inAreaAsync.isLoading ||
-        scheduleAsync.isLoading;
-
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
@@ -270,36 +265,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const CreateEventCTA(),
-                  if (isHomeFeedLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 80),
-                      child: Center(
-                        child: BloomLoadingIndicator(size: 40),
-                      ),
-                    )
-                  else ...[
-                    const UpcomingEventsSection(),
-                    const SizedBox(height: 24),
-                    HomeFeedCarouselSection(
-                      title: 'For You',
-                      subtitle: 'Your social life curated',
-                      iconAsset: 'assets/icons/home/fyp_icon.svg',
-                      detailRoute: '/home/for-you',
-                      rawFeedProvider: forYouRawFeedProvider,
-                      scheduledEventsProvider: forYouScheduledEventsProvider,
-                      errorPrefix: 'Error loading For You feed',
-                    ),
-                    const SizedBox(height: 24),
-                    HomeFeedCarouselSection(
-                      title: 'In your Area',
-                      subtitle: 'The Streets are calling',
-                      iconAsset: 'assets/icons/home/area_icon.svg',
-                      detailRoute: '/home/in-your-area',
-                      rawFeedProvider: eventsInAreaRawFeedProvider,
-                      scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
-                      errorPrefix: 'Error loading In your Area feed',
-                    ),
-                  ],
+                  const UpcomingEventsSection(),
+                  const SizedBox(height: 24),
+                  HomeFeedCarouselSection(
+                    title: 'For You',
+                    subtitle: 'Your social life curated',
+                    iconAsset: 'assets/icons/home/fyp_icon.svg',
+                    detailRoute: '/home/for-you',
+                    rawFeedProvider: forYouRawFeedProvider,
+                    scheduledEventsProvider: forYouScheduledEventsProvider,
+                    errorPrefix: 'Error loading For You feed',
+                  ),
+                  const SizedBox(height: 24),
+                  HomeFeedCarouselSection(
+                    title: 'In your Area',
+                    subtitle: 'The Streets are calling',
+                    iconAsset: 'assets/icons/home/area_icon.svg',
+                    detailRoute: '/home/in-your-area',
+                    rawFeedProvider: eventsInAreaRawFeedProvider,
+                    scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
+                    errorPrefix: 'Error loading In your Area feed',
+                  ),
                 ],
               ),
             ),
@@ -342,18 +328,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Left: Messages
-          GestureDetector(
-            onTap: () => context.push('/messages'),
-            child: SvgPicture.asset(
-              'assets/icons/nav/inbox_line.svg',
-              width: 24,
-              height: 24,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
+          // Left: Messages (inbox_line)
+          Consumer(
+            builder: (context, ref, _) {
+              final count = ref.watch(totalUnreadCountProvider);
+              return GestureDetector(
+                onTap: () => context.push('/messages'),
+                child: Badge(
+                  isLabelVisible: count > 0,
+                  backgroundColor: const Color(0xFFF04A9F),
+                  label: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icons/nav/inbox_line.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           // Center: Main Logo
