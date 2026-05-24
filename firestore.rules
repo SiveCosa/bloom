@@ -63,11 +63,11 @@ service cloud.firestore {
           // Owner can update
           request.auth.uid == userId
           ||
-          // Peer can update status to 'connected' only if the owner was the initiator
-          (request.auth.uid == targetUid && 
-           request.resource.data.status == 'connected' && 
+          // Accepter (recipient of the request) may mark both sides connected
+          (request.auth.uid == targetUid &&
+           request.resource.data.status == 'connected' &&
            resource.data.status == 'pending' &&
-           resource.data.initiated_by == userId &&
+           resource.data.initiated_by != request.auth.uid &&
            request.resource.data.initiated_by == resource.data.initiated_by)
         );
 

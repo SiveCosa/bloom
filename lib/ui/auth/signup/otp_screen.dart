@@ -226,8 +226,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                             } catch (e) {
                               if (context.mounted) {
                                 setState(() {
-                                  _errorMessage =
-                                      "Incorrect OTP. Please check your email and try again";
+                                  _errorMessage = otpVerifyErrorMessage(e);
                                 });
                               }
                             }

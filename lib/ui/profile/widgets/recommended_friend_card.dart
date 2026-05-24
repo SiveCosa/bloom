@@ -188,6 +188,7 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                                   });
                                   try {
                                     await repo.acceptRequest(uid);
+                                    invalidateFriendshipCaches(ref, uid);
                                   } catch (e) {
                                     setState(() {
                                       _localStateOverride = null;

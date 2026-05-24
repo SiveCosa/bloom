@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/routing/event_navigation.dart';
+import '../../core/routing/chat_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/auth/auth_providers.dart';
 import '../../domain/friendship/friendship_models.dart';
@@ -231,7 +232,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           const SizedBox(height: 30),
                           
                           // Action Buttons
-                          _buildConnectionActionBar(context, ref, connectionState),
+                          _buildConnectionActionBar(
+                            context,
+                            ref,
+                            connectionState,
+                            displayName: name,
+                          ),
                           const SizedBox(height: 30),
                           
                           Text(
@@ -388,7 +394,12 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     return Container(width: 1, height: 50, color: Colors.white12);
   }
 
-  Widget _buildConnectionActionBar(BuildContext context, WidgetRef ref, FriendshipState state) {
+  Widget _buildConnectionActionBar(
+    BuildContext context,
+    WidgetRef ref,
+    FriendshipState state, {
+    required String displayName,
+  }) {
     final showDecline = state == FriendshipState.receivedPending;
     
     return SizedBox(
@@ -405,7 +416,11 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
                   ref.invalidate(recommendedFriendsProvider);
                 } else {
-                  // TODO: Message logic
+                  openChat(
+                    context,
+                    uid: widget.userId,
+                    username: displayName,
+                  );
                 }
               },
             ),
@@ -444,9 +459,15 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           label: 'Accept Request',
           backgroundColor: const Color(0xFF0086D8),
           textColor: Colors.white,
-          onTap: () {
-            ref.read(connectionRepositoryProvider).acceptRequest(widget.userId);
-            ref.invalidate(recommendedFriendsProvider);
+          onTap: () async {
+            try {
+              await ref
+                  .read(connectionRepositoryProvider)
+                  .acceptRequest(widget.userId);
+              invalidateFriendshipCaches(ref, widget.userId);
+            } catch (_) {
+              // connectionStateProvider stream reflects failure on next read
+            }
           },
         );
       case FriendshipState.connected:

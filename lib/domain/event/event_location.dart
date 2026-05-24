@@ -1,3 +1,5 @@
+import 'package:dart_geohash/dart_geohash.dart';
+
 class EventLocation {
   final double latitude;
   final double longitude;
@@ -34,14 +36,24 @@ class EventLocation {
   }
 
   Map<String, dynamic> toMap() {
+    final resolvedGeohash = geohash.isNotEmpty
+        ? geohash
+        : (latitude != 0 || longitude != 0
+            ? _encodeGeohash(longitude, latitude)
+            : '');
+
     return {
       'latitude': latitude,
       'longitude': longitude,
-      'geohash': geohash,
+      'geohash': resolvedGeohash,
       'formattedAddress': formattedAddress,
       'displayName': displayName,
       if (apartmentInfo != null) 'apartmentInfo': apartmentInfo,
     };
+  }
+
+  static String _encodeGeohash(double longitude, double latitude) {
+    return GeoHasher().encode(longitude, latitude);
   }
 
   factory EventLocation.fromMap(Map<String, dynamic> map) {

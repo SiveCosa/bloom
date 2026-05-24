@@ -1,0 +1,95 @@
+@startuml bloom_assets
+' Bloom app static assets (sync with pubspec.yaml asset paths)
+skinparam backgroundColor #0B0E12
+skinparam defaultFontColor white
+skinparam folderStyle rectangle
+
+folder "assets/" {
+  file bloom_logo.png
+  file icon.png
+
+  folder "icons/" {
+    folder "discover/" {
+      file all_icon.svg
+      file art_icon.svg
+      file community_icon.svg
+      file fitness_icon.svg
+      file food_icon.svg
+      file movie_icon.svg
+      file music_icon.svg
+    }
+
+    folder "events/" {
+      file audience_group_fill.svg
+      file calendar_fill.svg
+      file calendar_line.svg
+      file host_fill.svg
+      file pin_location_fill.svg
+      file pin_location_line.svg
+      file spots_availible_fill.svg
+
+      folder "visibility/" {
+        file female_only_fill.svg
+        file friends_of_friends_fill.svg
+        file friends_only_fill.svg
+        file male_only_fill.svg
+        file public_fill.svg
+      }
+    }
+
+    folder "home/" {
+      file area_icon.svg
+      file fyp_icon.svg
+    }
+
+    folder "misc/" {
+      file add_chat_fill.svg
+      file filter_line.svg
+      file list_line.svg
+      file plus_one_fill.svg
+      file search_line.svg
+    }
+
+    folder "nav/" {
+      file bell_line.svg
+      file calendar_fill.svg
+      file calendar_line.svg
+      file create_fill.svg
+      file discover_fill.svg
+      file discover_line.svg
+      file home_fill.svg
+      file home_line.svg
+      file inbox_line.svg
+    }
+
+    folder "profile/" {
+      file instagram_icon.svg
+      file snapchat_icon.svg
+      file star_fill.svg
+      file star_line.svg
+      file x_icon.svg
+    }
+  }
+
+  folder "images/" {
+    folder "home-posters/" {
+      file poster_1.webp
+      file poster_2.webp
+      file poster_3.webp
+      file poster_4.webp
+      file poster_5.webp
+    }
+  }
+
+  folder "logos/" {
+    file main_logo.svg
+  }
+}
+
+note right of "assets/"
+  Removed:
+  * icons/profile/star_icon.png
+  * icons/profile/interested_icon.svg
+end note
+
+@enduml

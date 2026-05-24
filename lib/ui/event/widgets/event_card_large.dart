@@ -103,7 +103,6 @@ class EventCardLarge extends ConsumerWidget {
     final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
     final isCoHost =
         currentUserId != null && event.coHostIds.contains(currentUserId);
-
     // 1. Extract and process color palette
     final colors = _parseAuroraColors(event.auroraColors);
     final displayColors = colors.isNotEmpty ? colors : CreateEventState.defaultAuroraColors;
@@ -154,7 +153,7 @@ class EventCardLarge extends ConsumerWidget {
               // Host bar
               Container(
                 height: hostBarHeight,
-                padding: const EdgeInsets.only(left: 12, right: 0),
+                padding: const EdgeInsets.only(left: 12, right: 8),
                 decoration: BoxDecoration(
                   gradient: hostBarGradient,
                 ),

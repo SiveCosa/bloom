@@ -32,8 +32,7 @@ class ConfirmScreen extends ConsumerWidget {
       appBar: AuthAppBar(
         leftAction: AuthAppBarAction.cancel,
         onCancel: () async {
-          await FirebaseAuth.instance.signOut();
-          ref.read(signUpFormProvider.notifier).clearForm();
+          await ref.read(authControllerProvider.notifier).signOut();
           if (context.mounted) {
             context.go('/auth/login');
           }

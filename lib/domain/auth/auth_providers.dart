@@ -8,6 +8,28 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/media/image_compression_helper.dart';
+import '../chat/cometchat_auth_service.dart';
+
+/// User-facing copy for OTP verify failures from Cloud Functions.
+String otpVerifyErrorMessage(Object error) {
+  if (error is FirebaseFunctionsException) {
+    switch (error.code) {
+      case 'invalid-argument':
+        final msg = error.message?.toLowerCase() ?? '';
+        if (msg.contains('incorrect')) {
+          return 'Incorrect code. Double-check the 6 digits or tap Re-send code.';
+        }
+        return error.message ?? 'Invalid code.';
+      case 'not-found':
+        return 'No active code for this email. Tap Re-send code and use the newest code.';
+      case 'failed-precondition':
+        return error.message ?? 'Code expired. Tap Re-send code.';
+      default:
+        return error.message ?? 'Could not verify. Try Re-send code.';
+    }
+  }
+  return 'Could not verify. Tap Re-send code and try again.';
+}
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -46,14 +68,37 @@ final userProfileFutureProvider =
     });
 
 /// Stream any user's profile by UID (real-time updates)
+/// Handles case-insensitive lookup (e.g. for CometChat's lowercase UIDs).
 final userProfileStreamProvider =
-    StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) {
-      if (uid.trim().isEmpty) return Stream.value(null);
-      return FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .snapshots()
-          .map((snap) => snap.data());
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, uid) async* {
+      if (uid.trim().isEmpty) {
+        yield null;
+        return;
+      }
+      
+      final db = FirebaseFirestore.instance;
+      // Fast path: try exact match first
+      final snap = await db.collection('users').doc(uid).get();
+      if (snap.exists) {
+        yield* db.collection('users').doc(uid).snapshots().map((s) => s.data());
+        return;
+      }
+
+      // Slow path: find real mixed-case UID for CometChat integration
+      final qs = await db.collection('users').get();
+      String? realUid;
+      for (final doc in qs.docs) {
+        if (doc.id.toLowerCase() == uid.toLowerCase()) {
+          realUid = doc.id;
+          break;
+        }
+      }
+
+      if (realUid != null) {
+        yield* db.collection('users').doc(realUid).snapshots().map((s) => s.data());
+      } else {
+        yield null;
+      }
     });
 
 /// Firestore `institutions/{id}.allowed_domains` (lowercased) for client-side validation.
@@ -363,8 +408,8 @@ class AuthController extends AsyncNotifier<void> {
       final callable = functions.httpsCallable('verifyOtp');
 
       final result = await callable.call(<String, dynamic>{
-        'email': email,
-        'otp': otp,
+        'email': email.trim(),
+        'otp': otp.trim(),
       });
 
       final data = Map<String, dynamic>.from(result.data as Map);
@@ -376,6 +421,15 @@ class AuthController extends AsyncNotifier<void> {
       }
 
       await FirebaseAuth.instance.signInWithCustomToken(token);
+
+      // Chat is optional at login — never block Firebase sign-in if CometChat fails.
+      if (!isNewUser) {
+        try {
+          await CometChatAuthService.loginWithFirebaseSession();
+        } catch (e, st) {
+          debugPrint('CometChat login after OTP skipped: $e\n$st');
+        }
+      }
 
       state = const AsyncData(null);
       return isNewUser;
@@ -482,10 +536,20 @@ class AuthController extends AsyncNotifier<void> {
         'created_at': FieldValue.serverTimestamp(),
       });
 
+      await CometChatAuthService.registerAndLogin(name: formData.name.trim());
+
       state = const AsyncData(null);
     } catch (e, st) {
       state = AsyncError(e, st);
       rethrow;
+    }
+  }
+
+  Future<void> signOut({bool clearSignUpForm = true}) async {
+    await CometChatAuthService.logout();
+    await FirebaseAuth.instance.signOut();
+    if (clearSignUpForm) {
+      ref.read(signUpFormProvider.notifier).clearForm();
     }
   }
 
@@ -555,16 +619,14 @@ class AuthController extends AsyncNotifier<void> {
         final callable = functions.httpsCallable('deleteUserAccount');
         await callable.call();
 
-        // Also sign out locally to clear the session
-        await FirebaseAuth.instance.signOut();
+        await signOut();
+      } else {
+        await signOut();
       }
-      ref.read(signUpFormProvider.notifier).clearForm();
       state = const AsyncData(null);
     } catch (e) {
       debugPrint("Auth rollback failed: $e");
-      // Fallback: sign out to at least clear the local session
-      await FirebaseAuth.instance.signOut();
-      ref.read(signUpFormProvider.notifier).clearForm();
+      await signOut();
       state = const AsyncData(null);
     }
   }
