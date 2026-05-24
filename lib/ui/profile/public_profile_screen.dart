@@ -459,9 +459,15 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           label: 'Accept Request',
           backgroundColor: const Color(0xFF0086D8),
           textColor: Colors.white,
-          onTap: () {
-            ref.read(connectionRepositoryProvider).acceptRequest(widget.userId);
-            ref.invalidate(recommendedFriendsProvider);
+          onTap: () async {
+            try {
+              await ref
+                  .read(connectionRepositoryProvider)
+                  .acceptRequest(widget.userId);
+              invalidateFriendshipCaches(ref, widget.userId);
+            } catch (_) {
+              // connectionStateProvider stream reflects failure on next read
+            }
           },
         );
       case FriendshipState.connected:

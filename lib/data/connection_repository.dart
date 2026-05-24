@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,47 +56,14 @@ class ConnectionRepository {
     await batch.commit();
   }
 
-  /// Accept an incoming connection request.
+  /// Accept an incoming connection request (both users updated on the server).
   Future<void> acceptRequest(String targetUserId) async {
     final currentUserId = _currentUserId;
     if (currentUserId == null) return;
 
-    final batch = _firestore.batch();
-    
-    final currentUserConnRef = _firestore
-        .collection('users')
-        .doc(currentUserId)
-        .collection('connections')
-        .doc(targetUserId);
-        
-    final targetUserConnRef = _firestore
-        .collection('users')
-        .doc(targetUserId)
-        .collection('connections')
-        .doc(currentUserId);
-
-    batch.update(currentUserConnRef, {
-      'status': 'connected',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    batch.update(targetUserConnRef, {
-      'status': 'connected',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    // Increment friend counts on both user documents
-    final currentUserRef = _firestore.collection('users').doc(currentUserId);
-    final targetUserRef = _firestore.collection('users').doc(targetUserId);
-    
-    batch.update(currentUserRef, {
-      'counts.friends': FieldValue.increment(1),
-    });
-    batch.update(targetUserRef, {
-      'counts.friends': FieldValue.increment(1),
-    });
-
-    await batch.commit();
+    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+    final callable = functions.httpsCallable('acceptConnection');
+    await callable.call(<String, dynamic>{'targetUserId': targetUserId});
   }
 
   /// Remove a connection or cancel a pending request.

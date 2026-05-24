@@ -242,6 +242,92 @@ class EventRepository {
     return controller.stream;
   }
 
+  static bool _isJoinedScheduleEntry(ScheduledEvent entry) {
+    final status = entry.rsvpStatus;
+    if (status == 'maybe' || status == 'interested') return false;
+    return status == null || status == 'going';
+  }
+
+  /// RSVP'd events on the user's schedule, excluding host/cohost, as full [Event] docs.
+  Stream<List<Event>> getJoinedEventsStream(String userId) {
+    if (userId.trim().isEmpty) return Stream.value([]);
+
+    final controller = StreamController<List<Event>>();
+    List<ScheduledEvent>? latestSchedule;
+    Set<String>? latestHostedIds;
+    final eventsById = <String, Event>{};
+    final eventSubs = <String, StreamSubscription<Event?>>{};
+
+    void publish() {
+      if (latestSchedule == null || latestHostedIds == null || controller.isClosed) {
+        return;
+      }
+
+      final orderedIds = latestSchedule!
+          .where((e) => !latestHostedIds!.contains(e.id))
+          .where(_isJoinedScheduleEntry)
+          .map((e) => e.id)
+          .toList();
+
+      final wanted = orderedIds.toSet();
+      for (final id in eventSubs.keys.toList()) {
+        if (!wanted.contains(id)) {
+          eventSubs.remove(id)?.cancel();
+          eventsById.remove(id);
+        }
+      }
+      for (final id in orderedIds) {
+        if (eventSubs.containsKey(id)) continue;
+        eventSubs[id] = getEventStream(id).listen(
+          (event) {
+            if (event != null) {
+              eventsById[id] = event;
+            } else {
+              eventsById.remove(id);
+            }
+            publish();
+          },
+          onError: controller.addError,
+        );
+      }
+
+      final events = [
+        for (final id in orderedIds)
+          if (eventsById.containsKey(id)) eventsById[id]!,
+      ];
+      controller.add(events);
+    }
+
+    final scheduleSub = getScheduleStream(userId).listen(
+      (list) {
+        latestSchedule = list
+            .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+            .toList();
+        publish();
+      },
+      onError: controller.addError,
+    );
+
+    final hostedSub = getHostedAndCoHostedEventsStream(userId).listen(
+      (hosted) {
+        latestHostedIds = hosted.map((e) => e.id).toSet();
+        publish();
+      },
+      onError: controller.addError,
+    );
+
+    controller.onCancel = () {
+      scheduleSub.cancel();
+      hostedSub.cancel();
+      for (final sub in eventSubs.values) {
+        sub.cancel();
+      }
+      eventSubs.clear();
+    };
+
+    return controller.stream;
+  }
+
   Stream<List<Map<String, dynamic>>> getScheduleStream(String profileUserId) {
     if (profileUserId.trim().isEmpty) return Stream.value([]);
     return _firestore

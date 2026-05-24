@@ -51,6 +51,9 @@ flutter:
     - assets/icons/profile/
     - assets/icons/home/
     - assets/icons/discover/
+    - assets/icons/misc/
+    - assets/icons/events/
+    - assets/icons/events/visibility/
     - assets/logos/
     - assets/images/home-posters/
 

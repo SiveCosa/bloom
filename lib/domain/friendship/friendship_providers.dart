@@ -254,5 +254,13 @@ final friendsMadeProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
       });
 });
 
-
+/// Refresh friendship-related UI after accept, decline, or unfriend.
+void invalidateFriendshipCaches(WidgetRef ref, String otherUid) {
+  ref.invalidate(friendsMadeProvider);
+  ref.invalidate(connectionStateProvider(otherUid));
+  ref.invalidate(recommendedFriendsProvider);
+  ref.invalidate(incomingRequestsProvider);
+  ref.invalidate(incomingRequestsCountProvider);
+  ref.invalidate(outgoingRequestsCountProvider);
+}
 

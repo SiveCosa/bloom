@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cometchat_sdk/cometchat_sdk.dart' as cc;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,14 +20,26 @@ class CometChatAuthService {
     await _loginWithAuthToken(token);
   }
 
+  static Future<void>? _loginFuture;
+
   static Future<void> loginWithFirebaseSession() async {
+    if (_loginFuture != null) return _loginFuture;
+    _loginFuture = _loginWithFirebaseSessionInternal();
+    try {
+      await _loginFuture;
+    } finally {
+      _loginFuture = null;
+    }
+  }
+
+  static Future<void> _loginWithFirebaseSessionInternal() async {
     final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
     if (firebaseUid == null) {
       throw Exception('Must be signed in to Firebase before CometChat login.');
     }
 
     final loggedIn = await cc.CometChat.getLoggedInUser();
-    if (loggedIn?.uid == firebaseUid) {
+    if (loggedIn?.uid.toLowerCase() == firebaseUid.toLowerCase()) {
       return;
     }
 
@@ -43,23 +57,33 @@ class CometChatAuthService {
     final loggedIn = await cc.CometChat.getLoggedInUser();
     if (loggedIn == null) return;
 
+    final completer = Completer<void>();
     await cc.CometChat.logout(
-      onSuccess: null,
+      onSuccess: (String message) {
+        if (!completer.isCompleted) completer.complete();
+      },
       onError: (cc.CometChatException e) {
         debugPrint('CometChat logout error: ${e.message}');
+        if (!completer.isCompleted) completer.completeError(e);
       },
     );
+    await completer.future;
   }
 
   static Future<void> _loginWithAuthToken(String authToken) async {
-    final user = await cc.CometChat.loginWithAuthToken(
+    final completer = Completer<cc.User>();
+    
+    await cc.CometChat.loginWithAuthToken(
       authToken,
-      onSuccess: null,
-      onError: null,
+      onSuccess: (cc.User user) {
+        if (!completer.isCompleted) completer.complete(user);
+      },
+      onError: (cc.CometChatException e) {
+        if (!completer.isCompleted) completer.completeError(Exception('CometChat login failed: ${e.message}'));
+      },
     );
-    if (user == null) {
-      throw Exception('CometChat login failed');
-    }
+
+    final user = await completer.future;
     debugPrint('CometChat login success: ${user.uid}');
   }
 }

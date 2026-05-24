@@ -76,6 +76,19 @@ final publicHostedEventsProvider = StreamProvider.family<List<Event>, String>((r
   return ref.watch(eventRepositoryProvider).getHostedAndCoHostedEventsStream(userId);
 });
 
+final joinedEventsProvider = StreamProvider<List<Event>>((ref) {
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  if (user == null) return Stream.value([]);
+
+  return ref.watch(eventRepositoryProvider).getJoinedEventsStream(user.uid);
+});
+
+final publicJoinedEventsProvider =
+    StreamProvider.autoDispose.family<List<Event>, String>((ref, userId) {
+  if (userId.trim().isEmpty) return Stream.value([]);
+  return ref.watch(eventRepositoryProvider).getJoinedEventsStream(userId);
+});
+
 /// Upcoming joining + hosting events for the public profile being viewed ([profileUserId]).
 final publicProfileUpcomingEventsProvider =
     StreamProvider.autoDispose.family<List<ScheduledEvent>, String>((ref, profileUserId) {

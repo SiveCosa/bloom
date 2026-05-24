@@ -1,4 +1,5 @@
 const { auth } = require("firebase-functions/v1");
+const { logger } = require("firebase-functions/v2");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
@@ -8,18 +9,22 @@ const { geohashQueryBounds, distanceBetween } = require("geofire-common");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
+const COMETCHAT_APP_ID = defineSecret("COMETCHAT_APP_ID");
+const COMETCHAT_REGION = defineSecret("COMETCHAT_REGION");
 const COMETCHAT_AUTH_KEY = defineSecret("COMETCHAT_AUTH_KEY");
 
-// Non-secret CometChat app config (must match lib/core/config/cometchat_config.dart).
-const COMETCHAT_APP_ID = "YOUR_APP_ID";
-const COMETCHAT_REGION = "us";
+const COMETCHAT_SECRETS = [
+  COMETCHAT_APP_ID,
+  COMETCHAT_REGION,
+  COMETCHAT_AUTH_KEY,
+];
 
-function cometChatApiBase() {
-  return `https://${COMETCHAT_APP_ID}.api-${COMETCHAT_REGION}.cometchat.io/v3`;
+function cometChatApiBase(appId, region) {
+  return `https://${appId}.api-${region}.cometchat.io/v3`;
 }
 
-async function cometChatCreateUserRest(uid, name, authKey) {
-  const response = await fetch(`${cometChatApiBase()}/users`, {
+async function cometChatCreateUserRest(uid, name, authKey, appId, region) {
+  const response = await fetch(`${cometChatApiBase(appId, region)}/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -45,9 +50,9 @@ async function cometChatCreateUserRest(uid, name, authKey) {
   );
 }
 
-async function cometChatCreateAuthTokenRest(uid, authKey) {
+async function cometChatCreateAuthTokenRest(uid, authKey, appId, region) {
   const response = await fetch(
-    `${cometChatApiBase()}/users/${encodeURIComponent(uid)}/auth_tokens`,
+    `${cometChatApiBase(appId, region)}/users/${encodeURIComponent(uid)}/auth_tokens`,
     {
       method: "POST",
       headers: {
@@ -423,6 +428,9 @@ exports.requestOtp = onCall(
       expiresAt: expiration,
     });
 
+    // Dev/testing: visible in Cloud Functions logs (remove before production launch).
+    logger.info(`[TESTING] The OTP for ${normalized} is: ${otp}`);
+
     return { success: true };
   }
 );
@@ -432,7 +440,7 @@ exports.verifyOtp = onCall(
   { region: "africa-south1" },
   async (request) => {
     const email = request.data.email;
-    const otp = request.data.otp;
+    const otp = String(request.data.otp ?? "").trim();
 
     if (!email || !otp) {
       throw new HttpsError("invalid-argument", "Email and OTP are required.");
@@ -455,12 +463,17 @@ exports.verifyOtp = onCall(
     const otpData = otpDoc.data();
 
     // Security Layer 2: Expiration Check
-    if (otpData.expiresAt.toDate() < new Date()) {
+    const expiresAt = otpData.expiresAt;
+    const expiresMs =
+      expiresAt && typeof expiresAt.toDate === "function"
+        ? expiresAt.toDate().getTime()
+        : new Date(expiresAt).getTime();
+    if (expiresMs < Date.now()) {
       throw new HttpsError("failed-precondition", "OTP has expired.");
     }
 
     // Security Layer 3: Value Check
-    if (otpData.otp !== otp) {
+    if (String(otpData.otp).trim() !== otp) {
       throw new HttpsError("invalid-argument", "Incorrect OTP.");
     }
 
@@ -640,6 +653,94 @@ exports.validateUsername = onCall(
     if (!snap.empty) {
       throw new HttpsError("already-exists", "This username is already taken.");
     }
+
+    return { success: true };
+  }
+);
+
+// Accept friend request — updates both users atomically (Admin SDK).
+exports.acceptConnection = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Must be signed in to accept a friend request."
+      );
+    }
+
+    const currentUid = request.auth.uid;
+    const targetUid = request.data?.targetUserId;
+
+    if (!targetUid || typeof targetUid !== "string" || !targetUid.trim()) {
+      throw new HttpsError("invalid-argument", "targetUserId is required.");
+    }
+    if (targetUid === currentUid) {
+      throw new HttpsError("invalid-argument", "Cannot accept a request from yourself.");
+    }
+
+    const currentConnRef = db
+      .collection("users")
+      .doc(currentUid)
+      .collection("connections")
+      .doc(targetUid);
+    const targetConnRef = db
+      .collection("users")
+      .doc(targetUid)
+      .collection("connections")
+      .doc(currentUid);
+
+    const [currentConnSnap, targetConnSnap] = await Promise.all([
+      currentConnRef.get(),
+      targetConnRef.get(),
+    ]);
+
+    if (!currentConnSnap.exists) {
+      throw new HttpsError("not-found", "No friend request found.");
+    }
+
+    const currentData = currentConnSnap.data() || {};
+    if (currentData.status !== "pending") {
+      throw new HttpsError("failed-precondition", "This request is no longer pending.");
+    }
+    if (currentData.initiated_by === currentUid) {
+      throw new HttpsError(
+        "failed-precondition",
+        "You cannot accept a request you sent."
+      );
+    }
+    if (currentData.initiated_by && currentData.initiated_by !== targetUid) {
+      throw new HttpsError("failed-precondition", "Invalid friend request.");
+    }
+
+    if (!targetConnSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Friend request is incomplete. Ask them to send the request again."
+      );
+    }
+
+    const targetData = targetConnSnap.data() || {};
+    if (targetData.status !== "pending") {
+      throw new HttpsError(
+        "failed-precondition",
+        "Friend request is out of sync on the other account."
+      );
+    }
+
+    const batch = db.batch();
+    const connectedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    batch.update(currentConnRef, { status: "connected", timestamp: connectedAt });
+    batch.update(targetConnRef, { status: "connected", timestamp: connectedAt });
+    batch.update(db.collection("users").doc(currentUid), {
+      "counts.friends": admin.firestore.FieldValue.increment(1),
+    });
+    batch.update(db.collection("users").doc(targetUid), {
+      "counts.friends": admin.firestore.FieldValue.increment(1),
+    });
+
+    await batch.commit();
 
     return { success: true };
   }
@@ -1782,12 +1883,35 @@ exports.getEventsInArea = onCall(
   }
 );
 
-// CometChat: create user + auth token (signup). Auth key in Secret Manager only.
-// Set secret: firebase functions:secrets:set COMETCHAT_AUTH_KEY
+// CometChat credentials: Google Cloud Secret Manager (firebase functions:secrets:set).
+exports.getCometChatClientConfig = onCall(
+  {
+    region: "africa-south1",
+    secrets: COMETCHAT_SECRETS,
+  },
+  async () => {
+    const appId = COMETCHAT_APP_ID.value();
+    const region = COMETCHAT_REGION.value();
+    if (!appId || !appId.trim() || appId === "YOUR_APP_ID") {
+      throw new HttpsError(
+        "failed-precondition",
+        "CometChat App ID is not configured. Set COMETCHAT_APP_ID in Secret Manager and redeploy."
+      );
+    }
+    if (!region || !region.trim()) {
+      throw new HttpsError(
+        "failed-precondition",
+        "CometChat region is not configured. Set COMETCHAT_REGION in Secret Manager and redeploy."
+      );
+    }
+    return { appId: appId.trim(), region: region.trim() };
+  }
+);
+
 exports.cometChatCreateUser = onCall(
   {
     region: "africa-south1",
-    secrets: [COMETCHAT_AUTH_KEY],
+    secrets: COMETCHAT_SECRETS,
   },
   async (request) => {
     if (!request.auth) {
@@ -1803,20 +1927,26 @@ exports.cometChatCreateUser = onCall(
     }
 
     const uid = request.auth.uid;
+    const appId = COMETCHAT_APP_ID.value();
+    const region = COMETCHAT_REGION.value();
     const authKey = COMETCHAT_AUTH_KEY.value();
 
-    await cometChatCreateUserRest(uid, name.trim(), authKey);
-    const authToken = await cometChatCreateAuthTokenRest(uid, authKey);
+    await cometChatCreateUserRest(uid, name.trim(), authKey, appId, region);
+    const authToken = await cometChatCreateAuthTokenRest(
+      uid,
+      authKey,
+      appId,
+      region
+    );
 
     return { authToken };
   }
 );
 
-// CometChat: auth token for existing user (login).
 exports.cometChatGetAuthToken = onCall(
   {
     region: "africa-south1",
-    secrets: [COMETCHAT_AUTH_KEY],
+    secrets: COMETCHAT_SECRETS,
   },
   async (request) => {
     if (!request.auth) {
@@ -1827,8 +1957,35 @@ exports.cometChatGetAuthToken = onCall(
     }
 
     const uid = request.auth.uid;
+    const appId = COMETCHAT_APP_ID.value();
+    const region = COMETCHAT_REGION.value();
     const authKey = COMETCHAT_AUTH_KEY.value();
-    const authToken = await cometChatCreateAuthTokenRest(uid, authKey);
+
+    let authToken;
+    try {
+      authToken = await cometChatCreateAuthTokenRest(
+        uid,
+        authKey,
+        appId,
+        region
+      );
+    } catch {
+      // Accounts created before CometChat may not exist in CometChat yet.
+      const userSnap = await db.collection("users").doc(uid).get();
+      const profile = userSnap.data() || {};
+      const name =
+        (typeof profile.name === "string" && profile.name.trim()) ||
+        (typeof profile.username === "string" && profile.username.trim()) ||
+        "Bloom User";
+      await cometChatCreateUserRest(uid, name, authKey, appId, region);
+      authToken = await cometChatCreateAuthTokenRest(
+        uid,
+        authKey,
+        appId,
+        region
+      );
+      logger.info(`CometChat user provisioned on login for ${uid}`);
+    }
 
     return { authToken };
   }

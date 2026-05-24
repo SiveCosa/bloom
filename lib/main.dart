@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'data/firebase_provider.dart';
-import 'data/cometchat_provider.dart';
-
-
+import 'domain/chat/cometchat_session_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -15,8 +13,6 @@ void main() async {
 
   // Initialize Firebase & AppCheck
   await FirebaseProvider.initialize();
-
-  await CometChatProvider.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -27,7 +23,8 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
-
+    // Establish CometChat session when Firebase user is signed in.
+    ref.watch(cometChatSessionProvider);
 
     return MaterialApp.router(
       title: 'Bloom', // Confirmed project name

@@ -1,14 +1,15 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../core/routing/event_navigation.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
-import '../../../domain/calendar/calendar_providers.dart';
 import '../../../domain/event/event_providers.dart';
+import '../../shared/widgets/event_medium_card.dart';
 import '../../shared/widgets/past_events_divider.dart';
-import '../../widgets/scheduled_event_card.dart';
-import 'dart:ui' as ui;
 
 class EventsJoinedScreen extends ConsumerWidget {
   final String? targetUserId;
@@ -22,11 +23,12 @@ class EventsJoinedScreen extends ConsumerWidget {
     final currentUser = ref.watch(firebaseAuthProvider).currentUser;
     final fetchUserId = isPublic ? targetUserId! : (currentUser?.uid ?? '');
 
-    final scheduleAsync = isPublic 
-        ? ref.watch(publicScheduleStreamProvider(fetchUserId))
-        : ref.watch(scheduleStreamProvider);
+    final eventsAsync = isPublic
+        ? ref.watch(publicJoinedEventsProvider(fetchUserId))
+        : ref.watch(joinedEventsProvider);
 
-    final titleText = isPublic ? '${targetUsername ?? "User"} joined' : 'Events Joined';
+    final titleText =
+        isPublic ? '${targetUsername ?? "User"} joined' : 'Events Joined';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -80,21 +82,9 @@ class EventsJoinedScreen extends ConsumerWidget {
                   ),
                 ),
                 Expanded(
-                  child: scheduleAsync.when(
-                    data: (schedule) {
-                      final excludeIds = isPublic
-                          ? ref.watch(publicHostedEventsProvider(fetchUserId)).value?.map((e) => e.id).toSet() ?? {}
-                          : ref.watch(hostedOrCoHostedEventIdsProvider);
-                      final joinedEvents = schedule
-                          .where((e) => !excludeIds.contains(e.id))
-                          .where((e) {
-                            final status = e.rsvpStatus;
-                            if (status == 'maybe' || status == 'interested') return false;
-                            return status == null || status == 'going';
-                          })
-                          .toList();
-                      
-                      if (joinedEvents.isEmpty) {
+                  child: eventsAsync.when(
+                    data: (events) {
+                      if (events.isEmpty) {
                         return const Center(
                           child: Text(
                             'No events joined yet.',
@@ -104,64 +94,47 @@ class EventsJoinedScreen extends ConsumerWidget {
                       }
 
                       final now = DateTime.now();
-                      final upcoming = joinedEvents.where((e) => e.endTime.isAfter(now)).toList();
-                      final past = joinedEvents.where((e) => e.endTime.isBefore(now)).toList();
+                      final upcoming =
+                          events.where((e) => !e.timing.isPast).toList();
+                      final past =
+                          events.where((e) => e.timing.isPast).toList();
 
-                      upcoming.sort((a, b) {
-                        if (a.startTime == null && b.startTime == null) return 0;
-                        if (a.startTime == null) return -1;
-                        if (b.startTime == null) return 1;
-                        return a.startTime!.compareTo(b.startTime!);
-                      });
-                      past.sort((a, b) {
-                        if (a.startTime == null && b.startTime == null) return 0;
-                        if (a.startTime == null) return 1;
-                        if (b.startTime == null) return -1;
-                        return b.startTime!.compareTo(a.startTime!);
-                      });
+                      upcoming.sort((a, b) => (a.timing.startDate ?? now)
+                          .compareTo(b.timing.startDate ?? now));
+                      past.sort((a, b) => (b.timing.startDate ?? now)
+                          .compareTo(a.timing.startDate ?? now));
 
                       return CustomScrollView(
                         physics: const BouncingScrollPhysics(),
                         slivers: [
                           if (upcoming.isNotEmpty)
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 12.0),
-                                    child: ScheduledEventCard(
-                                      event: upcoming[index],
-                                      isHost: false,
-                                      onTap: () => pushEventDetail(context, upcoming[index].id),
-                                    ),
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => EventMediumCard(
+                                  event: upcoming[index],
+                                  onTap: () => pushEventDetail(
+                                    context,
+                                    upcoming[index].id,
                                   ),
-                                  childCount: upcoming.length,
                                 ),
+                                childCount: upcoming.length,
                               ),
                             ),
-                          
                           if (past.isNotEmpty)
                             const SliverToBoxAdapter(child: PastEventsDivider()),
-
                           if (past.isNotEmpty)
-                            SliverPadding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 12.0),
-                                    child: ScheduledEventCard(
-                                      event: past[index],
-                                      isHost: false,
-                                      onTap: () => pushEventDetail(context, past[index].id),
-                                    ),
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) => EventMediumCard(
+                                  event: past[index],
+                                  onTap: () => pushEventDetail(
+                                    context,
+                                    past[index].id,
                                   ),
-                                  childCount: past.length,
                                 ),
+                                childCount: past.length,
                               ),
                             ),
-                            
                           const SliverToBoxAdapter(child: SizedBox(height: 40)),
                         ],
                       );

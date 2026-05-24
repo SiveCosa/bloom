@@ -241,8 +241,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               children: [
                                 _buildTopIcon(
                                   assetPath:
-                                      'assets/icons/profile/interested_icon.svg',
-                                  icon: Icons.star_outline,
+                                      'assets/icons/profile/star_fill.svg',
                                   onTap: () {
                                     ref.invalidate(recommendedFriendsProvider);
                                     context.push('/profile/interested');

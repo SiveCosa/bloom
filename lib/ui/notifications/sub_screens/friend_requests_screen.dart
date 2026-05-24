@@ -355,7 +355,10 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                                           await ref
                                               .read(connectionRepositoryProvider)
                                               .acceptRequest(requesterUid);
-                                          ref.invalidate(recommendedFriendsProvider);
+                                          invalidateFriendshipCaches(
+                                            ref,
+                                            requesterUid,
+                                          );
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(
