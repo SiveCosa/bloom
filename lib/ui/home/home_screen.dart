@@ -461,9 +461,82 @@ class HomeFeedCarouselSection extends ConsumerWidget {
     required this.errorPrefix,
   });
 
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: () => context.push(detailRoute),
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          children: [
+            SvgPicture.asset(
+              iconAsset,
+              width: _carouselIconSize,
+              height: _carouselIconSize,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.white.withValues(alpha: 0.5),
+              size: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(context),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: EventCardLarge.carouselHeight,
+          child: const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white70,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rawFeedAsync = ref.watch(rawFeedProvider);
+
+    if (rawFeedAsync.isLoading) {
+      return _buildLoadingState(context);
+    }
 
     return rawFeedAsync.when(
       data: (rawList) {
@@ -479,53 +552,7 @@ class HomeFeedCarouselSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
-                onTap: () => context.push(detailRoute),
-                behavior: HitTestBehavior.opaque,
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      iconAsset,
-                      width: _carouselIconSize,
-                      height: _carouselIconSize,
-                      fit: BoxFit.contain,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.white.withValues(alpha: 0.5),
-                      size: 24,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildHeader(context),
             const SizedBox(height: 16),
             SizedBox(
               height: EventCardLarge.carouselHeight,
@@ -547,7 +574,7 @@ class HomeFeedCarouselSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const SizedBox.shrink(),
+      loading: () => _buildLoadingState(context),
       error: (err, stack) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Center(
