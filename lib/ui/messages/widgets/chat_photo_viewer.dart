@@ -15,7 +15,7 @@ void showChatPhotoViewer(
     PageRouteBuilder<void>(
       opaque: false,
       barrierColor: Colors.black.withValues(alpha: 0.92),
-      pageBuilder: (context, _, __) {
+      pageBuilder: (context, _, _) {
         return _ChatPhotoViewerPage(
           networkUrl: hasNetwork ? networkUrl : null,
           filePath: hasFile ? filePath : null,

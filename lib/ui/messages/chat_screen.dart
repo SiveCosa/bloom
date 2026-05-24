@@ -150,14 +150,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _onMessageReceipt(MessageReceipt receipt) {
-    if (receipt.sender?.uid?.toLowerCase() != widget.peerUid.toLowerCase() &&
+    if (receipt.sender.uid.toLowerCase() != widget.peerUid.toLowerCase() &&
         receipt.receiverId?.toLowerCase() != widget.peerUid.toLowerCase()) {
       return;
     }
 
     setState(() {
       _messages = _messages.map((entry) {
-        if (entry.message.id.toString() == receipt.messageId) {
+        if (entry.message.id.toString() == receipt.messageId.toString()) {
           if (receipt.receiptType == 'read') {
             entry.message.readAt = receipt.readAt ?? DateTime.now();
             entry.message.deliveredAt ??= entry.message.readAt;
@@ -219,7 +219,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final senderId = message.sender?.uid;
     final receiverId = message.receiverUid;
     final peerLower = widget.peerUid.toLowerCase();
-    return senderId?.toLowerCase() == peerLower || receiverId?.toLowerCase() == peerLower;
+    return senderId?.toLowerCase() == peerLower || receiverId.toLowerCase() == peerLower;
   }
 
   Future<void> _bootstrap() async {
@@ -695,7 +695,7 @@ class _ChatMessageListener with MessageListener {
     final senderId = message.sender?.uid;
     final receiverId = message.receiverUid;
     final peerLower = peerUid.toLowerCase();
-    return senderId?.toLowerCase() == peerLower || receiverId?.toLowerCase() == peerLower;
+    return senderId?.toLowerCase() == peerLower || receiverId.toLowerCase() == peerLower;
   }
 
   @override
