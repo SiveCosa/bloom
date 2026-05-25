@@ -240,6 +240,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
       }
     });
 
+    ref.listen(mainShellIndexProvider, (previous, next) {
+      if (next == 1) {
+        ref.read(discoverFeedCacheProvider.notifier).refreshIfNeeded();
+      }
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
@@ -261,55 +267,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   child: Column(
                     children: [
                       const SizedBox(height: 12),
-                      // 1. Weekend Forecast
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Weekend Forecast',
-                        routeCategory: 'weekend-forecast',
-                        eventsProvider: discoverWeekendForecastEventsProvider,
-                      ),
-                      // 2. Meet New People (Community)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Meet New People',
-                        routeCategory: 'Community',
-                        eventsProvider: discoverCommunityEventsProvider,
-                      ),
-                      // 3. After Hours (Music)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'After Hours',
-                        routeCategory: 'Music',
-                        eventsProvider: discoverMusicEventsProvider,
-                      ),
-                      // 4. Silver Screen (Film)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Silver Screen',
-                        routeCategory: 'Film',
-                        eventsProvider: discoverFilmEventsProvider,
-                      ),
-                      // 5. Modern Renaissance (Arts)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Modern Renaissance',
-                        routeCategory: 'Arts',
-                        eventsProvider: discoverArtsEventsProvider,
-                      ),
-                      // 6. Peak Performance (Fitness)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Peak Performance',
-                        routeCategory: 'Fitness',
-                        eventsProvider: discoverFitnessEventsProvider,
-                      ),
-                      // 7. Feast & Flavor (Food)
-                      _buildRealCarousel(
-                        ref: ref,
-                        title: 'Feast & Flavor',
-                        routeCategory: 'Food',
-                        eventsProvider: discoverFoodEventsProvider,
-                      ),
+                      ...[
+                        ('Weekend Forecast', 'weekend-forecast', discoverWeekendForecastEventsProvider),
+                        ('Meet New People', 'Community', discoverCommunityEventsProvider),
+                        ('After Hours', 'Music', discoverMusicEventsProvider),
+                        ('Silver Screen', 'Film', discoverFilmEventsProvider),
+                        ('Modern Renaissance', 'Arts', discoverArtsEventsProvider),
+                        ('Peak Performance', 'Fitness', discoverFitnessEventsProvider),
+                        ('Feast & Flavor', 'Food', discoverFoodEventsProvider),
+                      ].map((c) => _buildRealCarousel(
+                            ref: ref,
+                            title: c.$1,
+                            routeCategory: c.$2,
+                            eventsProvider: c.$3,
+                          )),
                     ],
                   ),
                 ),
@@ -535,23 +506,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                         final category = discoverCategories[index];
                         final isSelected = activeFilter == category;
 
-                        String? iconPath;
                         final lowerCat = category.toLowerCase();
-                        if (lowerCat == 'all') {
-                          iconPath = 'assets/icons/discover/all_icon.svg';
-                        } else if (lowerCat == 'community') {
-                          iconPath = 'assets/icons/discover/community_icon.svg';
-                        } else if (lowerCat == 'music') {
-                          iconPath = 'assets/icons/discover/music_icon.svg';
-                        } else if (lowerCat == 'film') {
-                          iconPath = 'assets/icons/discover/movie_icon.svg';
-                        } else if (lowerCat == 'arts') {
-                          iconPath = 'assets/icons/discover/art_icon.svg';
-                        } else if (lowerCat == 'fitness') {
-                          iconPath = 'assets/icons/discover/fitness_icon.svg';
-                        } else if (lowerCat == 'food') {
-                          iconPath = 'assets/icons/discover/food_icon.svg';
-                        }
+                        final iconPath = const {
+                          'all': 'assets/icons/discover/all_icon.svg',
+                          'community': 'assets/icons/discover/community_icon.svg',
+                          'music': 'assets/icons/discover/music_icon.svg',
+                          'film': 'assets/icons/discover/movie_icon.svg',
+                          'arts': 'assets/icons/discover/art_icon.svg',
+                          'fitness': 'assets/icons/discover/fitness_icon.svg',
+                          'food': 'assets/icons/discover/food_icon.svg',
+                        }[lowerCat];
 
                         return GestureDetector(
                           onTap: () {

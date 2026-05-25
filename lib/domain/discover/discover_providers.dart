@@ -86,18 +86,19 @@ class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
   Future<DiscoverFeedCache?> build() async {
     ref.keepAlive();
 
-    ref.listen(mainShellIndexProvider, (previous, next) {
-      if (next == 1 && previous != 1) {
-        Future.microtask(() => ref.invalidateSelf());
-      }
-    });
-
-    final shellIndex = ref.watch(mainShellIndexProvider);
-    if (shellIndex != 1) {
-      return _persistedCache;
-    }
-
     return _load(force: false);
+  }
+
+  Future<void> refreshIfNeeded() async {
+    try {
+      final loaded = await _load(force: false);
+      if (loaded != _persistedCache) {
+        _persistedCache = loaded;
+        state = AsyncData(loaded);
+      }
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   Future<void> refresh() async {
@@ -234,32 +235,40 @@ List<DiscoverFeedCard> cardsForRouteCategory(
   DiscoverFeedAllResponse all,
   String routeCategory,
 ) {
-  final c = routeCategory.toLowerCase().trim();
-  if (c == 'weekend-forecast' || c == 'weekend forecast') {
-    return all.weekendForecast;
+  switch (routeCategory.toLowerCase().trim()) {
+    case 'weekend-forecast':
+    case 'weekend forecast':
+      return all.weekendForecast;
+    case 'music':
+    case 'after hours':
+    case 'after-hours':
+      return categoryCardsFromAll(all, 'Music');
+    case 'community':
+    case 'meet new people':
+    case 'meet-new-people':
+      return categoryCardsFromAll(all, 'Community');
+    case 'arts':
+    case 'modern renaissance':
+    case 'modern-renaissance':
+      return categoryCardsFromAll(all, 'Arts');
+    case 'film':
+    case 'silver screen':
+    case 'silver-screen':
+      return categoryCardsFromAll(all, 'Film');
+    case 'fitness':
+    case 'peak performance':
+    case 'peak-performance':
+      return categoryCardsFromAll(all, 'Fitness');
+    case 'food':
+    case 'feast & flavor':
+    case 'feast-&-flavor':
+      return categoryCardsFromAll(all, 'Food');
+    default:
+      if (discoverCategories.contains(routeCategory)) {
+        return categoryCardsFromAll(all, routeCategory);
+      }
+      return all.feed;
   }
-  if (c == 'music' || c == 'after hours' || c == 'after-hours') {
-    return categoryCardsFromAll(all, 'Music');
-  }
-  if (c == 'community' || c == 'meet new people' || c == 'meet-new-people') {
-    return categoryCardsFromAll(all, 'Community');
-  }
-  if (c == 'arts' || c == 'modern renaissance' || c == 'modern-renaissance') {
-    return categoryCardsFromAll(all, 'Arts');
-  }
-  if (c == 'film' || c == 'silver screen' || c == 'silver-screen') {
-    return categoryCardsFromAll(all, 'Film');
-  }
-  if (c == 'fitness' || c == 'peak performance' || c == 'peak-performance') {
-    return categoryCardsFromAll(all, 'Fitness');
-  }
-  if (c == 'food' || c == 'feast & flavor' || c == 'feast-&-flavor') {
-    return categoryCardsFromAll(all, 'Food');
-  }
-  if (discoverCategories.contains(routeCategory)) {
-    return categoryCardsFromAll(all, routeCategory);
-  }
-  return all.feed;
 }
 
 List<Event> _cardsToEvents(List<DiscoverFeedCard> cards) =>
