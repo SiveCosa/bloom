@@ -178,11 +178,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   Center(
                     child: TextButton(
                       onPressed: timerState.canResend
-                          ? () {
-                              ref
-                                  .read(authControllerProvider.notifier)
-                                  .requestOtp(email, AuthOtpFlow.login);
-                              ref.read(otpTimerProvider.notifier).start();
+                          ? () async {
+                              try {
+                                ref.read(otpTimerProvider.notifier).start();
+                                await ref
+                                    .read(authControllerProvider.notifier)
+                                    .requestOtp(email, AuthOtpFlow.login);
+                              } catch (e) {
+                                ref.read(otpTimerProvider.notifier).stop();
+                                if (context.mounted) {
+                                  setState(() {
+                                    _errorMessage = otpRequestErrorMessage(e);
+                                  });
+                                }
+                              }
                             }
                           : null,
                       style: TextButton.styleFrom(

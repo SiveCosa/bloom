@@ -101,6 +101,12 @@ service cloud.firestore {
       }
     }
 
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

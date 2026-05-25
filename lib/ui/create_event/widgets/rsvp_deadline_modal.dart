@@ -41,7 +41,7 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
 
     final startDate = state.timing.startDate;
     if (startDate != null && finalDate.isAfter(startDate)) {
-      return 'RSVP deadline cannot be after the event starts.';
+      return 'You can\'t set RSVP date after the event day.';
     }
 
     return null;

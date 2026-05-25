@@ -31,6 +31,14 @@ String otpVerifyErrorMessage(Object error) {
   return 'Could not verify. Tap Re-send code and try again.';
 }
 
+/// User-facing copy for OTP request failures from Cloud Functions.
+String otpRequestErrorMessage(Object error) {
+  if (error is FirebaseFunctionsException) {
+    return error.message ?? 'Failed to send code. Please try again.';
+  }
+  return 'Failed to send code. Please try again.';
+}
+
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
 });

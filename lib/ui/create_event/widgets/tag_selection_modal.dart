@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/auth/auth_providers.dart';
+
+import '../../../domain/categories/category_providers.dart';
 import '../../../domain/event/create_event_state.dart';
 import '../../shared/widgets/custom_text_fields.dart';
 import '../../shared/widgets/bloom_modal_shell.dart';
@@ -41,7 +42,7 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    final signupDataAsync = ref.watch(institutionSignupDataProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return BloomModalShell(
       title: 'Event Tags',
@@ -72,73 +73,98 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: signupDataAsync.when(
-                data: (data) {
+              child: categoriesAsync.when(
+                data: (categories) {
                   final query = _searchController.text.toLowerCase().trim();
-                  final filtered = query.isEmpty
-                      ? data.interests
-                      : data.interests.where((i) => i.toLowerCase().contains(query)).toList();
-
-                  return ListView(
+                  
+                  return ListView.builder(
                     physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 0),
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 12,
-                        children: filtered.map((tag) {
-                          final isSelected = _selectedTags.contains(tag);
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                if (isSelected) {
-                                  _selectedTags.remove(tag);
-                                } else if (_selectedTags.length < 5) {
-                                  _selectedTags.add(tag);
-                                }
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 8,
-                                horizontal: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(100),
-                                border: Border.all(
-                                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    tag,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  if (isSelected) ...[
-                                    const SizedBox(width: 8),
-                                    const Icon(
-                                      Icons.close,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                  ],
-                                ],
+                    itemCount: categories.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == categories.length) {
+                        return const SizedBox(height: 40);
+                      }
+                      
+                      final category = categories[index];
+                      final filteredTags = query.isEmpty
+                          ? category.tags
+                          : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
+                          
+                      if (filteredTags.isEmpty) return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              category.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
+                          ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 12,
+                            children: filteredTags.map((tag) {
+                              final isSelected = _selectedTags.contains(tag);
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedTags.remove(tag);
+                                    } else if (_selectedTags.length < 5) {
+                                      _selectedTags.add(tag);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                    horizontal: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Colors.white : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        tag,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.black : Colors.white,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                      if (isSelected) ...[
+                                        const SizedBox(width: 8),
+                                        const Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Colors.black,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      );
+                    },
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),

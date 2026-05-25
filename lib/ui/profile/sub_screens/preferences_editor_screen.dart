@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
+import '../../../domain/categories/category_providers.dart';
 import '../../shared/widgets/custom_text_fields.dart';
 import 'dart:ui' as ui;
 
@@ -73,7 +74,7 @@ class _PreferencesEditorScreenState
 
   @override
   Widget build(BuildContext context) {
-    final signupDataAsync = ref.watch(institutionSignupDataProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -101,18 +102,12 @@ class _PreferencesEditorScreenState
               children: [
                 _buildHeader(context),
                 Expanded(
-                  child: signupDataAsync.when(
+                  child: categoriesAsync.when(
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(child: Text('Error: $e')),
-                    data: (signupData) {
-                      final interests = signupData.interests;
+                    data: (categories) {
                       final query = _searchController.text.toLowerCase().trim();
-                      final filtered = query.isEmpty
-                          ? interests
-                          : interests
-                                .where((i) => i.toLowerCase().contains(query))
-                                .toList();
 
                       return SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
@@ -150,58 +145,79 @@ class _PreferencesEditorScreenState
                               ),
                             ),
                             const SizedBox(height: 24),
-                            Wrap(
-                              spacing: 8.0,
-                              runSpacing: 12.0,
-                              children: filtered.map((interest) {
-                                final isActive = _selectedInterests.contains(
-                                  interest,
-                                );
-                                return GestureDetector(
-                                  onTap: () => _toggleInterest(interest),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                      horizontal: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isActive
-                                          ? Colors.white.withValues(alpha: 0.15)
-                                          : Colors.white.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(_kRadius),
-                                      border: Border.all(
-                                        color: isActive
-                                            ? Colors.white54
-                                            : _kBorderColor,
+                            ...categories.map((category) {
+                              final filteredTags = query.isEmpty
+                                  ? category.tags
+                                  : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
+                                  
+                              if (filteredTags.isEmpty) return const SizedBox.shrink();
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: Text(
+                                      category.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          interest,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: isActive
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                  ),
+                                  Wrap(
+                                    spacing: 8.0,
+                                    runSpacing: 12.0,
+                                    children: filteredTags.map((interest) {
+                                      final isActive = _selectedInterests.contains(interest);
+                                      return GestureDetector(
+                                        onTap: () => _toggleInterest(interest),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isActive
+                                                ? Colors.white
+                                                : Colors.white.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(_kRadius),
+                                            border: Border.all(
+                                              color: isActive ? Colors.white : _kBorderColor,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                interest,
+                                                style: TextStyle(
+                                                  color: isActive ? Colors.black : Colors.white,
+                                                  fontWeight: isActive
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                              if (isActive) ...[
+                                                const SizedBox(width: 8),
+                                                const Icon(
+                                                  Icons.close,
+                                                  size: 14,
+                                                  color: Colors.black,
+                                                ),
+                                              ],
+                                            ],
                                           ),
                                         ),
-                                        if (isActive) ...[
-                                          const SizedBox(width: 8),
-                                          const Icon(
-                                            Icons.close,
-                                            size: 14,
-                                            color: Colors.white,
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                                      );
+                                    }).toList(),
                                   ),
-                                );
-                              }).toList(),
-                            ),
+                                  const SizedBox(height: 16),
+                                ],
+                              );
+                            }),
                             const SizedBox(height: 48),
                             _buildSaveButton(),
                             const SizedBox(height: 40),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/auth/auth_providers.dart';
+import '../../../domain/categories/category_providers.dart';
 import '../widgets/auth_app_bar.dart';
 import '../../shared/widgets/gradient_top_bar.dart';
 import '../../shared/widgets/custom_text_fields.dart';
@@ -29,7 +30,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(signUpFormProvider);
-    final signupDataAsync = ref.watch(institutionSignupDataProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -47,7 +48,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: signupDataAsync.when(
+              child: categoriesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
                   child: Text(
@@ -56,14 +57,8 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ),
-                data: (signupData) {
-                  final interests = signupData.interests;
+                data: (categories) {
                   final query = _searchController.text.toLowerCase().trim();
-                  final filtered = query.isEmpty
-                      ? interests
-                      : interests
-                            .where((i) => i.toLowerCase().contains(query))
-                            .toList();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,68 +103,81 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                 onChanged: (_) => setState(() {}),
                               ),
                               const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 8.0,
-                                runSpacing: 12.0,
-                                children: filtered.map((interest) {
-                                  final isActive = formState.interests.contains(
-                                    interest,
-                                  );
-                                  return GestureDetector(
-                                    onTap: () => ref
-                                        .read(signUpFormProvider.notifier)
-                                        .toggleInterest(interest),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
-                                        horizontal: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isActive
-                                            ? Colors.white.withValues(
-                                                alpha: 0.10,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.05,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                          _kRadius,
+                              ...categories.map((category) {
+                                final filteredTags = query.isEmpty
+                                    ? category.tags
+                                    : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
+                                    
+                                if (filteredTags.isEmpty) return const SizedBox.shrink();
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      child: Text(
+                                        category.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        border: Border.all(
-                                          color: isActive
-                                              ? Colors.white54
-                                              : _kBorderColor,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            interest,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: isActive
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                          if (isActive) ...[
-                                            const SizedBox(width: 8),
-                                            const Icon(
-                                              Icons.close,
-                                              size: 14,
-                                              color: Colors.white,
-                                            ),
-                                          ],
-                                        ],
                                       ),
                                     ),
-                                  );
-                                }).toList(),
-                              ),
+                                    Wrap(
+                                      spacing: 8.0,
+                                      runSpacing: 12.0,
+                                      children: filteredTags.map((interest) {
+                                        final isActive = formState.interests.contains(interest);
+                                        return GestureDetector(
+                                          onTap: () => ref
+                                              .read(signUpFormProvider.notifier)
+                                              .toggleInterest(interest),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 8,
+                                              horizontal: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isActive
+                                                  ? Colors.white
+                                                  : Colors.white.withValues(alpha: 0.05),
+                                              borderRadius: BorderRadius.circular(_kRadius),
+                                              border: Border.all(
+                                                color: isActive ? Colors.white : _kBorderColor,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  interest,
+                                                  style: TextStyle(
+                                                    color: isActive ? Colors.black : Colors.white,
+                                                    fontWeight: isActive
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                  ),
+                                                ),
+                                                if (isActive) ...[
+                                                  const SizedBox(width: 8),
+                                                  const Icon(
+                                                    Icons.close,
+                                                    size: 14,
+                                                    color: Colors.black,
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              }),
                               const SizedBox(height: 24),
                             ],
                           ),

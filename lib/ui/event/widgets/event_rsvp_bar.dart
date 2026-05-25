@@ -191,7 +191,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      currentStatus == 'requested'
+                      (currentStatus == 'requested' || currentStatus == 'waitlisted')
                           ? Icons.check_circle
                           : (isFull && !showWaitlist && !isAlreadyGoing) 
                               ? Icons.block 
@@ -205,9 +205,11 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                     Text(
                       currentStatus == 'requested'
                           ? 'Requested'
-                          : (isFull && !isAlreadyGoing)
-                              ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
-                              : 'Get on List',
+                          : currentStatus == 'waitlisted'
+                              ? 'Waitlisted'
+                              : (isFull && !isAlreadyGoing)
+                                  ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
+                                  : 'Get on List',
                       style: TextStyle(
                         color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
                             ? const Color(0xFF4B5563)

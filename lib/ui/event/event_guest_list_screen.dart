@@ -73,7 +73,20 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
         }
 
         final newTabs = _buildTabs(event);
-        if (_tabs.isEmpty || _tabs.length != newTabs.length || _lastEvent?.id != event.id) {
+        
+        bool tabsChanged = false;
+        if (_tabs.length != newTabs.length) {
+          tabsChanged = true;
+        } else {
+          for (int i = 0; i < _tabs.length; i++) {
+            if (_tabs[i] != newTabs[i]) {
+              tabsChanged = true;
+              break;
+            }
+          }
+        }
+
+        if (tabsChanged || _lastEvent?.id != event.id) {
           _tabs = newTabs;
           _lastEvent = event;
           _tabController?.dispose();
