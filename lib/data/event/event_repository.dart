@@ -244,8 +244,7 @@ class EventRepository {
 
   static bool _isJoinedScheduleEntry(ScheduledEvent entry) {
     final status = entry.rsvpStatus;
-    if (status == 'maybe' || status == 'interested') return false;
-    return status == null || status == 'going';
+    return status == 'going';
   }
 
   /// RSVP'd events on the user's schedule, excluding host/cohost, as full [Event] docs.
@@ -341,94 +340,7 @@ class EventRepository {
 
   static const int publicProfileUpcomingLimit = 10;
 
-  /// Upcoming joining + hosting events for [profileUserId] (not the signed-in viewer).
-  Stream<List<ScheduledEvent>> watchProfileUpcomingEvents(
-    String profileUserId, {
-    String profileDisplayName = '',
-  }) {
-    if (profileUserId.trim().isEmpty) return Stream.value([]);
-
-    final controller = StreamController<List<ScheduledEvent>>();
-    List<ScheduledEvent>? scheduleEvents;
-    List<Event>? hostedEvents;
-
-    void emitMerged() {
-      if (scheduleEvents == null || hostedEvents == null) return;
-      if (controller.isClosed) return;
-
-      final now = DateTime.now();
-      final result = scheduleEvents!
-          .where((e) {
-            final status = e.rsvpStatus;
-            if (status == 'maybe' || status == 'interested') return false;
-            return status == null || status == 'going';
-          })
-          .where((e) => e.endTime.isAfter(now))
-          .toList();
-
-      final seenIds = result.map((e) => e.id).toSet();
-
-      for (final event in hostedEvents!) {
-        if (seenIds.contains(event.id)) continue;
-        final end = event.timing.effectiveEndDate ??
-            event.timing.startDate ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        if (!end.isAfter(now)) continue;
-
-        result.add(
-          ScheduledEvent(
-            id: event.id,
-            title: event.title,
-            posterUrl: event.visuals.posterUrl,
-            startTime: event.timing.startDate,
-            endTime: end,
-            hostName: event.metadata.hostId == profileUserId
-                ? profileDisplayName
-                : '',
-            hostId: event.metadata.hostId,
-            auroraColors: event.visuals.auroraColors,
-            locationName: event.location?.displayName ?? '',
-            coHostIds: event.coHostIds,
-          ),
-        );
-        seenIds.add(event.id);
-      }
-
-      result.sort((a, b) {
-        if (a.startTime == null && b.startTime == null) return 0;
-        if (a.startTime == null) return -1;
-        if (b.startTime == null) return 1;
-        return a.startTime!.compareTo(b.startTime!);
-      });
-
-      controller.add(result.take(publicProfileUpcomingLimit).toList());
-    }
-
-    final scheduleSub = getScheduleStream(profileUserId).listen(
-      (list) {
-        scheduleEvents = list
-            .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
-            .toList();
-        emitMerged();
-      },
-      onError: controller.addError,
-    );
-
-    final hostedSub = getHostedAndCoHostedEventsStream(profileUserId).listen(
-      (events) {
-        hostedEvents = events;
-        emitMerged();
-      },
-      onError: controller.addError,
-    );
-
-    controller.onCancel = () {
-      scheduleSub.cancel();
-      hostedSub.cancel();
-    };
-
-    return controller.stream;
-  }
+  // Removed watchProfileUpcomingEvents as it is now handled directly by publicProfileUpcomingEventsProvider using publicJoinedEventsProvider and publicHostedEventsProvider.
 
   Stream<List<Map<String, dynamic>>> getUpcomingScheduleStream(String userId) {
     if (userId.trim().isEmpty) return Stream.value([]);

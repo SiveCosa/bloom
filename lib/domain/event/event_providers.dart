@@ -91,18 +91,66 @@ final publicJoinedEventsProvider =
 
 /// Upcoming joining + hosting events for the public profile being viewed ([profileUserId]).
 final publicProfileUpcomingEventsProvider =
-    StreamProvider.autoDispose.family<List<ScheduledEvent>, String>((ref, profileUserId) {
-  if (profileUserId.trim().isEmpty) return Stream.value([]);
+    Provider.autoDispose.family<AsyncValue<List<ScheduledEvent>>, String>((ref, profileUserId) {
+  if (profileUserId.trim().isEmpty) return const AsyncValue.data([]);
+
+  final joinedAsync = ref.watch(publicJoinedEventsProvider(profileUserId));
+  final hostedAsync = ref.watch(publicHostedEventsProvider(profileUserId));
+
+  if (joinedAsync.isLoading || hostedAsync.isLoading) {
+    if (!joinedAsync.hasValue && !hostedAsync.hasValue) {
+      return const AsyncLoading();
+    }
+  }
+
+  if (joinedAsync.hasError) return AsyncError(joinedAsync.error!, joinedAsync.stackTrace!);
+  if (hostedAsync.hasError) return AsyncError(hostedAsync.error!, hostedAsync.stackTrace!);
+
+  final joined = joinedAsync.value ?? [];
+  final hosted = hostedAsync.value ?? [];
 
   final profileDoc = ref.watch(userProfileStreamProvider(profileUserId)).value;
   final profileName = profileDoc?['name']?.toString() ??
       profileDoc?['username']?.toString() ??
       '';
 
-  return ref.watch(eventRepositoryProvider).watchProfileUpcomingEvents(
-        profileUserId,
-        profileDisplayName: profileName,
-      );
+  final now = DateTime.now();
+  final allEventsById = <String, Event>{};
+  
+  for (final e in joined) allEventsById[e.id] = e;
+  for (final e in hosted) allEventsById[e.id] = e;
+
+  final allEvents = allEventsById.values.toList();
+
+  final validEvents = allEvents.where((e) {
+    final end = e.timing.effectiveEndDate ?? e.timing.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return end.isAfter(now);
+  }).toList();
+
+  final scheduledEvents = validEvents.map((e) {
+    final end = e.timing.effectiveEndDate ?? e.timing.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return ScheduledEvent(
+      id: e.id,
+      title: e.title,
+      posterUrl: e.visuals.posterUrl,
+      startTime: e.timing.startDate,
+      endTime: end,
+      hostName: e.metadata.hostId == profileUserId ? profileName : '',
+      hostId: e.metadata.hostId,
+      auroraColors: e.visuals.auroraColors,
+      locationName: e.location?.displayName ?? '',
+      coHostIds: e.coHostIds,
+    );
+  }).toList();
+
+  scheduledEvents.sort((a, b) {
+    if (a.startTime == null && b.startTime == null) return 0;
+    if (a.startTime == null) return -1;
+    if (b.startTime == null) return 1;
+    return a.startTime!.compareTo(b.startTime!);
+  });
+
+  return AsyncData(scheduledEvents.take(5).toList());
 });
 
 /// Max events shown in a home horizontal carousel (For You + In your Area).
