@@ -24,9 +24,8 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
     _selectedReminders = List<String>.from(state.rsvpReminders);
   }
 
-  void _onSave() {
-    final notifier = ref.read(createEventProvider.notifier);
-    // Set time to 11:59 PM
+  String? _getErrorMessage() {
+    final state = ref.read(createEventProvider);
     final finalDate = DateTime(
       _selectedDate.year,
       _selectedDate.month,
@@ -34,6 +33,38 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
       23,
       59,
     );
+
+    final now = DateTime.now();
+    if (finalDate.isBefore(now)) {
+      return 'RSVP deadline must be in the future.';
+    }
+
+    final startDate = state.timing.startDate;
+    if (startDate != null && finalDate.isAfter(startDate)) {
+      return 'RSVP deadline cannot be after the event starts.';
+    }
+
+    return null;
+  }
+
+  void _onSave() {
+    final errorMessage = _getErrorMessage();
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      return;
+    }
+
+    final notifier = ref.read(createEventProvider.notifier);
+    final finalDate = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      23,
+      59,
+    );
+    
     notifier.updateRSVPDeadline(finalDate);
     notifier.updateRSVPReminders(_selectedReminders);
     Navigator.pop(context);
@@ -165,6 +196,21 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
               ),
             ],
           ),
+
+          const SizedBox(height: 20),
+          if (_getErrorMessage() != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                _getErrorMessage()!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
 
           const SizedBox(height: 40),
           const Divider(color: Colors.white12, indent: 20, endIndent: 20),

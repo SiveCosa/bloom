@@ -81,7 +81,13 @@ service cloud.firestore {
       match /schedule/{eventId} {
         // Any signed-in user can read (e.g. public profile joining events)
         allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && (
+          request.auth.uid == userId 
+          || (
+             exists(/databases/$(database)/documents/events/$(eventId)) &&
+             get(/databases/$(database)/documents/events/$(eventId)).data.metadata.hostId == request.auth.uid
+          )
+        );
       }
     }
 

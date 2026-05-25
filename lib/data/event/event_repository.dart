@@ -464,7 +464,7 @@ class EventRepository {
     });
   }
 
-  Future<void> updateRSVP(String eventId, String userId, String status) async {
+  Future<void> updateRSVP(String eventId, String userId, String status, {int plusOnesCount = 0}) async {
     if (eventId.trim().isEmpty || userId.trim().isEmpty) return;
     await _firestore
         .collection('events')
@@ -473,6 +473,7 @@ class EventRepository {
         .doc(userId)
         .set({
       'status': status,
+      'plusOnesCount': plusOnesCount,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

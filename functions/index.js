@@ -1,6 +1,6 @@
 const { auth } = require("firebase-functions/v1");
 const { logger } = require("firebase-functions/v2");
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
@@ -1988,5 +1988,193 @@ exports.cometChatGetAuthToken = onCall(
     }
 
     return { authToken };
+  }
+);
+
+// 8. Event Rich Preview (Open Graph)
+exports.generateEventPreview = onRequest(
+  { region: "africa-south1" },
+  async (req, res) => {
+    // Attempt to parse eventId from query (?eventId=...) or path segment
+    let eventId = req.query.eventId;
+    if (!eventId) {
+      const parts = req.path.split('/').filter(Boolean);
+      eventId = parts[parts.length - 1];
+    }
+    
+    if (!eventId || eventId === 'event') {
+      return res.status(400).send("Missing Event ID");
+    }
+
+    try {
+      const eventSnap = await db.collection("events").doc(eventId).get();
+      if (!eventSnap.exists) {
+        return res.status(404).send("Event not found");
+      }
+
+      const eventData = eventSnap.data();
+      const title = eventData.title || "Bloom Event";
+      const posterUrl = eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "https://bloomapp.software/default_poster.png";
+      const startDate = parseFirestoreDate(eventData.timing?.startDate);
+      
+      let dateStr = "";
+      if (startDate) {
+        // e.g., "Mon, 25 May 20:00"
+        dateStr = startDate.toLocaleString('en-US', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' });
+      }
+      
+      const location = eventData.location?.displayName || eventData.location?.display_name || "";
+      
+      let description = "";
+      if (dateStr && location) {
+        description = `${dateStr} • ${location}`;
+      } else {
+        description = dateStr || location || "Join us on Bloom!";
+      }
+
+      const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>${title}</title>
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${posterUrl}" />
+    <meta property="al:android:package" content="com.yourcompany.bloom" />
+    <meta property="al:ios:url" content="bloom://event/${eventId}" />
+    <meta property="al:android:url" content="bloom://event/${eventId}" />
+    <script>
+      window.onload = function() {
+        var timer = setTimeout(function() {
+          window.location = "https://play.google.com/store/apps/details?id=com.yourcompany.bloom";
+        }, 2500);
+        window.location = "bloom://event/${eventId}";
+      };
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to Bloom...</p>
+  </body>
+</html>`;
+      
+      res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+      res.status(200).send(html);
+    } catch (error) {
+      logger.error("Error generating event preview", error);
+      res.status(500).send("Internal error");
+    }
+  }
+);
+
+// 9. Automated RSVP & Waitlist Manager
+exports.onGuestRSVPUpdate = onDocumentWritten(
+  {
+    document: "events/{eventId}/guests/{guestId}",
+    region: "africa-south1",
+  },
+  async (event) => {
+    const eventId = event.params.eventId;
+    const guestId = event.params.guestId;
+    
+    const beforeData = event.data.before.exists ? event.data.before.data() : null;
+    const afterData = event.data.after.exists ? event.data.after.data() : null;
+
+    const beforeStatus = beforeData ? beforeData.status : null;
+    const afterStatus = afterData ? afterData.status : null;
+    const beforePlusOnes = beforeData && beforeData.plusOnesCount ? parseInt(beforeData.plusOnesCount) : 0;
+    const afterPlusOnes = afterData && afterData.plusOnesCount ? parseInt(afterData.plusOnesCount) : 0;
+
+    // If status and plus ones didn't change, no capacity updates needed
+    if (beforeStatus === afterStatus && beforePlusOnes === afterPlusOnes) return null;
+
+    const eventRef = db.collection("events").doc(eventId);
+
+    return db.runTransaction(async (transaction) => {
+      const eventDoc = await transaction.get(eventRef);
+      if (!eventDoc.exists) return null;
+
+      const eventData = eventDoc.data();
+      const liveCounts = eventData.live_counts || eventData.liveCounts || { going: 0, maybe: 0, interested: 0 };
+      const audience = eventData.audience || eventData.settings || {};
+      const waitlistEnabled = audience.waitlistEnabled || audience.waitlist_enabled || false;
+      const capacity = audience.capacity ? parseInt(audience.capacity) : null;
+
+      let newGoing = parseInt(liveCounts.going || 0);
+      let newMaybe = parseInt(liveCounts.maybe || 0);
+      let newInterested = parseInt(liveCounts.interested || 0);
+
+      // 1. Decrement old counts
+      if (beforeStatus === "going") {
+        newGoing -= (1 + beforePlusOnes);
+      } else if (beforeStatus === "maybe") {
+        newMaybe -= 1;
+      } else if (beforeStatus === "interested") {
+        newInterested -= 1;
+      }
+
+      // 2. Increment new counts
+      let revertToWaitlist = false;
+      if (afterStatus === "going") {
+        newGoing += (1 + afterPlusOnes);
+        
+        // Anti-race condition: if this RSVP put us over capacity, revert it
+        if (capacity !== null && waitlistEnabled && newGoing > capacity) {
+           revertToWaitlist = true;
+           newGoing -= (1 + afterPlusOnes);
+        }
+      } else if (afterStatus === "maybe") {
+        newMaybe += 1;
+      } else if (afterStatus === "interested") {
+        newInterested += 1;
+      }
+
+      // 3. Waitlist Promotion (if we dropped below capacity)
+      let waitlistPromotedGuestRefs = [];
+      if (waitlistEnabled && capacity !== null && newGoing < capacity) {
+        const waitlistQuery = db.collection("events").doc(eventId).collection("guests")
+          .where("status", "==", "waitlisted")
+          .orderBy("updatedAt", "asc")
+          .limit(5); // Check first 5 to see who fits
+        
+        const waitlistSnap = await transaction.get(waitlistQuery);
+        for (const doc of waitlistSnap.docs) {
+           if (doc.id === guestId) continue; // Skip current user
+           const promotedPlusOnes = doc.data().plusOnesCount ? parseInt(doc.data().plusOnesCount) : 0;
+           if (newGoing + 1 + promotedPlusOnes <= capacity) {
+               waitlistPromotedGuestRefs.push(doc.ref);
+               newGoing += (1 + promotedPlusOnes);
+           }
+        }
+      }
+
+      // Ensure counts don't drop below 0
+      newGoing = Math.max(0, newGoing);
+      newMaybe = Math.max(0, newMaybe);
+      newInterested = Math.max(0, newInterested);
+
+      // 4. Perform Updates
+      transaction.update(eventRef, {
+        "live_counts.going": newGoing,
+        "live_counts.maybe": newMaybe,
+        "live_counts.interested": newInterested,
+        "liveCounts.going": newGoing,
+        "liveCounts.maybe": newMaybe,
+        "liveCounts.interested": newInterested,
+      });
+
+      if (revertToWaitlist && event.data.after.exists) {
+        transaction.update(event.data.after.ref, {
+          status: "waitlisted",
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      }
+
+      for (const ref of waitlistPromotedGuestRefs) {
+        transaction.update(ref, {
+          status: "going",
+          updatedAt: FieldValue.serverTimestamp()
+        });
+      }
+    });
   }
 );

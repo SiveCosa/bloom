@@ -32,6 +32,7 @@ import '../../ui/profile/public_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
 import '../../ui/event/event_invitation_screen.dart';
+import '../../ui/event/event_guest_list_screen.dart';
 import '../../ui/messages/messages_list_screen.dart';
 import '../../ui/messages/add_chat_screen.dart';
 import '../../ui/messages/chat_screen.dart';
@@ -272,6 +273,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           );
         },
+        routes: [
+          GoRoute(
+            path: 'guests',
+            pageBuilder: (context, state) {
+              final eventId = state.pathParameters['eventId']!;
+              return CustomTransitionPage(
+                key: state.pageKey,
+                child: EventGuestListScreen(eventId: eventId),
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return child;
+                },
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/home/for-you',

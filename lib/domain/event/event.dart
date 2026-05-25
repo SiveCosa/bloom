@@ -27,6 +27,36 @@ enum EventStatus {
   draft,
 }
 
+enum RegistrationType {
+  open,
+  getOnList,
+  ticketed,
+}
+
+class EventSettings {
+  final bool allowMaybe;
+  final bool waitlistEnabled;
+
+  const EventSettings({
+    this.allowMaybe = true,
+    this.waitlistEnabled = false,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'allowMaybe': allowMaybe,
+      'waitlistEnabled': waitlistEnabled,
+    };
+  }
+
+  factory EventSettings.fromMap(Map<String, dynamic> map) {
+    return EventSettings(
+      allowMaybe: map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
+      waitlistEnabled: map['waitlistEnabled'] as bool? ?? map['waitlist_enabled'] as bool? ?? false,
+    );
+  }
+}
+
 class Event {
   final String id;
   final String title;
@@ -42,6 +72,8 @@ class Event {
   final List<String> previewGuests;
   final EventMetadata metadata;
   final List<String> coHostIds;
+  final RegistrationType registrationType;
+  final EventSettings settings;
 
   const Event({
     required this.id,
@@ -58,6 +90,8 @@ class Event {
     required this.previewGuests,
     required this.metadata,
     this.coHostIds = const [],
+    this.registrationType = RegistrationType.open,
+    this.settings = const EventSettings(),
   });
 
   Event copyWith({
@@ -75,6 +109,8 @@ class Event {
     List<String>? rsvpReminders,
     EventMetadata? metadata,
     List<String>? coHostIds,
+    RegistrationType? registrationType,
+    EventSettings? settings,
   }) {
     return Event(
       id: id ?? this.id,
@@ -91,6 +127,8 @@ class Event {
       rsvpReminders: rsvpReminders ?? this.rsvpReminders,
       metadata: metadata ?? this.metadata,
       coHostIds: coHostIds ?? this.coHostIds,
+      registrationType: registrationType ?? this.registrationType,
+      settings: settings ?? this.settings,
     );
   }
 
@@ -109,6 +147,8 @@ class Event {
       'rsvpReminders': rsvpReminders,
       'metadata': metadata.toMap(),
       'co_host_ids': coHostIds,
+      'registrationType': registrationType.name,
+      'settings': settings.toMap(),
     };
   }
 
@@ -128,7 +168,17 @@ class Event {
       rsvpReminders: _parseStringList(map['rsvpReminders'] ?? map['rsvp_reminders']),
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
       coHostIds: _parseStringList(map['co_host_ids'] ?? map['coHostIds']),
+      registrationType: _parseRegistrationType(map['registrationType'] ?? map['registration_type']),
+      settings: EventSettings.fromMap(map['settings'] ?? map['audience'] ?? {}), // Fallback to audience map for backwards compatibility
     );
+  }
+
+  static RegistrationType _parseRegistrationType(dynamic raw) {
+    if (raw == null) return RegistrationType.open;
+    final str = raw.toString();
+    if (str == 'getOnList' || str == 'get_on_list') return RegistrationType.getOnList;
+    if (str == 'ticketed') return RegistrationType.ticketed;
+    return RegistrationType.open;
   }
 
   static EventLocation? _parseLocation(dynamic raw) {

@@ -114,6 +114,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     final bool isAlreadyWaitlisted = currentStatus == 'waitlisted';
     final requireApproval = event.audience.requireApproval;
     final allowMaybe = event.audience.allowMaybe;
+    final isPastDeadline = event.audience.rsvpDeadline != null && DateTime.now().isAfter(event.audience.rsvpDeadline!);
 
     final colors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
     
@@ -150,17 +151,28 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
           ),
         ],
       ),
-      child: requireApproval
+      child: isPastDeadline
+          ? const Center(
+              child: Text(
+                'RSVP period has ended',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : requireApproval
           ? GestureDetector(
               onTap: () {
                 if (currentStatus == 'requested' || currentStatus == 'waitlisted') {
                   _handleRemoveRsvp(userId);
                 } else if (isFull && !isAlreadyGoing) {
                   if (showWaitlist) {
-                    _handleRsvp(userId, 'waitlisted');
+                    _handleRsvp(userId, 'waitlisted', event: event);
                   }
                 } else {
-                  _handleRsvp(userId, 'requested');
+                  _handleRsvp(userId, 'requested', event: event);
                 }
               },
               behavior: HitTestBehavior.opaque,
@@ -260,7 +272,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                             isSelected: activeIndex == 0,
                             isDisabled: !showWaitlist,
                             onPressed: showWaitlist 
-                                ? () => _handleRsvp(userId, 'waitlisted')
+                                ? () => _handleRsvp(userId, 'waitlisted', event: event)
                                 : () {},
                           )
                         else
@@ -274,7 +286,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                               if (currentStatus == 'going') {
                                 _handleRemoveRsvp(userId);
                               } else {
-                                _handleRsvp(userId, 'going');
+                                _handleRsvp(userId, 'going', event: event);
                               }
                             },
                           ),
@@ -294,7 +306,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                               if (currentStatus == 'maybe') {
                                 _handleRemoveRsvp(userId);
                               } else {
-                                _handleRsvp(userId, 'maybe');
+                                _handleRsvp(userId, 'maybe', event: event);
                               }
                             },
                           ),
@@ -310,7 +322,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                             if (currentStatus == 'declined') {
                               _handleRemoveRsvp(userId);
                             } else {
-                              _handleRsvp(userId, 'declined');
+                              _handleRsvp(userId, 'declined', event: event);
                             }
                           },
                         ),
@@ -347,9 +359,95 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     );
   }
 
-  Future<void> _handleRsvp(String? userId, String status) async {
+  Future<int?> _showPlusOnesSelector(BuildContext context, int maxPlusOnes) {
+    return showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Bringing anyone?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You can bring up to $maxPlusOnes guests.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: List.generate(maxPlusOnes + 1, (index) {
+                  return GestureDetector(
+                    onTap: () => Navigator.of(context).pop(index),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          index == 0 ? 'Just\nMe' : '+$index',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleRsvp(String? userId, String status, {Event? event}) async {
     if (userId == null) return;
-    await ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, status);
+    
+    int plusOnes = 0;
+    if ((status == 'going' || status == 'requested') && event != null && event.audience.maxPlusOnes > 0) {
+      final selectedPlusOnes = await _showPlusOnesSelector(context, event.audience.maxPlusOnes);
+      if (selectedPlusOnes == null) return; // Cancelled
+      plusOnes = selectedPlusOnes;
+    }
+    
+    await ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, status, plusOnesCount: plusOnes);
   }
 
   Future<void> _handleRemoveRsvp(String? userId) async {

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../../domain/event/event.dart';
+import '../../../domain/event/event_visibility.dart';
 
 class GuestListCard extends StatelessWidget {
   final Event event;
@@ -53,13 +54,18 @@ class GuestListCard extends StatelessWidget {
   }
 
   Widget _buildAvatarLayout() {
+    final bool canInvite = isHost ||
+        (event.audience.visibility != EventVisibility.private &&
+            event.audience.visibility != EventVisibility.friendsOnly);
+
     final guests = event.previewGuests;
     final int displayCount = guests.length.clamp(0, 6);
     
     // Algorithm based on requirements
     if (displayCount == 0) {
-      return _buildAvatarItem(null, 50, isButton: true);
+      return _buildAvatarItem(null, 50, isButton: canInvite);
     }
+
 
     if (displayCount == 1) {
       // 1 Guest: Avatar 1 (50dp) | Invite Button (50dp)
@@ -67,17 +73,20 @@ class GuestListCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _buildAvatarItem(guests[0], 50),
-          const SizedBox(width: 12),
-          _buildAvatarItem(null, 50, isButton: true),
+          if (canInvite) ...[
+            const SizedBox(width: 12),
+            _buildAvatarItem(null, 50, isButton: true),
+          ],
         ],
       );
     }
+
 
     if (displayCount == 2) {
       // 2 Guests: Avatar 1 (40dp) | Invite Button (50dp) | Avatar 2 (40dp)
       return _buildOverlappingLayout([
         _AvatarData(guests[0], 40),
-        _AvatarData(null, 50, isButton: true),
+        if (canInvite) _AvatarData(null, 50, isButton: true),
         _AvatarData(guests[1], 40),
       ]);
     }
@@ -92,8 +101,10 @@ class GuestListCard extends StatelessWidget {
           _buildAvatarItem(guests[1], 50),
           const SizedBox(width: -15),
           _buildAvatarItem(guests[2], 50),
-          const SizedBox(width: 12),
-          _buildAvatarItem(null, 50, isButton: true),
+          if (canInvite) ...[
+            const SizedBox(width: 12),
+            _buildAvatarItem(null, 50, isButton: true),
+          ],
         ],
       );
     }
@@ -103,7 +114,7 @@ class GuestListCard extends StatelessWidget {
       return _buildOverlappingLayout([
         _AvatarData(guests[3], 30),
         _AvatarData(guests[1], 40),
-        _AvatarData(null, 50, isButton: true),
+        if (canInvite) _AvatarData(null, 50, isButton: true),
         _AvatarData(guests[0], 40),
         _AvatarData(guests[2], 30),
       ]);
@@ -115,7 +126,7 @@ class GuestListCard extends StatelessWidget {
       if (displayCount >= 6) _AvatarData(guests[5], 20),
       if (displayCount >= 4) _AvatarData(guests[3], 30),
       _AvatarData(guests[1], 40),
-      _AvatarData(null, 50, isButton: true),
+      if (canInvite) _AvatarData(null, 50, isButton: true),
       _AvatarData(guests[0], 40),
       if (displayCount >= 3) _AvatarData(guests[2], 30),
       if (displayCount >= 5) _AvatarData(guests[4], 20),

@@ -41,7 +41,10 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.location == null || widget.startDate == null) {
+    if (widget.location == null || 
+        widget.startDate == null || 
+        widget.location?.latitude == null || 
+        widget.location?.longitude == null) {
       return const SizedBox.shrink();
     }
 

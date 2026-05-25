@@ -477,7 +477,7 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
       final event = Event(
         id: eventId,
-        title: state.title,
+        title: state.title.trim().isEmpty ? 'Untitled Event' : state.title.trim(),
         description: state.description,
         tags: state.tags,
         visuals: state.visuals.copyWith(posterUrl: finalPosterUrl),

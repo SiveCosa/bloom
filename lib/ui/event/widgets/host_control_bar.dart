@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:bloom/domain/event/event.dart';
-import 'package:share_plus/share_plus.dart';
 
 class HostControlBar extends StatelessWidget {
   final Event event;
   final VoidCallback onGoingPressed;
+  final VoidCallback onInvitePressed;
   final VoidCallback onRemindersPressed;
 
   const HostControlBar({
     super.key,
     required this.event,
     required this.onGoingPressed,
+    required this.onInvitePressed,
     required this.onRemindersPressed,
   });
 
@@ -62,7 +63,7 @@ class HostControlBar extends StatelessWidget {
               child: _buildActionItem(
                 icon: Icons.add,
                 label: 'Invite',
-                onTap: () => Share.share('Check out ${event.title} on Bloom!'),
+                onTap: onInvitePressed,
                 isCircleIcon: false,
               ),
             ),
