@@ -39,12 +39,20 @@ final eventGuestFilterProvider = FutureProvider.family<List<Map<String, dynamic>
   final results = await Future.wait(futures);
   populatedGuests.addAll(results.whereType<Map<String, dynamic>>());
 
-  // Dual-Phase Sorting
+  // Dual-Phase Sorting (viewer pinned first on their RSVP tab)
   final friends = <Map<String, dynamic>>[];
   final nonFriends = <Map<String, dynamic>>[];
+  Map<String, dynamic>? currentUserGuest;
 
   for (final guest in populatedGuests) {
-    if (guest['uid'] == currentUid) continue; // Skip current user
+    if (guest['uid'] == currentUid) {
+      currentUserGuest = {
+        ...guest,
+        'computedSubtitle': 'You',
+        'isCurrentUser': true,
+      };
+      continue;
+    }
 
     if (guest['isFriend'] == true) {
       guest['computedSubtitle'] = 'Friends';
@@ -72,5 +80,9 @@ final eventGuestFilterProvider = FutureProvider.family<List<Map<String, dynamic>
     return countB.compareTo(countA); // Descending
   });
 
-  return [...friends, ...nonFriends];
+  final sorted = [...friends, ...nonFriends];
+  if (currentUserGuest != null) {
+    return [currentUserGuest, ...sorted];
+  }
+  return sorted;
 });

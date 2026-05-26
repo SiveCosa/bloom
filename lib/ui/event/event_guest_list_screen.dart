@@ -18,6 +18,26 @@ Color _parseHexColor(String hexColor) {
   return Color(int.parse(hexColor, radix: 16));
 }
 
+String _tabToRsvpStatus(String tabName) {
+  switch (tabName.toLowerCase()) {
+    case 'waitlist':
+      return 'waitlisted';
+    case 'requests':
+    case 'requested':
+      return 'requested';
+    default:
+      return tabName.toLowerCase();
+  }
+}
+
+bool _tabMatchesInitial(String tab, String initialTab) {
+  final tabLower = tab.toLowerCase();
+  final initialLower = initialTab.toLowerCase();
+  if (tabLower == initialLower) return true;
+  if (tabLower == 'requests' && initialLower == 'requested') return true;
+  return false;
+}
+
 class EventGuestListScreen extends ConsumerStatefulWidget {
   final String eventId;
   final String? initialTab;
@@ -42,16 +62,16 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
     super.dispose();
   }
 
-  List<String> _buildTabs(Event event) {
+  List<String> _buildTabs(Event event, {required bool isHostOrCoHost}) {
     List<String> tabs = ['Going'];
 
     if (event.audience.requireApproval) {
-      tabs.add('Requested');
+      tabs.add('Requests');
     } else if (event.audience.allowMaybe) {
       tabs.add('Maybe');
     }
 
-    if (event.audience.waitlistEnabled) {
+    if (isHostOrCoHost && event.audience.waitlistEnabled) {
       tabs.add('Waitlist');
     }
 
@@ -73,8 +93,11 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
           );
         }
 
-        final newTabs = _buildTabs(event);
-        
+        final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+        final isHostOrCoHost = userId != null &&
+            (event.metadata.hostId == userId || event.coHostIds.contains(userId));
+        final newTabs = _buildTabs(event, isHostOrCoHost: isHostOrCoHost);
+
         bool tabsChanged = false;
         if (_tabs.length != newTabs.length) {
           tabsChanged = true;
@@ -94,7 +117,7 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
           
           int initialIndex = 0;
           if (widget.initialTab != null) {
-            final idx = _tabs.indexWhere((t) => t.toLowerCase() == widget.initialTab!.toLowerCase());
+            final idx = _tabs.indexWhere((t) => _tabMatchesInitial(t, widget.initialTab!));
             if (idx != -1) {
               initialIndex = idx;
             }
@@ -111,7 +134,7 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
         final guests = guestsAsync.value ?? [];
 
         int getCountForTab(String tabName) {
-          final targetStatus = tabName.toLowerCase() == 'waitlist' ? 'waitlisted' : tabName.toLowerCase();
+          final targetStatus = _tabToRsvpStatus(tabName);
           return guests.where((g) {
             final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();
             return status == targetStatus;
@@ -214,7 +237,10 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                   labelPadding: EdgeInsets.zero,
                                   tabs: _tabs.map((tab) {
                                     final tabLower = tab.toLowerCase();
-                                    if (tabLower == 'going' || tabLower == 'requested' || tabLower == 'waitlist') {
+                                    if (tabLower == 'going' ||
+                                        tabLower == 'maybe' ||
+                                        tabLower == 'requests' ||
+                                        tabLower == 'waitlist') {
                                       final count = getCountForTab(tab);
                                       if (count > 0) {
                                         return Tab(
@@ -286,17 +312,6 @@ class _GuestListTabView extends ConsumerWidget {
     required this.searchQuery,
   });
 
-  String _mapTabToRsvpStatus(String tab) {
-    switch (tab.toLowerCase()) {
-      case 'going': return 'going';
-      case 'maybe': return 'maybe';
-      case 'interested': return 'interested';
-      case 'requested': return 'requested';
-      case 'waitlist': return 'waitlisted';
-      default: return tab.toLowerCase();
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final guestsAsync = ref.watch(eventGuestFilterProvider(event.id));
@@ -305,7 +320,7 @@ class _GuestListTabView extends ConsumerWidget {
 
     return guestsAsync.when(
       data: (guests) {
-        final targetStatus = _mapTabToRsvpStatus(tabName);
+        final targetStatus = _tabToRsvpStatus(tabName);
         
         final filteredGuests = guests.where((g) {
           final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();

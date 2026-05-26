@@ -25,6 +25,7 @@ class GuestListRow extends ConsumerWidget {
     final name = guest['name'] as String? ?? guest['username'] as String? ?? 'Unknown';
     final avatarUrl = guest['profile_image_url'] as String? ?? '';
     final subtitle = guest['computedSubtitle'] as String? ?? '';
+    final isCurrentUser = guest['isCurrentUser'] == true;
 
     return Container(
       height: 80,
@@ -102,7 +103,7 @@ class GuestListRow extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          if (!isCurrentUser) ...[
           const SizedBox(width: 16),
           if (isHost && (guest['status'] == 'requested' || guest['rsvp_status'] == 'requested')) ...[
             Material(
@@ -171,6 +172,7 @@ class GuestListRow extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               constraints: const BoxConstraints(),
             ),
+          ],
           ],
         ],
       ),

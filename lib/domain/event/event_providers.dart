@@ -130,10 +130,12 @@ final publicProfileUpcomingEventsProvider = Provider.autoDispose
         }
       }
 
-      if (joinedAsync.hasError)
+      if (joinedAsync.hasError) {
         return AsyncError(joinedAsync.error!, joinedAsync.stackTrace!);
-      if (hostedAsync.hasError)
+      }
+      if (hostedAsync.hasError) {
         return AsyncError(hostedAsync.error!, hostedAsync.stackTrace!);
+      }
 
       final joined = joinedAsync.value ?? [];
       final hosted = hostedAsync.value ?? [];

@@ -85,7 +85,7 @@ class HostControlBar extends ConsumerWidget {
             child: GestureDetector(
               onTap: () {
                 final isRequestsActive = event.audience.requireApproval && requestedCount > 0;
-                onGoingPressed(isRequestsActive ? 'Requested' : 'Going');
+                onGoingPressed(isRequestsActive ? 'Requests' : 'Going');
               },
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
