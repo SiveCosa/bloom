@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'discover_feed.dart';
 import '../event/event.dart';
-import '../navigation/navigation_providers.dart';
 
 const List<String> discoverCategories = [
   'All',
@@ -36,8 +35,8 @@ class DiscoverCategoryFilterNotifier extends Notifier<String> {
 
 final discoverCategoryFilterProvider =
     NotifierProvider<DiscoverCategoryFilterNotifier, String>(() {
-  return DiscoverCategoryFilterNotifier();
-});
+      return DiscoverCategoryFilterNotifier();
+    });
 
 final userLocationProvider = FutureProvider<Position?>((ref) async {
   try {
@@ -72,10 +71,12 @@ class DiscoverFeedCache {
     required this.fetchedAt,
   });
 
-  bool isExpired(DateTime now) => now.difference(fetchedAt) > kDiscoverFeedCacheTtl;
+  bool isExpired(DateTime now) =>
+      now.difference(fetchedAt) > kDiscoverFeedCacheTtl;
 
   bool locationMovedFar(double lat, double lng) {
-    return _haversineKm(latitude, longitude, lat, lng) > kDiscoverLocationRefreshKm;
+    return _haversineKm(latitude, longitude, lat, lng) >
+        kDiscoverLocationRefreshKm;
   }
 }
 
@@ -174,8 +175,8 @@ class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
 
 final discoverFeedCacheProvider =
     AsyncNotifierProvider<DiscoverFeedCacheNotifier, DiscoverFeedCache?>(() {
-  return DiscoverFeedCacheNotifier();
-});
+      return DiscoverFeedCacheNotifier();
+    });
 
 /// View of the cache for the active category chip (no extra network calls).
 final discoverFeedProvider = Provider<AsyncValue<DiscoverFeedResult>>((ref) {
@@ -282,7 +283,9 @@ Map<String, DiscoverFeedCard> _cardMapFromAll(DiscoverFeedAllResponse all) {
   return {for (final c in cards) c.id: c};
 }
 
-final discoverFeedCardMapProvider = Provider<Map<String, DiscoverFeedCard>>((ref) {
+final discoverFeedCardMapProvider = Provider<Map<String, DiscoverFeedCard>>((
+  ref,
+) {
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
   return cacheAsync.when(
     data: (cache) => cache == null ? {} : _cardMapFromAll(cache.allResponse),
@@ -292,18 +295,21 @@ final discoverFeedCardMapProvider = Provider<Map<String, DiscoverFeedCard>>((ref
 });
 
 final discoverFeedCardMapForRouteProvider =
-    Provider.family<Map<String, DiscoverFeedCard>, String>((ref, routeCategory) {
-  final cacheAsync = ref.watch(discoverFeedCacheProvider);
-  return cacheAsync.when(
-    data: (cache) {
-      if (cache == null) return {};
-      final cards = cardsForRouteCategory(cache.allResponse, routeCategory);
-      return {for (final c in cards) c.id: c};
-    },
-    loading: () => {},
-    error: (_, _) => {},
-  );
-});
+    Provider.family<Map<String, DiscoverFeedCard>, String>((
+      ref,
+      routeCategory,
+    ) {
+      final cacheAsync = ref.watch(discoverFeedCacheProvider);
+      return cacheAsync.when(
+        data: (cache) {
+          if (cache == null) return {};
+          final cards = cardsForRouteCategory(cache.allResponse, routeCategory);
+          return {for (final c in cards) c.id: c};
+        },
+        loading: () => {},
+        error: (_, _) => {},
+      );
+    });
 
 final allDiscoverEventsProvider = Provider<List<Event>>((ref) {
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
@@ -348,11 +354,19 @@ final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
 });
 
 final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.soundcheck, fallbackCategory: 'Music');
+  return _carouselFromCache(
+    ref,
+    (r) => r.soundcheck,
+    fallbackCategory: 'Music',
+  );
 });
 
 final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.silverScreening, fallbackCategory: 'Film');
+  return _carouselFromCache(
+    ref,
+    (r) => r.silverScreening,
+    fallbackCategory: 'Film',
+  );
 });
 
 final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
@@ -372,7 +386,11 @@ final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
 });
 
 final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(ref, (r) => r.foodieFrenzy, fallbackCategory: 'Food');
+  return _carouselFromCache(
+    ref,
+    (r) => r.foodieFrenzy,
+    fallbackCategory: 'Food',
+  );
 });
 
 final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
@@ -384,8 +402,10 @@ final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
 });
 
 /// Spotlight carousel for a category chip (1+ events is enough to show).
-final discoverCategoryCarouselProvider =
-    Provider.family<List<Event>, String>((ref, category) {
+final discoverCategoryCarouselProvider = Provider.family<List<Event>, String>((
+  ref,
+  category,
+) {
   if (category == 'All') return [];
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
   return cacheAsync.when(
@@ -404,14 +424,15 @@ final discoverCategoryCarouselProvider =
 
 List<Event> sortByPopularity(List<Event> events) => events;
 
-final categoryEventsProvider = Provider.family<List<Event>, String>((ref, category) {
+final categoryEventsProvider = Provider.family<List<Event>, String>((
+  ref,
+  category,
+) {
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
   return cacheAsync.when(
     data: (cache) {
       if (cache == null) return [];
-      return _cardsToEvents(
-        cardsForRouteCategory(cache.allResponse, category),
-      );
+      return _cardsToEvents(cardsForRouteCategory(cache.allResponse, category));
     },
     loading: () => [],
     error: (_, _) => [],
@@ -434,14 +455,18 @@ final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
             shownIds.add(card.id);
           }
         }
-        final explore = all.feed.where((c) => !shownIds.contains(c.id)).toList();
+        final explore = all.feed
+            .where((c) => !shownIds.contains(c.id))
+            .toList();
         // If every event appears in a carousel, still show the full feed below.
         return _cardsToEvents(explore.isNotEmpty ? explore : all.feed);
       }
 
       final categoryCards = categoryCardsFromAll(all, activeFilter);
-      final spotlightIds =
-          spotlightCardsForFilter(all, activeFilter).map((c) => c.id).toSet();
+      final spotlightIds = spotlightCardsForFilter(
+        all,
+        activeFilter,
+      ).map((c) => c.id).toSet();
       return _cardsToEvents(
         categoryCards.where((c) => !spotlightIds.contains(c.id)).toList(),
       );
@@ -455,7 +480,8 @@ double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
   const r = 6371.0;
   final dLat = _toRad(lat2 - lat1);
   final dLon = _toRad(lon2 - lon1);
-  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+  final a =
+      math.sin(dLat / 2) * math.sin(dLat / 2) +
       math.cos(_toRad(lat1)) *
           math.cos(_toRad(lat2)) *
           math.sin(dLon / 2) *

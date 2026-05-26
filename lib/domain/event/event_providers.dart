@@ -16,7 +16,9 @@ final hostedEventsProvider = StreamProvider<List<Event>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
   if (user == null) return Stream.value([]);
 
-  return ref.watch(eventRepositoryProvider).getHostedAndCoHostedEventsStream(user.uid);
+  return ref
+      .watch(eventRepositoryProvider)
+      .getHostedAndCoHostedEventsStream(user.uid);
 });
 
 /// Event ids where the user is host or cohost (for joined-count filtering).
@@ -42,14 +44,25 @@ final profileJoinedCountProvider = Provider<int>((ref) {
   }).length;
 });
 
-final publicProfileHostedCountProvider = Provider.family<int, String>((ref, userId) {
+final publicProfileHostedCountProvider = Provider.family<int, String>((
+  ref,
+  userId,
+) {
   return ref.watch(publicHostedEventsProvider(userId)).value?.length ?? 0;
 });
 
-final publicProfileJoinedCountProvider = Provider.family<int, String>((ref, userId) {
+final publicProfileJoinedCountProvider = Provider.family<int, String>((
+  ref,
+  userId,
+) {
   final schedule = ref.watch(publicScheduleStreamProvider(userId)).value ?? [];
   final excludeIds =
-      ref.watch(publicHostedEventsProvider(userId)).value?.map((e) => e.id).toSet() ?? {};
+      ref
+          .watch(publicHostedEventsProvider(userId))
+          .value
+          ?.map((e) => e.id)
+          .toSet() ??
+      {};
   return schedule.where((e) {
     if (excludeIds.contains(e.id)) return false;
     final status = e.rsvpStatus;
@@ -58,22 +71,36 @@ final publicProfileJoinedCountProvider = Provider.family<int, String>((ref, user
   }).length;
 });
 
-final eventStreamProvider = StreamProvider.family<Event?, String>((ref, eventId) {
+final eventStreamProvider = StreamProvider.family<Event?, String>((
+  ref,
+  eventId,
+) {
   return ref.watch(eventRepositoryProvider).getEventStream(eventId);
 });
 
-final userEventRsvpProvider = StreamProvider.family<String?, String>((ref, eventId) {
+final userEventRsvpProvider = StreamProvider.family<String?, String>((
+  ref,
+  eventId,
+) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
   if (user == null) return Stream.value(null);
-  return ref.watch(eventRepositoryProvider).getUserRSVPStream(eventId, user.uid);
+  return ref
+      .watch(eventRepositoryProvider)
+      .getUserRSVPStream(eventId, user.uid);
 });
 
-final eventGuestsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, eventId) {
-  return ref.watch(eventRepositoryProvider).getEventGuestsStream(eventId);
-});
+final eventGuestsProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, eventId) {
+      return ref.watch(eventRepositoryProvider).getEventGuestsStream(eventId);
+    });
 
-final publicHostedEventsProvider = StreamProvider.family<List<Event>, String>((ref, userId) {
-  return ref.watch(eventRepositoryProvider).getHostedAndCoHostedEventsStream(userId);
+final publicHostedEventsProvider = StreamProvider.family<List<Event>, String>((
+  ref,
+  userId,
+) {
+  return ref
+      .watch(eventRepositoryProvider)
+      .getHostedAndCoHostedEventsStream(userId);
 });
 
 final joinedEventsProvider = StreamProvider<List<Event>>((ref) {
@@ -83,75 +110,90 @@ final joinedEventsProvider = StreamProvider<List<Event>>((ref) {
   return ref.watch(eventRepositoryProvider).getJoinedEventsStream(user.uid);
 });
 
-final publicJoinedEventsProvider =
-    StreamProvider.autoDispose.family<List<Event>, String>((ref, userId) {
-  if (userId.trim().isEmpty) return Stream.value([]);
-  return ref.watch(eventRepositoryProvider).getJoinedEventsStream(userId);
-});
+final publicJoinedEventsProvider = StreamProvider.autoDispose
+    .family<List<Event>, String>((ref, userId) {
+      if (userId.trim().isEmpty) return Stream.value([]);
+      return ref.watch(eventRepositoryProvider).getJoinedEventsStream(userId);
+    });
 
 /// Upcoming joining + hosting events for the public profile being viewed ([profileUserId]).
-final publicProfileUpcomingEventsProvider =
-    Provider.autoDispose.family<AsyncValue<List<ScheduledEvent>>, String>((ref, profileUserId) {
-  if (profileUserId.trim().isEmpty) return const AsyncValue.data([]);
+final publicProfileUpcomingEventsProvider = Provider.autoDispose
+    .family<AsyncValue<List<ScheduledEvent>>, String>((ref, profileUserId) {
+      if (profileUserId.trim().isEmpty) return const AsyncValue.data([]);
 
-  final joinedAsync = ref.watch(publicJoinedEventsProvider(profileUserId));
-  final hostedAsync = ref.watch(publicHostedEventsProvider(profileUserId));
+      final joinedAsync = ref.watch(publicJoinedEventsProvider(profileUserId));
+      final hostedAsync = ref.watch(publicHostedEventsProvider(profileUserId));
 
-  if (joinedAsync.isLoading || hostedAsync.isLoading) {
-    if (!joinedAsync.hasValue && !hostedAsync.hasValue) {
-      return const AsyncLoading();
-    }
-  }
+      if (joinedAsync.isLoading || hostedAsync.isLoading) {
+        if (!joinedAsync.hasValue && !hostedAsync.hasValue) {
+          return const AsyncLoading();
+        }
+      }
 
-  if (joinedAsync.hasError) return AsyncError(joinedAsync.error!, joinedAsync.stackTrace!);
-  if (hostedAsync.hasError) return AsyncError(hostedAsync.error!, hostedAsync.stackTrace!);
+      if (joinedAsync.hasError)
+        return AsyncError(joinedAsync.error!, joinedAsync.stackTrace!);
+      if (hostedAsync.hasError)
+        return AsyncError(hostedAsync.error!, hostedAsync.stackTrace!);
 
-  final joined = joinedAsync.value ?? [];
-  final hosted = hostedAsync.value ?? [];
+      final joined = joinedAsync.value ?? [];
+      final hosted = hostedAsync.value ?? [];
 
-  final profileDoc = ref.watch(userProfileStreamProvider(profileUserId)).value;
-  final profileName = profileDoc?['name']?.toString() ??
-      profileDoc?['username']?.toString() ??
-      '';
+      final profileDoc = ref
+          .watch(userProfileStreamProvider(profileUserId))
+          .value;
+      final profileName =
+          profileDoc?['name']?.toString() ??
+          profileDoc?['username']?.toString() ??
+          '';
 
-  final now = DateTime.now();
-  final allEventsById = <String, Event>{};
-  
-  for (final e in joined) allEventsById[e.id] = e;
-  for (final e in hosted) allEventsById[e.id] = e;
+      final now = DateTime.now();
+      final allEventsById = <String, Event>{};
 
-  final allEvents = allEventsById.values.toList();
+      for (final e in joined) {
+        allEventsById[e.id] = e;
+      }
+      for (final e in hosted) {
+        allEventsById[e.id] = e;
+      }
 
-  final validEvents = allEvents.where((e) {
-    final end = e.timing.effectiveEndDate ?? e.timing.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
-    return end.isAfter(now);
-  }).toList();
+      final allEvents = allEventsById.values.toList();
 
-  final scheduledEvents = validEvents.map((e) {
-    final end = e.timing.effectiveEndDate ?? e.timing.startDate ?? DateTime.fromMillisecondsSinceEpoch(0);
-    return ScheduledEvent(
-      id: e.id,
-      title: e.title,
-      posterUrl: e.visuals.posterUrl,
-      startTime: e.timing.startDate,
-      endTime: end,
-      hostName: e.metadata.hostId == profileUserId ? profileName : '',
-      hostId: e.metadata.hostId,
-      auroraColors: e.visuals.auroraColors,
-      locationName: e.location?.displayName ?? '',
-      coHostIds: e.coHostIds,
-    );
-  }).toList();
+      final validEvents = allEvents.where((e) {
+        final end =
+            e.timing.effectiveEndDate ??
+            e.timing.startDate ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return end.isAfter(now);
+      }).toList();
 
-  scheduledEvents.sort((a, b) {
-    if (a.startTime == null && b.startTime == null) return 0;
-    if (a.startTime == null) return -1;
-    if (b.startTime == null) return 1;
-    return a.startTime!.compareTo(b.startTime!);
-  });
+      final scheduledEvents = validEvents.map((e) {
+        final end =
+            e.timing.effectiveEndDate ??
+            e.timing.startDate ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return ScheduledEvent(
+          id: e.id,
+          title: e.title,
+          posterUrl: e.visuals.posterUrl,
+          startTime: e.timing.startDate,
+          endTime: end,
+          hostName: e.metadata.hostId == profileUserId ? profileName : '',
+          hostId: e.metadata.hostId,
+          auroraColors: e.visuals.auroraColors,
+          locationName: e.location?.displayName ?? '',
+          coHostIds: e.coHostIds,
+        );
+      }).toList();
 
-  return AsyncData(scheduledEvents.take(5).toList());
-});
+      scheduledEvents.sort((a, b) {
+        if (a.startTime == null && b.startTime == null) return 0;
+        if (a.startTime == null) return -1;
+        if (b.startTime == null) return 1;
+        return a.startTime!.compareTo(b.startTime!);
+      });
+
+      return AsyncData(scheduledEvents.take(5).toList());
+    });
 
 /// Max events shown in a home horizontal carousel (For You + In your Area).
 const int kHomeFeedCarouselLimit = 10;
@@ -210,10 +252,7 @@ Event _mapFeedToEvent(Map<String, dynamic> map) {
       aspectRatio: 1.0,
       auroraColors: List<String>.from(map['aurora_colors'] ?? []),
     ),
-    timing: EventTiming(
-      startDate: start,
-      startTimeTbd: start == null,
-    ),
+    timing: EventTiming(startDate: start, startTimeTbd: start == null),
     location: EventLocation(
       displayName: map['location_name'] as String? ?? '',
       formattedAddress: map['location_name'] as String? ?? '',
@@ -221,9 +260,7 @@ Event _mapFeedToEvent(Map<String, dynamic> map) {
       longitude: 0.0,
       geohash: '',
     ),
-    audience: const EventAudience(
-      visibility: EventVisibility.public,
-    ),
+    audience: const EventAudience(visibility: EventVisibility.public),
     extras: const [],
     rsvpReminders: const [],
     liveCounts: const EventLiveCounts(),
@@ -241,14 +278,20 @@ List<ScheduledEvent> _mapRawFeedToScheduledEvents(
   List<Map<String, dynamic>> rawList,
   Ref ref,
 ) {
-  return _filterHostedFeedMaps(rawList, ref).map(_mapFeedToScheduledEvent).toList();
+  return _filterHostedFeedMaps(
+    rawList,
+    ref,
+  ).map(_mapFeedToScheduledEvent).toList();
 }
 
 List<Event> _mapRawFeedToEvents(List<Map<String, dynamic>> rawList, Ref ref) {
   return _filterHostedFeedMaps(rawList, ref).map(_mapFeedToEvent).toList();
 }
 
-Future<GeoPoint?> _readUserGeoPoint(FirebaseFirestore firestore, String uid) async {
+Future<GeoPoint?> _readUserGeoPoint(
+  FirebaseFirestore firestore,
+  String uid,
+) async {
   final snap = await firestore.collection('users').doc(uid).get();
   final location = snap.data()?['location'];
   if (location is GeoPoint) return location;
@@ -268,7 +311,9 @@ Future<GeoPoint?> _ensureUserGeoPoint(Ref ref) async {
   return location;
 }
 
-final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
     final result = await functions.httpsCallable('getForYouFeed').call();
@@ -284,9 +329,10 @@ final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
   final rawFeedAsync = ref.watch(forYouRawFeedProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref)
-        .take(kHomeFeedCarouselLimit)
-        .toList(),
+    data: (rawList) => _mapRawFeedToScheduledEvents(
+      rawList,
+      ref,
+    ).take(kHomeFeedCarouselLimit).toList(),
     loading: () => [],
     error: (err, stack) => [],
   );
@@ -335,8 +381,9 @@ List<Map<String, dynamic>> _mergeInAreaWithForYou(
   return merged;
 }
 
-final eventsInAreaRawFeedProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final eventsInAreaRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   try {
     List<Map<String, dynamic>> inArea = [];
     final location = await _ensureUserGeoPoint(ref);
@@ -361,13 +408,16 @@ final eventsInAreaRawFeedProvider =
   }
 });
 
-final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
+final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((
+  ref,
+) {
   final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
 
   return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(rawList, ref)
-        .take(kHomeFeedCarouselLimit)
-        .toList(),
+    data: (rawList) => _mapRawFeedToScheduledEvents(
+      rawList,
+      ref,
+    ).take(kHomeFeedCarouselLimit).toList(),
     loading: () => [],
     error: (err, stack) => [],
   );
