@@ -278,9 +278,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'guests',
             pageBuilder: (context, state) {
               final eventId = state.pathParameters['eventId']!;
+              final initialTab = state.uri.queryParameters['tab'];
               return CustomTransitionPage(
                 key: state.pageKey,
-                child: EventGuestListScreen(eventId: eventId),
+                child: EventGuestListScreen(eventId: eventId, initialTab: initialTab),
                 transitionDuration: Duration.zero,
                 reverseTransitionDuration: Duration.zero,
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {

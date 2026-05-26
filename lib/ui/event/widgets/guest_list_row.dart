@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:bloom/data/event/event_repository.dart';
 
 class GuestListRow extends ConsumerWidget {
@@ -26,13 +27,8 @@ class GuestListRow extends ConsumerWidget {
     final subtitle = guest['computedSubtitle'] as String? ?? '';
 
     return Container(
+      height: 80,
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
       child: Row(
         children: [
           Expanded(
@@ -73,6 +69,7 @@ class GuestListRow extends ConsumerWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -90,9 +87,9 @@ class GuestListRow extends ConsumerWidget {
                           Text(
                             subtitle,
                             style: TextStyle(
-                              color: subtitle == 'Friends' ? Colors.blue[300] : Colors.white.withValues(alpha: 0.4),
+                              color: Colors.white.withValues(alpha: 0.6),
                               fontSize: 12,
-                              fontWeight: subtitle == 'Friends' ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -107,26 +104,55 @@ class GuestListRow extends ConsumerWidget {
           ),
           const SizedBox(width: 16),
           const SizedBox(width: 16),
-          if (isHost && guest['rsvp_status'] == 'requested') ...[
-            IconButton(
-              onPressed: () {
-                if (uid.isNotEmpty && eventId != null) {
-                  ref.read(eventRepositoryProvider).updateRSVP(eventId!, uid, isEventFull ? 'waitlisted' : 'going');
-                }
-              },
-              icon: const Icon(Icons.check_circle, color: Colors.greenAccent),
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
+          if (isHost && (guest['status'] == 'requested' || guest['rsvp_status'] == 'requested')) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (uid.isNotEmpty && eventId != null) {
+                    ref.read(eventRepositoryProvider).updateRSVP(eventId!, uid, isEventFull ? 'waitlisted' : 'going');
+                  }
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: Ink(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.black,
+                    size: 18,
+                  ),
+                ),
+              ),
             ),
-            IconButton(
-              onPressed: () {
-                if (uid.isNotEmpty && eventId != null) {
-                  ref.read(eventRepositoryProvider).removeRSVP(eventId!, uid);
-                }
-              },
-              icon: const Icon(Icons.cancel, color: Colors.redAccent),
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
+            const SizedBox(width: 8),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (uid.isNotEmpty && eventId != null) {
+                    ref.read(eventRepositoryProvider).removeRSVP(eventId!, uid);
+                  }
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: Ink(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
+                ),
+              ),
             ),
           ] else ...[
             IconButton(
@@ -136,7 +162,12 @@ class GuestListRow extends ConsumerWidget {
                   context.push('/messages/chat/$uid?name=$rawName');
                 }
               },
-              icon: const Icon(Icons.mode_comment_outlined, color: Colors.white),
+              icon: SvgPicture.asset(
+                'assets/icons/misc/message_fill.svg',
+                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                width: 24,
+                height: 24,
+              ),
               padding: const EdgeInsets.all(12),
               constraints: const BoxConstraints(),
             ),

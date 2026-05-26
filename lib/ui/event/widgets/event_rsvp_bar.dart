@@ -127,8 +127,8 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
       gradientColors = [const Color(0xFF6366f1), const Color(0xFFa855f7)];
     }
 
-    final double barHeight = requireApproval ? 50 : 75;
-    final double borderRadiusVal = requireApproval ? 25 : 37.5;
+    final double barHeight = 75;
+    final double borderRadiusVal = 37.5;
 
     final activeIndex = _getIndexForStatus(currentStatus, allowMaybe: allowMaybe);
     final displayIndex = _lastNonNullActiveIndex ?? 0;
@@ -164,9 +164,32 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
             )
           : requireApproval
           ? GestureDetector(
-              onTap: () {
-                if (currentStatus == 'requested' || currentStatus == 'waitlisted') {
-                  _handleRemoveRsvp(userId);
+              onTap: () async {
+                if (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going') {
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFF15191D),
+                      title: const Text('Remove RSVP?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      content: const Text(
+                        'If you remove your RSVP, you will need to request to get on the list again.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Remove', style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    _handleRemoveRsvp(userId);
+                  }
                 } else if (isFull && !isAlreadyGoing) {
                   if (showWaitlist) {
                     _handleRsvp(userId, 'waitlisted', event: event);
@@ -182,40 +205,42 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                 alignment: Alignment.center,
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 decoration: BoxDecoration(
-                  color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                  color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
                       ? Colors.white
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(21),
+                  borderRadius: BorderRadius.circular(34),
                 ),
-                child: Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                      (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
                           ? Icons.check_circle
                           : (isFull && !showWaitlist && !isAlreadyGoing) 
                               ? Icons.block 
                               : Icons.add_circle_outline,
-                      color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                      color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
                           ? Colors.black
                           : Colors.white,
-                      size: 20,
+                      size: 24,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 4),
                     Text(
-                      currentStatus == 'requested'
-                          ? 'Requested'
-                          : currentStatus == 'waitlisted'
-                              ? 'Waitlisted'
-                              : (isFull && !isAlreadyGoing)
-                                  ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
-                                  : 'Get on List',
+                      currentStatus == 'going'
+                          ? 'Going'
+                          : currentStatus == 'requested'
+                              ? 'Requested'
+                              : currentStatus == 'waitlisted'
+                                  ? 'Waitlisted'
+                                  : (isFull && !isAlreadyGoing)
+                                      ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
+                                      : 'Get on List',
                       style: TextStyle(
-                        color: (currentStatus == 'requested' || currentStatus == 'waitlisted')
+                        color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
                             ? const Color(0xFF4B5563)
                             : Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -493,7 +518,7 @@ class _RsvpButton extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.2)
                     : isSelected
                         ? Colors.black
-                        : Colors.white.withValues(alpha: 0.6),
+                        : Colors.white.withValues(alpha: 0.8),
               ),
               const SizedBox(height: 4),
               Text(
@@ -504,7 +529,7 @@ class _RsvpButton extends StatelessWidget {
                       ? Colors.white.withValues(alpha: 0.2)
                       : isSelected
                           ? const Color(0xFF4B5563)
-                          : Colors.white.withValues(alpha: 0.6),
+                          : Colors.white.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),

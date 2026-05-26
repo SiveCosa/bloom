@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bloom/domain/event/event.dart';
+import 'package:bloom/domain/event/event_providers.dart';
 
-class HostControlBar extends StatelessWidget {
+class HostControlBar extends ConsumerWidget {
   final Event event;
-  final VoidCallback onGoingPressed;
+  final Function(String?) onGoingPressed;
   final VoidCallback onInvitePressed;
   final VoidCallback onRemindersPressed;
 
@@ -26,7 +28,7 @@ class HostControlBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
     
     List<Color> gradientColors;
@@ -38,8 +40,17 @@ class HostControlBar extends StatelessWidget {
       gradientColors = [const Color(0xFF6366f1), const Color(0xFFa855f7)];
     }
 
+    final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+    final guests = guestsAsync.value ?? [];
+    
+    final goingCount = guests.isEmpty 
+        ? event.liveCounts.going 
+        : guests.where((g) => g['status'] == 'going' || g['rsvp_status'] == 'going').length;
+        
+    final requestedCount = guests.where((g) => g['status'] == 'requested' || g['rsvp_status'] == 'requested').length;
+
     return Container(
-      height: 75, // Updated height to 75dp
+      height: 75,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(37.5),
         gradient: LinearGradient(
@@ -72,35 +83,63 @@ class HostControlBar extends StatelessWidget {
           // Center Section: Going (Balanced Island)
           Expanded(
             child: GestureDetector(
-              onTap: onGoingPressed,
+              onTap: () {
+                final isRequestsActive = event.audience.requireApproval && requestedCount > 0;
+                onGoingPressed(isRequestsActive ? 'Requested' : 'Going');
+              },
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(34),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${event.liveCounts.going}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        height: 1.1,
+                child: (event.audience.requireApproval && requestedCount > 0)
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedCounterText(
+                            value: requestedCount,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                          ),
+                          const Text(
+                            'Requests',
+                            key: ValueKey('Requests'),
+                            style: TextStyle(
+                              color: Color(0xFF4B5563),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedCounterText(
+                            value: goingCount,
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                          ),
+                          const Text(
+                            'Going',
+                            key: ValueKey('Going'),
+                            style: TextStyle(
+                              color: Color(0xFF4B5563),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const Text(
-                      'Going',
-                      style: TextStyle(
-                        color: Color(0xFF4B5563),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -143,17 +182,53 @@ class HostControlBar extends StatelessWidget {
               child: Icon(icon, color: Colors.white, size: 25),
             )
           else
-            Icon(icon, color: Colors.white, size: 25), // Exact icon size (25sp)
+            Icon(icon, color: Colors.white, size: 25),
           const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 12, // Exact font size for labels (12pt)
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class AnimatedCounterText extends StatelessWidget {
+  final int value;
+  final TextStyle style;
+
+  const AnimatedCounterText({
+    super.key,
+    required this.value,
+    required this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        final isEntering = (child.key as ValueKey<int>?)?.value == value;
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: isEntering ? const Offset(0.0, 0.6) : const Offset(0.0, -0.6),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        );
+      },
+      child: Text(
+        '$value',
+        key: ValueKey<int>(value),
+        style: style,
       ),
     );
   }

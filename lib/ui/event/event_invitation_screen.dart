@@ -495,8 +495,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                         child: isHost 
                           ? HostControlBar(
                               event: event,
-                              onGoingPressed: () {
-                                context.push('/event/${event.id}/guests');
+                              onGoingPressed: (tab) {
+                                context.push('/event/${event.id}/guests${tab != null ? '?tab=$tab' : ''}');
                               },
                               onInvitePressed: () => _showInviteFriendsSheet(context, event),
                               onRemindersPressed: () => _showRemindersModal(context, event),

@@ -20,8 +20,9 @@ Color _parseHexColor(String hexColor) {
 
 class EventGuestListScreen extends ConsumerStatefulWidget {
   final String eventId;
+  final String? initialTab;
 
-  const EventGuestListScreen({super.key, required this.eventId});
+  const EventGuestListScreen({super.key, required this.eventId, this.initialTab});
 
   @override
   ConsumerState<EventGuestListScreen> createState() => _EventGuestListScreenState();
@@ -90,7 +91,31 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
           _tabs = newTabs;
           _lastEvent = event;
           _tabController?.dispose();
-          _tabController = TabController(length: _tabs.length, vsync: this);
+          
+          int initialIndex = 0;
+          if (widget.initialTab != null) {
+            final idx = _tabs.indexWhere((t) => t.toLowerCase() == widget.initialTab!.toLowerCase());
+            if (idx != -1) {
+              initialIndex = idx;
+            }
+          }
+          
+          _tabController = TabController(
+            length: _tabs.length,
+            vsync: this,
+            initialIndex: initialIndex,
+          );
+        }
+
+        final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+        final guests = guestsAsync.value ?? [];
+
+        int getCountForTab(String tabName) {
+          final targetStatus = tabName.toLowerCase() == 'waitlist' ? 'waitlisted' : tabName.toLowerCase();
+          return guests.where((g) {
+            final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();
+            return status == targetStatus;
+          }).length;
         }
 
         final palette = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
@@ -169,6 +194,8 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                  child: TabBar(
                                   controller: _tabController,
                                   isScrollable: false,
+                                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                                  splashFactory: NoSplash.splashFactory,
                                   indicator: const UnderlineTabIndicator(
                                     borderSide: BorderSide(
                                       color: Colors.white,
@@ -185,7 +212,29 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                   padding: EdgeInsets.zero,
                                   indicatorPadding: EdgeInsets.zero,
                                   labelPadding: EdgeInsets.zero,
-                                  tabs: _tabs.map((tab) => Tab(height: 36, text: tab)).toList(),
+                                  tabs: _tabs.map((tab) {
+                                    final tabLower = tab.toLowerCase();
+                                    if (tabLower == 'going' || tabLower == 'requested' || tabLower == 'waitlist') {
+                                      final count = getCountForTab(tab);
+                                      if (count > 0) {
+                                        return Tab(
+                                          height: 36,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                '$count',
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(tab),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    return Tab(height: 36, text: tab);
+                                  }).toList(),
                                 ),
                               ),
                             ],
@@ -259,7 +308,7 @@ class _GuestListTabView extends ConsumerWidget {
         final targetStatus = _mapTabToRsvpStatus(tabName);
         
         final filteredGuests = guests.where((g) {
-          final status = (g['rsvp_status'] as String? ?? '').toLowerCase();
+          final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();
           if (status != targetStatus) return false;
 
           if (searchQuery.isEmpty) return true;

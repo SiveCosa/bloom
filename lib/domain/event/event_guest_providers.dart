@@ -29,7 +29,7 @@ final eventGuestFilterProvider = FutureProvider.family<List<Map<String, dynamic>
     if (!snap.exists) return null;
 
     return {
-      ...guest, // contains rsvp_status etc.
+      ...guest, // contains status etc.
       ...snap.data()!, // contains name, interests, etc.
       'uid': uid,
       'isFriend': friendUids.contains(uid),
@@ -50,18 +50,12 @@ final eventGuestFilterProvider = FutureProvider.family<List<Map<String, dynamic>
       guest['computedSubtitle'] = 'Friends';
       friends.add(guest);
     } else {
+      final username = guest['username'] as String? ?? '';
+      guest['computedSubtitle'] = username.isNotEmpty ? username : '';
+
       final guestInterests = List<String>.from(guest['interests'] ?? []);
       final intersection = guestInterests.where((i) => currentUserInterests.contains(i)).toList();
       guest['mutualInterestsCount'] = intersection.length;
-      
-      if (intersection.isNotEmpty) {
-        final count = intersection.length - 1;
-        guest['computedSubtitle'] = count > 0
-            ? '${intersection.first} +$count other mutual interests'
-            : '${intersection.first} mutual interest';
-      } else {
-        guest['computedSubtitle'] = '';
-      }
       nonFriends.add(guest);
     }
   }
