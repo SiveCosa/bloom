@@ -1,9 +1,12 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/event.dart';
 import '../../../domain/event/event_visibility.dart';
+import '../../../domain/event/event_providers.dart';
+import '../../../domain/auth/auth_providers.dart';
 
-class GuestListCard extends StatelessWidget {
+class GuestListCard extends ConsumerWidget {
   final Event event;
   final bool isHost;
   final int mutualFriendsCount;
@@ -18,7 +21,7 @@ class GuestListCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -43,7 +46,7 @@ class GuestListCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _buildAvatarLayout(),
+              _buildAvatarLayout(ref),
               const SizedBox(height: 24),
               _buildFooterText(),
             ],
@@ -53,99 +56,96 @@ class GuestListCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatarLayout() {
+  Widget _buildAvatarLayout(WidgetRef ref) {
     final bool canInvite = isHost ||
         (event.audience.visibility != EventVisibility.private &&
             event.audience.visibility != EventVisibility.friendsOnly);
 
-    final guests = event.previewGuests;
-    final int displayCount = guests.length.clamp(0, 6);
+    final guestsListAsync = ref.watch(eventGuestsProvider(event.id));
+    final guestsData = guestsListAsync.value ?? [];
     
-    // Algorithm based on requirements
+    final goingUserIds = guestsData
+        .where((g) => g['status'] == 'going')
+        .map((g) => g['uid'] as String)
+        .toList();
+
+    // Fetch up to 6 avatars
+    final List<String> guests = [];
+    for (int i = 0; i < goingUserIds.length && i < 6; i++) {
+      final profileAsync = ref.watch(userProfileStreamProvider(goingUserIds[i]));
+      final profile = profileAsync.value;
+      if (profile != null) {
+        final avatar = profile['avatar_url'] ?? profile['profile_image_url'];
+        if (avatar != null && avatar.toString().isNotEmpty) {
+          guests.add(avatar.toString());
+        }
+      }
+    }
+
+    final int displayCount = guests.length;
+    
+    final List<_AvatarData> data = [];
+
     if (displayCount == 0) {
-      return _buildAvatarItem(null, 50, isButton: canInvite);
+      data.add(_AvatarData(null, 50, isButton: canInvite));
+    } else if (displayCount == 1) {
+      data.add(_AvatarData(guests[0], 50));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+    } else if (displayCount == 2) {
+      data.add(_AvatarData(guests[0], 45));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+      data.add(_AvatarData(guests[1], 45));
+    } else if (displayCount == 3) {
+      data.add(_AvatarData(guests[0], 50));
+      data.add(_AvatarData(guests[1], 50));
+      data.add(_AvatarData(guests[2], 50));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+    } else if (displayCount == 4) {
+      data.add(_AvatarData(guests[0], 40));
+      data.add(_AvatarData(guests[1], 45));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+      data.add(_AvatarData(guests[2], 45));
+      data.add(_AvatarData(guests[3], 40));
+    } else if (displayCount == 5) {
+      data.add(_AvatarData(guests[0], 40));
+      data.add(_AvatarData(guests[1], 40));
+      data.add(_AvatarData(guests[2], 40));
+      data.add(_AvatarData(guests[3], 40));
+      data.add(_AvatarData(guests[4], 40));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+    } else {
+      // 6 or more
+      data.add(_AvatarData(guests[0], 35));
+      data.add(_AvatarData(guests[1], 40));
+      data.add(_AvatarData(guests[2], 45));
+      if (canInvite) data.add(_AvatarData(null, 50, isButton: true));
+      data.add(_AvatarData(guests[3], 45));
+      data.add(_AvatarData(guests[4], 40));
+      data.add(_AvatarData(guests[5], 35));
     }
 
-
-    if (displayCount == 1) {
-      // 1 Guest: Avatar 1 (50dp) | Invite Button (50dp)
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildAvatarItem(guests[0], 50),
-          if (canInvite) ...[
-            const SizedBox(width: 12),
-            _buildAvatarItem(null, 50, isButton: true),
-          ],
-        ],
-      );
-    }
-
-
-    if (displayCount == 2) {
-      // 2 Guests: Avatar 1 (40dp) | Invite Button (50dp) | Avatar 2 (40dp)
-      return _buildOverlappingLayout([
-        _AvatarData(guests[0], 40),
-        if (canInvite) _AvatarData(null, 50, isButton: true),
-        _AvatarData(guests[1], 40),
-      ]);
-    }
-
-    if (displayCount == 3) {
-      // 3 Guests: A1, A2, A3 (50dp) | Button (50dp)
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildAvatarItem(guests[0], 50),
-          const SizedBox(width: -15),
-          _buildAvatarItem(guests[1], 50),
-          const SizedBox(width: -15),
-          _buildAvatarItem(guests[2], 50),
-          if (canInvite) ...[
-            const SizedBox(width: 12),
-            _buildAvatarItem(null, 50, isButton: true),
-          ],
-        ],
-      );
-    }
-
-    if (displayCount == 4) {
-      // 4 Guests: A4 (30dp), A2 (40dp) | Button (50dp) | A1 (40dp), A3 (30dp)
-      return _buildOverlappingLayout([
-        _AvatarData(guests[3], 30),
-        _AvatarData(guests[1], 40),
-        if (canInvite) _AvatarData(null, 50, isButton: true),
-        _AvatarData(guests[0], 40),
-        _AvatarData(guests[2], 30),
-      ]);
-    }
-
-    // Default / 7+ Guests (Max 6 Avatars visible)
-    // A6 (20dp), A4 (30dp), A2 (40dp) | Button (50dp) | A1 (40dp), A3 (30dp), A5 (20dp)
-    return _buildOverlappingLayout([
-      if (displayCount >= 6) _AvatarData(guests[5], 20),
-      if (displayCount >= 4) _AvatarData(guests[3], 30),
-      _AvatarData(guests[1], 40),
-      if (canInvite) _AvatarData(null, 50, isButton: true),
-      _AvatarData(guests[0], 40),
-      if (displayCount >= 3) _AvatarData(guests[2], 30),
-      if (displayCount >= 5) _AvatarData(guests[4], 20),
-    ]);
+    return _buildSpacedLayout(data);
   }
 
-  Widget _buildOverlappingLayout(List<_AvatarData> data) {
-    const double overlap = 15.0;
-    
+  Widget _buildSpacedLayout(List<_AvatarData> data) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(data.length, (index) {
         final item = data[index];
-        final bool isFirst = index == 0;
+        final bool isLast = index == data.length - 1;
         
-        return Padding(
-          padding: EdgeInsets.only(left: isFirst ? 0 : -overlap),
-          child: _buildAvatarItem(item.url, item.size, isButton: item.isButton),
-        );
+        Widget avatar = _buildAvatarItem(item.url, item.size, isButton: item.isButton);
+        
+        if (!isLast) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              avatar,
+              const SizedBox(width: 8),
+            ],
+          );
+        }
+        return avatar;
       }),
     );
   }
@@ -172,10 +172,9 @@ class GuestListCard extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF1A1D24),
-        border: Border.all(color: const Color(0xFF0B0E12), width: 2),
+        color: Color(0xFF1A1D24),
       ),
       child: ClipOval(
         child: hasValidImage
@@ -210,33 +209,25 @@ class GuestListCard extends StatelessWidget {
 
   Widget _buildFooterText() {
     final int capacity = event.audience.capacity ?? 0;
-    final int going = event.liveCounts.going;
+    // Add 1 to include the host
+    final int going = event.liveCounts.going + 1;
     final int spotsLeft = capacity - going;
-    final int count = mutualFriendsCount > 0 ? mutualFriendsCount : going;
-    final String friendLabel = mutualFriendsCount > 0 ? 'mutual friend' : 'friend';
     
-    String text;
+    final parts = <String>[];
     
+    parts.add('$going going');
+    
+    if (mutualFriendsCount > 0) {
+      final String friendLabel = mutualFriendsCount == 1 ? 'friend' : 'friends';
+      parts.add('$mutualFriendsCount $friendLabel going');
+    }
+
     if (capacity > 0) {
-      if (spotsLeft <= 0) {
-        text = 'Event is full • $going joining';
-      } else if (spotsLeft <= 5) {
-        text = 'Only $spotsLeft spots left! • $going joining';
-      } else {
-        text = '$going joining • $spotsLeft spots left';
-      }
-    } else {
-      if (count == 0) {
-        text = 'No one here yet? Invite them.';
-      } else if (count == 1) {
-        text = '1 $friendLabel will be joining';
-      } else {
-        text = '$count ${friendLabel}s will be joining';
-      }
+      parts.add('${spotsLeft < 0 ? 0 : spotsLeft} spots left');
     }
 
     return Text(
-      text,
+      parts.join(' • '),
       textAlign: TextAlign.center,
       style: TextStyle(
         color: Colors.white.withValues(alpha: 0.8),

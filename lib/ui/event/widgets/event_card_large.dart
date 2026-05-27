@@ -7,6 +7,8 @@ import 'package:bloom/core/routing/event_navigation.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/domain/event/create_event_state.dart';
 import 'package:bloom/domain/auth/auth_providers.dart';
+import 'package:bloom/domain/event/event_providers.dart';
+import 'package:bloom/data/event/event_repository.dart';
 
 class EventCardLarge extends ConsumerWidget {
   static const double hostBarHeight = 45;
@@ -340,35 +342,7 @@ class EventCardLarge extends ConsumerWidget {
                     if (!isCoHost) ...[
                       const SizedBox(height: 8),
                       Center(
-                        child: TextButton.icon(
-                          onPressed: onInterestedTap,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.transparent,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            minimumSize: Size.zero,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          icon: const Icon(
-                            Icons.star_border,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                          label: const Text(
-                            'Interested',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
+                        child: _InterestedButton(eventId: event.id),
                       ),
                     ],
                   ],
@@ -381,3 +355,112 @@ class EventCardLarge extends ConsumerWidget {
     );
   }
 }
+
+class _InterestedButton extends ConsumerStatefulWidget {
+  final String eventId;
+
+  const _InterestedButton({required this.eventId});
+
+  @override
+  ConsumerState<_InterestedButton> createState() => _InterestedButtonState();
+}
+
+class _InterestedButtonState extends ConsumerState<_InterestedButton> {
+  @override
+  Widget build(BuildContext context) {
+    final rsvpStatus = ref.watch(userEventRsvpProvider(widget.eventId)).value;
+    final isGoing = rsvpStatus == 'going';
+    final isMaybe = rsvpStatus == 'maybe';
+    final isNotGoing = rsvpStatus == 'declined';
+    final isWaitlist = rsvpStatus == 'waitlisted';
+    final isRequested = rsvpStatus == 'requested';
+    final isInterested = rsvpStatus == 'interested';
+    final hasActiveRsvp = isGoing || isMaybe || isNotGoing || isWaitlist || isRequested;
+
+    final fullEvent = ref.watch(eventStreamProvider(widget.eventId)).value;
+    final baseCount = fullEvent?.liveCounts.interested ?? 0;
+    
+    int displayCount = baseCount;
+    final optMap = ref.watch(optimisticInterestedCountProvider);
+    final optData = optMap[widget.eventId];
+    if (optData != null && DateTime.now().isBefore(optData.expiresAt)) {
+      displayCount = optData.count;
+    }
+
+    if (displayCount < 0) displayCount = 0;
+
+    String buttonLabel;
+    IconData buttonIcon;
+    
+    if (hasActiveRsvp) {
+      if (isGoing) {
+        buttonLabel = 'Going';
+        buttonIcon = Icons.check_circle;
+      } else if (isMaybe) {
+        buttonLabel = 'Maybe';
+        buttonIcon = Icons.help;
+      } else if (isRequested) {
+        buttonLabel = 'Requested';
+        buttonIcon = Icons.pending;
+      } else if (isWaitlist) {
+        buttonLabel = 'Waitlisted';
+        buttonIcon = Icons.hourglass_bottom;
+      } else {
+        buttonLabel = 'Not going';
+        buttonIcon = Icons.cancel;
+      }
+    } else {
+      buttonLabel = displayCount > 0 ? '$displayCount Interested' : 'Interested';
+      buttonIcon = isInterested ? Icons.star : Icons.star_border;
+    }
+
+    return TextButton.icon(
+      onPressed: hasActiveRsvp ? null : () {
+        final newInterested = !isInterested;
+        final newCount = newInterested ? displayCount + 1 : displayCount - 1;
+        ref.read(optimisticInterestedCountProvider.notifier).updateCount(
+          widget.eventId,
+          OptimisticCount(
+            newCount < 0 ? 0 : newCount,
+            DateTime.now().add(const Duration(seconds: 5)),
+          ),
+        );
+        
+        final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
+        if (userId != null) {
+          if (newInterested) {
+            ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, 'interested');
+          } else {
+            ref.read(eventRepositoryProvider).removeRSVP(widget.eventId, userId);
+          }
+        }
+      },
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
+        backgroundColor: Colors.transparent,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 4,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+      icon: Icon(
+        buttonIcon,
+        size: 20,
+      ),
+      label: Text(
+        buttonLabel,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+

@@ -614,6 +614,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     ),
                     const SizedBox(width: 10),
                   ],
+                  if (!isHost) ...[
+                    _AppBarInterestedButton(eventId: event.id),
+                    const SizedBox(width: 10),
+                  ],
                   _buildTopButton(
                     Transform.flip(
                       flipX: true,
@@ -2006,17 +2010,114 @@ class _AutoReminderSelectorSheetState extends State<_AutoReminderSelectorSheet> 
             },
           );
         }),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: () => widget.onSave(_selectedOptions.toList()),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFAD83FE),
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => widget.onSave(_selectedOptions.toList()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFAD83FE),
+              minimumSize: const Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text('Save Settings', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-          child: const Text('Save Settings', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      );
+  }
+}
+
+class _AppBarInterestedButton extends ConsumerStatefulWidget {
+  final String eventId;
+
+  const _AppBarInterestedButton({required this.eventId});
+
+  @override
+  ConsumerState<_AppBarInterestedButton> createState() => _AppBarInterestedButtonState();
+}
+
+class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton> {
+  @override
+  Widget build(BuildContext context) {
+    final rsvpStatus = ref.watch(userEventRsvpProvider(widget.eventId)).value;
+    final isGoing = rsvpStatus == 'going';
+    final isInterested = rsvpStatus == 'interested';
+
+    final fullEvent = ref.watch(eventStreamProvider(widget.eventId)).value;
+    final baseCount = fullEvent?.liveCounts.interested ?? 0;
+    
+    int displayCount = baseCount;
+    final optMap = ref.watch(optimisticInterestedCountProvider);
+    final optData = optMap[widget.eventId];
+    if (optData != null && DateTime.now().isBefore(optData.expiresAt)) {
+      displayCount = optData.count;
+    }
+
+    if (displayCount < 0) displayCount = 0;
+
+    return GestureDetector(
+      onTap: isGoing ? null : () {
+        final newInterested = !isInterested;
+        final newCount = newInterested ? displayCount + 1 : displayCount - 1;
+        ref.read(optimisticInterestedCountProvider.notifier).updateCount(
+          widget.eventId,
+          OptimisticCount(
+            newCount < 0 ? 0 : newCount,
+            DateTime.now().add(const Duration(seconds: 5)),
+          ),
+        );
+        
+        final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
+        if (userId != null) {
+          if (newInterested) {
+            ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, 'interested');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marked Interested', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                backgroundColor: Color(0xFF333333),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.fromLTRB(16, 0, 16, 80),
+              ),
+            );
+          } else {
+            ref.read(eventRepositoryProvider).removeRSVP(widget.eventId, userId);
+          }
+        }
+      },
+      child: Container(
+        height: 40,
+        width: displayCount > 0 ? null : 40,
+        padding: displayCount > 0 ? const EdgeInsets.symmetric(horizontal: 12) : EdgeInsets.zero,
+        alignment: displayCount > 0 ? null : Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
         ),
-      ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isInterested ? Icons.star : Icons.star_border,
+              size: 22,
+              color: isGoing 
+                  ? Colors.black26 
+                  : Colors.black,
+            ),
+            if (displayCount > 0) ...[
+              const SizedBox(width: 6),
+              Text(
+                '$displayCount',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: isGoing ? Colors.black26 : Colors.black,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
+

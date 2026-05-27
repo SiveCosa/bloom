@@ -12,6 +12,28 @@ import '../calendar/scheduled_event.dart';
 import 'event_visibility.dart';
 import 'event_location.dart';
 
+class OptimisticCount {
+  final int count;
+  final DateTime expiresAt;
+  OptimisticCount(this.count, this.expiresAt);
+}
+
+class OptimisticInterestedCountNotifier extends Notifier<Map<String, OptimisticCount>> {
+  @override
+  Map<String, OptimisticCount> build() => {};
+
+  void updateCount(String eventId, OptimisticCount count) {
+    state = {
+      ...state,
+      eventId: count,
+    };
+  }
+}
+
+final optimisticInterestedCountProvider = NotifierProvider<OptimisticInterestedCountNotifier, Map<String, OptimisticCount>>(() {
+  return OptimisticInterestedCountNotifier();
+});
+
 final hostedEventsProvider = StreamProvider<List<Event>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
   if (user == null) return Stream.value([]);
@@ -108,6 +130,13 @@ final joinedEventsProvider = StreamProvider<List<Event>>((ref) {
   if (user == null) return Stream.value([]);
 
   return ref.watch(eventRepositoryProvider).getJoinedEventsStream(user.uid);
+});
+
+final interestedEventsProvider = StreamProvider<List<Event>>((ref) {
+  final user = ref.watch(firebaseAuthProvider).currentUser;
+  if (user == null) return Stream.value([]);
+
+  return ref.watch(eventRepositoryProvider).getInterestedEventsStream(user.uid);
 });
 
 final publicJoinedEventsProvider = StreamProvider.autoDispose

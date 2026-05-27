@@ -249,8 +249,21 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
             )
           : LayoutBuilder(
               builder: (context, constraints) {
-                final buttonWidth = (constraints.maxWidth - 2) / buttonCount;
-                final leftOffset = displayIndex * (buttonWidth + 1);
+                final totalDividerWidth = (buttonCount - 1).toDouble();
+                final actualMaxWidth = (constraints.maxWidth.isInfinite || constraints.maxWidth.isNaN) 
+                    ? MediaQuery.of(context).size.width - 30.0 
+                    : constraints.maxWidth;
+                final safeMaxWidth = actualMaxWidth < 0 ? 0.0 : actualMaxWidth;
+                final buttonWidth = (safeMaxWidth - totalDividerWidth) / buttonCount;
+                final safeButtonWidth = (buttonWidth.isInfinite || buttonWidth.isNaN || buttonWidth < 0) 
+                    ? 0.0 
+                    : buttonWidth;
+                
+                final maxLeft = safeMaxWidth - safeButtonWidth;
+                double leftOffset = displayIndex * (safeButtonWidth + 1.0);
+                if (leftOffset.isNaN || leftOffset.isInfinite) leftOffset = 0.0;
+                if (!maxLeft.isNaN && !maxLeft.isInfinite && leftOffset > maxLeft) leftOffset = maxLeft;
+                if (leftOffset < 0) leftOffset = 0.0;
 
                 return Stack(
                   children: [
@@ -262,7 +275,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                       left: leftOffset,
                       top: 0,
                       bottom: 0,
-                      width: buttonWidth,
+                      width: safeButtonWidth,
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 200),
                         opacity: _hasActiveSelection ? 1.0 : 0.0,
