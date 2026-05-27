@@ -414,13 +414,72 @@ class EventRepository {
 
   Stream<List<Map<String, dynamic>>> getScheduleStream(String profileUserId) {
     if (profileUserId.trim().isEmpty) return Stream.value([]);
-    return _firestore
+
+    final controller = StreamController<List<Map<String, dynamic>>>();
+    List<Map<String, dynamic>>? latestSchedule;
+    final validatedEvents = <String, Map<String, dynamic>>{};
+    final eventSubs = <String, StreamSubscription<Event?>>{};
+
+    void publish() {
+      if (latestSchedule == null || controller.isClosed) return;
+
+      final orderedIds = latestSchedule!.map((e) => e['id'] as String).toList();
+      final wanted = orderedIds.toSet();
+
+      for (final id in eventSubs.keys.toList()) {
+        if (!wanted.contains(id)) {
+          eventSubs.remove(id)?.cancel();
+          validatedEvents.remove(id);
+        }
+      }
+
+      for (final rawEvent in latestSchedule!) {
+        final id = rawEvent['id'] as String;
+        if (eventSubs.containsKey(id)) continue;
+
+        eventSubs[id] = getEventStream(id).listen(
+          (event) {
+            if (event != null) {
+              validatedEvents[id] = rawEvent;
+            } else {
+              validatedEvents.remove(id);
+            }
+            publish();
+          },
+          onError: controller.addError,
+        );
+      }
+
+      final result = [
+        for (final id in orderedIds)
+          if (validatedEvents.containsKey(id)) validatedEvents[id]!,
+      ];
+      controller.add(result);
+    }
+
+    final scheduleSub = _firestore
         .collection('users')
         .doc(profileUserId)
         .collection('schedule')
         .orderBy('startTime', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
+        .listen(
+      (snapshot) {
+        latestSchedule = snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+        publish();
+      },
+      onError: controller.addError,
+    );
+
+    controller.onCancel = () {
+      scheduleSub.cancel();
+      for (final sub in eventSubs.values) {
+        sub.cancel();
+      }
+      eventSubs.clear();
+    };
+
+    return controller.stream;
   }
 
   static const int publicProfileUpcomingLimit = 10;
@@ -429,8 +488,51 @@ class EventRepository {
 
   Stream<List<Map<String, dynamic>>> getUpcomingScheduleStream(String userId) {
     if (userId.trim().isEmpty) return Stream.value([]);
+
+    final controller = StreamController<List<Map<String, dynamic>>>();
+    List<Map<String, dynamic>>? latestSchedule;
+    final validatedEvents = <String, Map<String, dynamic>>{};
+    final eventSubs = <String, StreamSubscription<Event?>>{};
+
+    void publish() {
+      if (latestSchedule == null || controller.isClosed) return;
+
+      final orderedIds = latestSchedule!.map((e) => e['id'] as String).toList();
+      final wanted = orderedIds.toSet();
+
+      for (final id in eventSubs.keys.toList()) {
+        if (!wanted.contains(id)) {
+          eventSubs.remove(id)?.cancel();
+          validatedEvents.remove(id);
+        }
+      }
+
+      for (final rawEvent in latestSchedule!) {
+        final id = rawEvent['id'] as String;
+        if (eventSubs.containsKey(id)) continue;
+
+        eventSubs[id] = getEventStream(id).listen(
+          (event) {
+            if (event != null) {
+              validatedEvents[id] = rawEvent;
+            } else {
+              validatedEvents.remove(id);
+            }
+            publish();
+          },
+          onError: controller.addError,
+        );
+      }
+
+      final result = [
+        for (final id in orderedIds)
+          if (validatedEvents.containsKey(id)) validatedEvents[id]!,
+      ];
+      controller.add(result);
+    }
+
     final now = DateTime.now();
-    return _firestore
+    final scheduleSub = _firestore
         .collection('users')
         .doc(userId)
         .collection('schedule')
@@ -438,7 +540,23 @@ class EventRepository {
         .orderBy('startTime', descending: false)
         .limit(10)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList());
+        .listen(
+      (snapshot) {
+        latestSchedule = snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
+        publish();
+      },
+      onError: controller.addError,
+    );
+
+    controller.onCancel = () {
+      scheduleSub.cancel();
+      for (final sub in eventSubs.values) {
+        sub.cancel();
+      }
+      eventSubs.clear();
+    };
+
+    return controller.stream;
   }
 
   Stream<Event?> getEventStream(String id) {
