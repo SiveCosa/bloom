@@ -5,6 +5,8 @@ import '../../../domain/notification/notification_model.dart';
 import '../../../domain/notification/notification_providers.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'action_buttons.dart';
+import '../../../data/connection_repository.dart';
+import '../../../domain/friendship/friendship_providers.dart';
 
 class NotificationTile extends ConsumerWidget {
   final AppNotification notification;
@@ -145,17 +147,18 @@ class _EventImage extends StatelessWidget {
   }
 }
 
-class _FriendRequestTile extends StatefulWidget {
+class _FriendRequestTile extends ConsumerStatefulWidget {
   final AppNotification notification;
 
   const _FriendRequestTile({required this.notification});
 
   @override
-  State<_FriendRequestTile> createState() => _FriendRequestTileState();
+  ConsumerState<_FriendRequestTile> createState() => _FriendRequestTileState();
 }
 
-class _FriendRequestTileState extends State<_FriendRequestTile> {
+class _FriendRequestTileState extends ConsumerState<_FriendRequestTile> {
   bool accepted = false;
+  bool processing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -192,14 +195,55 @@ class _FriendRequestTileState extends State<_FriendRequestTile> {
             )
           : ActionButtons(
               primaryText: 'Accept',
-              onPrimaryPressed: () {
-                // TODO: call accept connection logic
-                setState(() {
-                  accepted = true;
-                });
+              isLoading: processing,
+              onPrimaryPressed: () async {
+                setState(() => processing = true);
+                try {
+                  final actorId = widget.notification.actorId;
+                  if (actorId != null) {
+                    await ref.read(connectionRepositoryProvider).acceptRequest(actorId);
+                    invalidateFriendshipCaches(ref, actorId);
+                  }
+                  if (mounted) {
+                    setState(() {
+                      accepted = true;
+                      processing = false;
+                    });
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() => processing = false);
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to accept request: $e')),
+                    );
+                  }
+                }
               },
-              onSecondaryPressed: () {
-                // TODO: Delete notification or dismiss request
+              onSecondaryPressed: () async {
+                setState(() => processing = true);
+                try {
+                  final actorId = widget.notification.actorId;
+                  if (actorId != null) {
+                    await ref.read(connectionRepositoryProvider).removeConnection(actorId);
+                    ref.invalidate(recommendedFriendsProvider);
+                    ref.invalidate(incomingRequestsCountProvider);
+                    ref.invalidate(notificationsProvider);
+                  }
+                  if (mounted) {
+                    setState(() => processing = false);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() => processing = false);
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to decline request: $e')),
+                    );
+                  }
+                }
               },
             ),
     );

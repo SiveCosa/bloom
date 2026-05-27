@@ -12,6 +12,7 @@ import 'package:bloom/domain/home/home_schedule_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/domain/chat/chat_providers.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
+import 'package:bloom/domain/notification/notification_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
@@ -378,17 +379,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           SvgPicture.asset('assets/logos/main_logo.svg', height: 40),
 
           // Right: Notifications
-          GestureDetector(
-            onTap: () => context.push('/notifications'),
-            child: SvgPicture.asset(
-              'assets/icons/nav/bell_line.svg',
-              width: 24,
-              height: 24,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
+          Consumer(
+            builder: (context, ref, _) {
+              final unreadCount = ref.watch(unreadNotificationsCountProvider).maybeWhen(
+                data: (v) => v,
+                orElse: () => 0,
+              );
+              return GestureDetector(
+                onTap: () => context.push('/notifications'),
+                child: Badge(
+                  isLabelVisible: unreadCount > 0,
+                  backgroundColor: const Color(0xFF0086D8), // Blue circle for notifications
+                  smallSize: 10,
+                  child: SvgPicture.asset(
+                    'assets/icons/nav/bell_line.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

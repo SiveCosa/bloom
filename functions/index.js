@@ -2432,10 +2432,28 @@ exports.onConnectionCreated = onDocumentWritten(
     const connectionId = event.params.connectionId;
     
     // Only care about creations or updates that set status to pending
-    const afterData = event.data.after.data();
+    const afterData = event.data.after.exists ? event.data.after.data() : null;
     const beforeData = event.data.before.exists ? event.data.before.data() : null;
     
-    if (!afterData) return null; // deleted
+    // Handle when a connection is deleted (e.g., declined or cancelled)
+    if (!afterData && beforeData && beforeData.status === 'pending') {
+      const initiatedBy = beforeData.initiated_by;
+      if (initiatedBy && initiatedBy !== userId) {
+        const notifsSnap = await db.collection("users").doc(userId).collection("notifications")
+            .where("type", "==", "friend_request")
+            .where("actor_id", "==", connectionId)
+            .get();
+            
+        const batch = db.batch();
+        notifsSnap.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        if (!notifsSnap.empty) await batch.commit();
+      }
+      return null;
+    }
+    
+    if (!afterData) return null; // deleted but not a pending request
     
     if (afterData.status === 'pending' && (!beforeData || beforeData.status !== 'pending')) {
       const initiatedBy = afterData.initiated_by;
@@ -2455,7 +2473,7 @@ exports.onConnectionCreated = onDocumentWritten(
           grouped_count: 0,
         });
       }
-    } else if (afterData.status === 'accepted' && beforeData && beforeData.status === 'pending') {
+    } else if (afterData.status === 'connected' && beforeData && beforeData.status === 'pending') {
       const initiatedBy = afterData.initiated_by;
       
       if (initiatedBy && initiatedBy === userId) {
@@ -2471,6 +2489,18 @@ exports.onConnectionCreated = onDocumentWritten(
           actor_avatar_url: otherUserData.profile_image_url || otherUserData.avatar_url || "",
           grouped_count: 0,
         });
+      } else if (initiatedBy && initiatedBy !== userId) {
+        // The recipient just accepted the request. Delete their original friend_request notification.
+        const notifsSnap = await db.collection("users").doc(userId).collection("notifications")
+            .where("type", "==", "friend_request")
+            .where("actor_id", "==", connectionId)
+            .get();
+            
+        const batch = db.batch();
+        notifsSnap.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        if (!notifsSnap.empty) await batch.commit();
       }
     }
     return null;
@@ -2585,14 +2615,18 @@ exports.onEventGuestCreated = onDocumentWritten(
       .where("type", "==", notificationType)
       .where("target_id", "==", eventId)
       .where("is_read", "==", false)
-      .where("created_at", ">=", admin.firestore.Timestamp.fromDate(cutoff))
-      .orderBy("created_at", "desc")
-      .limit(1)
       .get();
       
-    if (!existingSnap.empty) {
+    const recentDocs = existingSnap.docs.filter(doc => {
+      const data = doc.data();
+      if (!data.created_at) return false;
+      return data.created_at.toDate() >= cutoff;
+    });
+      
+    if (recentDocs.length > 0) {
       // Group it
-      const docToUpdate = existingSnap.docs[0];
+      recentDocs.sort((a, b) => b.data().created_at.toDate() - a.data().created_at.toDate());
+      const docToUpdate = recentDocs[0];
       await docToUpdate.ref.update({
         grouped_count: admin.firestore.FieldValue.increment(1),
         created_at: admin.firestore.FieldValue.serverTimestamp(), // bump it to top

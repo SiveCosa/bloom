@@ -6,6 +6,7 @@ import 'package:cometchat_sdk/cometchat_sdk.dart';
 import '../../../domain/event/event.dart';
 import '../../../domain/friendship/friendship_providers.dart';
 import '../../../domain/chat/chat_send_helper.dart';
+import '../../../domain/auth/auth_providers.dart';
 import '../../shared/widgets/custom_text_fields.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -64,6 +65,9 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
     final messageText = _messageController.text.trim();
 
     try {
+      final currentUserId = ref.read(firebaseAuthProvider).currentUser?.uid;
+      final batch = FirebaseFirestore.instance.batch();
+
       for (final uid in _selectedFriends) {
         final customData = {
           'eventId': widget.event.id,
@@ -80,6 +84,24 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
         );
 
         await sendCustomMessageSafe(message);
+        
+        // Write to Firestore so that the notification system picks it up
+        if (currentUserId != null) {
+          final inviteRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('invites')
+              .doc(widget.event.id);
+          
+          batch.set(inviteRef, {
+            'invited_by': currentUserId,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      if (currentUserId != null) {
+        await batch.commit();
       }
 
       if (mounted) {

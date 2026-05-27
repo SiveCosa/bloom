@@ -8,11 +8,23 @@ import '../../domain/friendship/friendship_providers.dart';
 import 'widgets/notification_tiles.dart';
 import 'widgets/navigation_tile.dart';
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  @override
+  void dispose() {
+    // Mark all notifications as read when the user leaves the page
+    ref.read(notificationControllerProvider)?.markAllAsRead();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notificationsAsync = ref.watch(notificationsProvider);
     final countAsync = ref.watch(incomingRequestsCountProvider);
 
