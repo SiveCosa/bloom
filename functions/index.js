@@ -134,6 +134,48 @@ function readLatLngFromLocation(location) {
   return null;
 }
 
+// 7. Cleanup Expired Invitations (onSchedule)
+exports.cleanupExpiredInvitations = onSchedule("every 1 hours", async (event) => {
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  
+  // Find events that ended in the last hour
+  const eventsSnap = await db.collection("events")
+    .where("timing.endDate", "<=", admin.firestore.Timestamp.fromDate(now))
+    .where("timing.endDate", ">", admin.firestore.Timestamp.fromDate(oneHourAgo))
+    .get();
+    
+  if (eventsSnap.empty) return null;
+  
+  let batch = db.batch();
+  let count = 0;
+  
+  for (const doc of eventsSnap.docs) {
+    const eventId = doc.id;
+    
+    const notificationsSnap = await db.collectionGroup("notifications")
+      .where("target_id", "==", eventId)
+      .where("type", "in", ["event_invite", "co_host_invite"])
+      .get();
+      
+    for (const notifDoc of notificationsSnap.docs) {
+      batch.delete(notifDoc.ref);
+      count++;
+      if (count === 500) {
+        await batch.commit();
+        batch = db.batch();
+        count = 0;
+      }
+    }
+  }
+  
+  if (count > 0) {
+    await batch.commit();
+  }
+  
+  return null;
+});
+
 function isEventUpcoming(eventData, now) {
   const startDate = parseFirestoreDate(eventData.timing?.startDate);
   const endDate = parseFirestoreDate(eventData.timing?.endDate);
@@ -1116,10 +1158,11 @@ exports.onEventUpdate = onDocumentWritten(
     const timingChanged = JSON.stringify(after.timing) !== JSON.stringify(before.timing);
     const posterChanged = after.visuals?.posterUrl !== before.visuals?.posterUrl;
     const locationChanged = after.location?.displayName !== before.location?.displayName;
-    const coHostChanged =
-      JSON.stringify(getCoHostIds(before).sort()) !== JSON.stringify(getCoHostIds(after).sort());
+    const coHostIdsBefore = getCoHostIds(before);
+    const coHostIdsAfter = getCoHostIds(after);
+    const coHostChanged = JSON.stringify(coHostIdsBefore.sort()) !== JSON.stringify(coHostIdsAfter.sort());
 
-    if (!titleChanged && !timingChanged && !posterChanged && !locationChanged && !coHostChanged) {
+    if (!titleChanged && !timingChanged && !posterChanged && !locationChanged && !coHostChanged && after.status === before.status) {
       return;
     }
 
@@ -1138,6 +1181,10 @@ exports.onEventUpdate = onDocumentWritten(
     } catch (err) {
       console.error(`Error loading host profile for schedule propagation: ${err}`);
     }
+
+    const isCancelled = after.status === 'cancelled' && before.status !== 'cancelled';
+    const needsUpdateNotification = isCancelled || timingChanged || locationChanged;
+    const newlyAddedCoHosts = coHostIdsAfter.filter(id => !coHostIdsBefore.includes(id));
 
     const schedulePatch = buildSchedulePatchFromEvent(after, eventId, hostName, hostImageUrl);
     const batch = db.batch();
@@ -1175,6 +1222,40 @@ exports.onEventUpdate = onDocumentWritten(
         }),
         { merge: true }
       );
+      opCount++;
+      
+      if (needsUpdateNotification && status === "going") {
+        const notifRef = db.collection("users").doc(uid).collection("notifications").doc();
+        batch.set(notifRef, {
+          type: "event_update",
+          created_at: admin.firestore.FieldValue.serverTimestamp(),
+          is_read: false,
+          actor_id: hostId,
+          actor_username: hostName,
+          actor_avatar_url: hostImageUrl,
+          target_id: eventId,
+          target_name: after.title || "an event",
+          target_image_url: after.visuals?.posterUrl || "",
+          grouped_count: 0,
+        });
+        opCount++;
+      }
+    });
+
+    newlyAddedCoHosts.forEach(coHostUid => {
+      const notifRef = db.collection("users").doc(coHostUid).collection("notifications").doc();
+      batch.set(notifRef, {
+        type: "co_host_invite",
+        created_at: admin.firestore.FieldValue.serverTimestamp(),
+        is_read: false,
+        actor_id: hostId,
+        actor_username: hostName,
+        actor_avatar_url: hostImageUrl,
+        target_id: eventId,
+        target_name: after.title || "an event",
+        target_image_url: after.visuals?.posterUrl || "",
+        grouped_count: 0,
+      });
       opCount++;
     });
 
@@ -2340,3 +2421,279 @@ exports.getFriendsAndMutualsFeed = onCall(
     }
   }
 );
+
+// --- Notifications Triggers ---
+
+// 1. Friend Request (onConnectionCreated)
+exports.onConnectionCreated = onDocumentWritten(
+  "users/{userId}/connections/{connectionId}",
+  async (event) => {
+    const userId = event.params.userId;
+    const connectionId = event.params.connectionId;
+    
+    // Only care about creations or updates that set status to pending
+    const afterData = event.data.after.data();
+    const beforeData = event.data.before.exists ? event.data.before.data() : null;
+    
+    if (!afterData) return null; // deleted
+    
+    if (afterData.status === 'pending' && (!beforeData || beforeData.status !== 'pending')) {
+      const initiatedBy = afterData.initiated_by;
+      
+      if (initiatedBy && initiatedBy !== userId) {
+        // Fetch initiator's profile
+        const userSnap = await db.collection("users").doc(initiatedBy).get();
+        const userData = userSnap.data() || {};
+        
+        await db.collection("users").doc(userId).collection("notifications").add({
+          type: "friend_request",
+          created_at: admin.firestore.FieldValue.serverTimestamp(),
+          is_read: false,
+          actor_id: initiatedBy,
+          actor_username: userData.username || userData.name || "",
+          actor_avatar_url: userData.profile_image_url || userData.avatar_url || "",
+          grouped_count: 0,
+        });
+      }
+    } else if (afterData.status === 'accepted' && beforeData && beforeData.status === 'pending') {
+      const initiatedBy = afterData.initiated_by;
+      
+      if (initiatedBy && initiatedBy === userId) {
+        const otherUserSnap = await db.collection("users").doc(connectionId).get();
+        const otherUserData = otherUserSnap.data() || {};
+        
+        await db.collection("users").doc(userId).collection("notifications").add({
+          type: "friend_request_accepted",
+          created_at: admin.firestore.FieldValue.serverTimestamp(),
+          is_read: false,
+          actor_id: connectionId,
+          actor_username: otherUserData.username || otherUserData.name || "",
+          actor_avatar_url: otherUserData.profile_image_url || otherUserData.avatar_url || "",
+          grouped_count: 0,
+        });
+      }
+    }
+    return null;
+  }
+);
+
+// 2. Event Invite (onEventInviteCreated)
+exports.onEventInviteCreated = onDocumentWritten(
+  "users/{userId}/invites/{eventId}",
+  async (event) => {
+    const userId = event.params.userId;
+    const eventId = event.params.eventId;
+    
+    if (!event.data.after.exists || event.data.before.exists) return null; // only on create
+    
+    const inviteData = event.data.after.data();
+    const inviterId = inviteData.invited_by || inviteData.inviterId;
+    
+    if (!inviterId) return null;
+    
+    // Fetch inviter and event
+    const [inviterSnap, eventSnap] = await Promise.all([
+      db.collection("users").doc(inviterId).get(),
+      db.collection("events").doc(eventId).get()
+    ]);
+    
+    const inviterData = inviterSnap.data() || {};
+    const eventData = eventSnap.data() || {};
+    
+    await db.collection("users").doc(userId).collection("notifications").add({
+      type: "event_invite",
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      is_read: false,
+      actor_id: inviterId,
+      actor_username: inviterData.username || inviterData.name || "",
+      actor_avatar_url: inviterData.profile_image_url || inviterData.avatar_url || "",
+      target_id: eventId,
+      target_name: eventData.title || "",
+      target_image_url: eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "",
+      grouped_count: 0,
+    });
+    
+    return null;
+  }
+);
+
+// 3. Event RSVP / Waitlist (onEventGuestCreated)
+exports.onEventGuestCreated = onDocumentWritten(
+  "events/{eventId}/guests/{guestId}",
+  async (event) => {
+    const eventId = event.params.eventId;
+    const guestId = event.params.guestId;
+    
+    const afterData = event.data.after.data();
+    const beforeData = event.data.before.exists ? event.data.before.data() : null;
+    
+    if (!afterData) return null; // deleted
+    
+    // Determine status change
+    const status = afterData.status || afterData.rsvpStatus;
+    const oldStatus = beforeData ? (beforeData.status || beforeData.rsvpStatus) : null;
+    
+    if (status === oldStatus) return null; // no status change
+    
+    let notificationType = null;
+    if (status === 'going' && oldStatus === 'waitlisted') {
+      notificationType = 'waitlist_approved';
+    } else if (status === 'going') {
+      notificationType = 'event_rsvp';
+    } else if (status === 'waitlisted') {
+      notificationType = 'event_waitlist';
+    } else if (status === 'requested') {
+      notificationType = 'event_request_to_join'; // hypothetical if they have this
+    }
+    
+    if (!notificationType) return null;
+    
+    // Need to notify the host(s). Fetch event to get hostId.
+    const eventSnap = await db.collection("events").doc(eventId).get();
+    if (!eventSnap.exists) return null;
+    
+    const eventData = eventSnap.data();
+    const hostId = eventData.metadata?.hostId || eventData.metadata?.host_id;
+    if (!hostId) return null;
+    
+    if (notificationType === 'waitlist_approved') {
+        await db.collection("users").doc(guestId).collection("notifications").add({
+            type: "waitlist_approved",
+            created_at: admin.firestore.FieldValue.serverTimestamp(),
+            is_read: false,
+            actor_id: hostId,
+            actor_username: "Host", 
+            actor_avatar_url: "",
+            target_id: eventId,
+            target_name: eventData.title || "",
+            target_image_url: eventData.visuals?.posterUrl || "",
+            grouped_count: 0,
+        });
+        return null;
+    }
+
+    if (hostId === guestId) return null; // don't notify host of their own RSVP
+    
+    const userSnap = await db.collection("users").doc(guestId).get();
+    const userData = userSnap.data() || {};
+    
+    // Grouping Logic: Check if there's an existing UNREAD notification of this type for this event in the last 24h
+    const notificationsRef = db.collection("users").doc(hostId).collection("notifications");
+    
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existingSnap = await notificationsRef
+      .where("type", "==", notificationType)
+      .where("target_id", "==", eventId)
+      .where("is_read", "==", false)
+      .where("created_at", ">=", admin.firestore.Timestamp.fromDate(cutoff))
+      .orderBy("created_at", "desc")
+      .limit(1)
+      .get();
+      
+    if (!existingSnap.empty) {
+      // Group it
+      const docToUpdate = existingSnap.docs[0];
+      await docToUpdate.ref.update({
+        grouped_count: admin.firestore.FieldValue.increment(1),
+        created_at: admin.firestore.FieldValue.serverTimestamp(), // bump it to top
+      });
+    } else {
+      // Create new
+      await notificationsRef.add({
+        type: notificationType,
+        created_at: admin.firestore.FieldValue.serverTimestamp(),
+        is_read: false,
+        actor_id: guestId,
+        actor_username: userData.username || userData.name || "",
+        actor_avatar_url: userData.profile_image_url || userData.avatar_url || "",
+        target_id: eventId,
+        target_name: eventData.title || "",
+        target_image_url: eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "",
+        grouped_count: 0,
+      });
+    }
+    
+    return null;
+  }
+);
+
+// 6. Event Reminders (onSchedule)
+exports.sendEventReminders = onSchedule("every 1 hours", async (event) => {
+  const now = new Date();
+  const upperBound = new Date(now.getTime() + 24.5 * 60 * 60 * 1000);
+  
+  const eventsSnap = await db.collection("events")
+    .where("timing.startDate", ">=", admin.firestore.Timestamp.fromDate(now))
+    .where("timing.startDate", "<=", admin.firestore.Timestamp.fromDate(upperBound))
+    .get();
+    
+  for (const doc of eventsSnap.docs) {
+    const data = doc.data();
+    const status = data.status || "active";
+    if (status === "cancelled" || status === "deleted") continue;
+    
+    const eventId = doc.id;
+    const startDate = data.timing?.startDate?.toDate();
+    if (!startDate) continue;
+    
+    const remindersSent = data.reminders_sent || {};
+    
+    const msUntilStart = startDate.getTime() - now.getTime();
+    const hoursUntilStart = msUntilStart / (1000 * 60 * 60);
+    
+    if (hoursUntilStart <= 0.25 && !remindersSent.live) {
+      await sendReminderToAllGuests(eventId, data, 'live');
+      await doc.ref.set({ reminders_sent: { ...remindersSent, live: true } }, { merge: true });
+    } else if (hoursUntilStart <= 4 && hoursUntilStart > 0.25 && !remindersSent.today) {
+      await sendReminderToAllGuests(eventId, data, 'today');
+      await doc.ref.set({ reminders_sent: { ...remindersSent, today: true } }, { merge: true });
+    } else if (hoursUntilStart <= 24 && hoursUntilStart > 4 && !remindersSent.tomorrow) {
+      await sendReminderToAllGuests(eventId, data, 'tomorrow');
+      await doc.ref.set({ reminders_sent: { ...remindersSent, tomorrow: true } }, { merge: true });
+    }
+  }
+});
+
+async function sendReminderToAllGuests(eventId, eventData, phase) {
+    const guestsSnap = await db.collection("events").doc(eventId).collection("guests").where("status", "==", "going").get();
+    
+    let batches = [];
+    let currentBatch = db.batch();
+    let opCount = 0;
+    
+    const hostId = eventData.metadata?.hostId || eventData.metadata?.host_id || "Host";
+    let hostImageUrl = eventData.visuals?.posterUrl || "";
+    
+    guestsSnap.docs.forEach(guestDoc => {
+        const uid = guestDoc.id;
+        const notifRef = db.collection("users").doc(uid).collection("notifications").doc(`reminder_${eventId}`);
+        
+        currentBatch.set(notifRef, {
+            type: "event_reminder",
+            created_at: admin.firestore.FieldValue.serverTimestamp(),
+            is_read: false,
+            actor_id: hostId,
+            actor_username: phase, // "tomorrow", "today", "live"
+            actor_avatar_url: hostImageUrl,
+            target_id: eventId,
+            target_name: eventData.title || "An event",
+            target_image_url: hostImageUrl,
+            grouped_count: 0,
+        });
+        
+        opCount++;
+        if (opCount >= 400) {
+            batches.push(currentBatch);
+            currentBatch = db.batch();
+            opCount = 0;
+        }
+    });
+    
+    if (opCount > 0) {
+        batches.push(currentBatch);
+    }
+    
+    for (const batch of batches) {
+        await batch.commit();
+    }
+}

@@ -89,6 +89,16 @@ service cloud.firestore {
           )
         );
       }
+
+      // Notifications sub-collection
+      match /notifications/{notificationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Invites sub-collection
+      match /invites/{eventId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Events collection

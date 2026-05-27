@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/widgets/gradient_top_bar.dart';
+import '../../../domain/notification/notification_providers.dart';
+import '../../../domain/notification/notification_model.dart';
+import '../widgets/notification_tiles.dart';
 
-class EventInvitationsScreen extends StatelessWidget {
+class EventInvitationsScreen extends ConsumerWidget {
   const EventInvitationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notificationsAsync = ref.watch(notificationsProvider);
+
     return Container(
       color: const Color(0xFF0B0E12),
       child: Stack(
@@ -33,25 +39,63 @@ class EventInvitationsScreen extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            body: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.mail_outline_rounded,
-                    color: Colors.white24,
-                    size: 64,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No pending event invitations',
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+            body: notificationsAsync.when(
+              data: (notifications) {
+                final invites = notifications.where((n) => 
+                  n.type == NotificationType.eventInvite || 
+                  n.type == NotificationType.coHostInvite
+                ).toList();
+
+                if (invites.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.mail_outline_rounded,
+                          color: Colors.white24,
+                          size: 64,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No pending event invitations',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  );
+                }
+
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  itemCount: invites.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final invite = invites[index];
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.transparent, // Let the tile handle its UI
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: NotificationTile(notification: invite),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFB087F5)),
+                ),
+              ),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Error loading invitations',
+                  style: const TextStyle(color: Colors.redAccent),
+                ),
               ),
             ),
           ),

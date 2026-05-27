@@ -8,6 +8,8 @@ import '../../../domain/auth/auth_providers.dart';
 import '../../../data/connection_repository.dart';
 import '../../shared/widgets/gradient_top_bar.dart';
 import '../../shared/widgets/container_placeholder.dart';
+import '../widgets/navigation_tile.dart';
+import '../widgets/action_buttons.dart';
 
 class FriendRequestsScreen extends ConsumerStatefulWidget {
   const FriendRequestsScreen({super.key});
@@ -17,6 +19,12 @@ class FriendRequestsScreen extends ConsumerStatefulWidget {
 }
 
 class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
+  List<Map<String, dynamic>> _localRequests = [];
+  bool _isInitialized = false;
+  final Set<String> _acceptedUids = {};
+  final Set<String> _declinedUids = {};
+  final Set<String> _processingUids = {};
+
   String _getElapsedTime(DateTime? dateTime) {
     if (dateTime == null) return '';
     final difference = DateTime.now().difference(dateTime);
@@ -36,84 +44,41 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
   Widget _buildPendingRequestsTile(BuildContext context) {
     final outgoingCountAsync = ref.watch(outgoingRequestsCountProvider);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => context.push('/notifications/pending-requests'),
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: const BoxDecoration(
-            color: Colors.transparent, // Clear background
+    return NavigationTile(
+      onTap: () => context.push('/notifications/pending-requests'),
+      icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
+      iconBackgroundColor: const Color(0xFFFFB965), // Custom amber/orange circle
+      title: 'Pending requests',
+      subtitle: outgoingCountAsync.when(
+        data: (outgoingCount) {
+          final hasRequests = outgoingCount > 0;
+          return Text(
+            hasRequests
+                ? '$outgoingCount Request${outgoingCount > 1 ? 's' : ''} Pending'
+                : 'No Pending Requests Sent',
+            style: TextStyle(
+              color: hasRequests
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.38),
+              fontWeight: hasRequests
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+              fontSize: 14,
+            ),
+          );
+        },
+        loading: () => Text(
+          'Checking requests...',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.38),
+            fontSize: 14,
           ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 24,
-                backgroundColor: Color(0xFFFFB965), // Custom amber/orange circle
-                child: Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Pending requests',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    outgoingCountAsync.when(
-                      data: (outgoingCount) {
-                        final hasRequests = outgoingCount > 0;
-                        return Text(
-                          hasRequests
-                              ? '$outgoingCount Request${outgoingCount > 1 ? 's' : ''} Pending'
-                              : 'No Pending Requests Sent',
-                          style: TextStyle(
-                            color: hasRequests
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.38),
-                            fontWeight: hasRequests
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 14,
-                          ),
-                        );
-                      },
-                      loading: () => Text(
-                        'Checking requests...',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.38),
-                          fontSize: 14,
-                        ),
-                      ),
-                      error: (err, stack) => Text(
-                        'Failed to load requests',
-                        style: TextStyle(
-                          color: Colors.redAccent.withValues(alpha: 0.8),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.3),
-                size: 22,
-              ),
-            ],
+        ),
+        error: (err, stack) => Text(
+          'Failed to load requests',
+          style: TextStyle(
+            color: Colors.redAccent.withValues(alpha: 0.8),
+            fontSize: 14,
           ),
         ),
       ),
@@ -122,7 +87,43 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<List<Map<String, dynamic>>>>(
+      incomingRequestsProvider,
+      (previous, next) {
+        if (next.hasValue) {
+          final streamRequests = next.value!;
+          setState(() {
+            final Map<String, Map<String, dynamic>> mergedMap = {};
+            for (var req in streamRequests) {
+              mergedMap[req['uid']] = req;
+            }
+            for (var localReq in _localRequests) {
+              final uid = localReq['uid'] as String;
+              if ((_acceptedUids.contains(uid) || _declinedUids.contains(uid)) && !mergedMap.containsKey(uid)) {
+                mergedMap[uid] = localReq;
+              }
+            }
+            _localRequests = mergedMap.values.toList();
+            // Sort by timestamp descending
+            _localRequests.sort((a, b) {
+              final tsA = a['timestamp'];
+              final tsB = b['timestamp'];
+              if (tsA == null || tsB == null) return 0;
+              final timeA = (tsA is Timestamp) ? tsA.toDate() : DateTime.fromMillisecondsSinceEpoch(tsA);
+              final timeB = (tsB is Timestamp) ? tsB.toDate() : DateTime.fromMillisecondsSinceEpoch(tsB);
+              return timeB.compareTo(timeA);
+            });
+            _isInitialized = true;
+          });
+        }
+      },
+    );
+
     final requestsAsync = ref.watch(incomingRequestsProvider);
+    if (!_isInitialized && requestsAsync.hasValue) {
+      _localRequests = List.from(requestsAsync.value!);
+      _isInitialized = true;
+    }
 
     return Container(
       color: const Color(0xFF0B0E12),
@@ -176,40 +177,42 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                 ),
                 // Incoming list
                 Expanded(
-                  child: requestsAsync.when(
-                    data: (requests) {
-                      if (requests.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.people_outline_rounded,
-                                color: Colors.white24,
-                                size: 64,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'No pending friend requests',
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+                  child: !_isInitialized && requestsAsync.isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D8CF0)),
                           ),
-                        );
-                      }
-
-                      return ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        itemCount: requests.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final request = requests[index];
-                          final requesterUid = request['uid'] as String;
-                          final timestamp = request['timestamp'];
+                        )
+                      : _localRequests.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.people_outline_rounded,
+                                    color: Colors.white24,
+                                    size: 64,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No pending friend requests',
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              itemCount: _localRequests.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final request = _localRequests[index];
+                                final requesterUid = request['uid'] as String;
+                                final timestamp = request['timestamp'];
                           DateTime? requestedAt;
                           if (timestamp is Timestamp) {
                             requestedAt = timestamp.toDate();
@@ -345,123 +348,97 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                           ),
                                 const SizedBox(width: 8),
                                 // Accept and Decline Buttons
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Accept Button (Blue, elegant)
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        try {
-                                          await ref
-                                              .read(connectionRepositoryProvider)
-                                              .acceptRequest(requesterUid);
-                                          invalidateFriendshipCaches(
-                                            ref,
-                                            requesterUid,
+                                if (_acceptedUids.contains(requesterUid))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    child: const Text(
+                                      'Accepted',
+                                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  )
+                                else if (_declinedUids.contains(requesterUid))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                    child: const Text(
+                                      'Declined',
+                                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  )
+                                else
+                                  ActionButtons(
+                                    primaryText: 'Accept',
+                                    isLoading: _processingUids.contains(requesterUid),
+                                    onPrimaryPressed: () async {
+                                      setState(() {
+                                        _processingUids.add(requesterUid);
+                                      });
+                                      try {
+                                        await ref
+                                            .read(connectionRepositoryProvider)
+                                            .acceptRequest(requesterUid);
+                                        setState(() {
+                                          _acceptedUids.add(requesterUid);
+                                          _processingUids.remove(requesterUid);
+                                        });
+                                        invalidateFriendshipCaches(
+                                          ref,
+                                          requesterUid,
+                                        );
+                                      } catch (e) {
+                                        setState(() {
+                                          _processingUids.remove(requesterUid);
+                                        });
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Failed to accept request: $e'),
+                                              backgroundColor: Colors.redAccent,
+                                            ),
                                           );
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Friend request accepted!'),
-                                                duration: Duration(seconds: 2),
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Failed to accept request: $e'),
-                                                backgroundColor: Colors.redAccent,
-                                              ),
-                                            );
-                                          }
                                         }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF2D8CF0),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        minimumSize: const Size(0, 36),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(18),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: const Text(
-                                        'Accept',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    // Decline Button (X, grey transparent circle)
-                                    Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () async {
-                                          try {
-                                            await ref
-                                                .read(connectionRepositoryProvider)
-                                                .removeConnection(requesterUid);
-                                            ref.invalidate(recommendedFriendsProvider);
-                                            if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text('Friend request declined.'),
-                                                  duration: Duration(seconds: 2),
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (context.mounted) {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Failed to decline request: $e'),
-                                                  backgroundColor: Colors.redAccent,
-                                                ),
-                                              );
-                                            }
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(18),
-                                        child: Ink(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(alpha: 0.06),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.close,
-                                            color: Colors.white70,
-                                            size: 18,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                      }
+                                    },
+                                    onSecondaryPressed: () async {
+                                      setState(() {
+                                        _processingUids.add(requesterUid);
+                                      });
+                                      try {
+                                        await ref
+                                            .read(connectionRepositoryProvider)
+                                            .removeConnection(requesterUid);
+                                        setState(() {
+                                          _declinedUids.add(requesterUid);
+                                          _processingUids.remove(requesterUid);
+                                        });
+                                        ref.invalidate(recommendedFriendsProvider);
+                                      } catch (e) {
+                                        setState(() {
+                                          _processingUids.remove(requesterUid);
+                                        });
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Failed to decline request: $e'),
+                                              backgroundColor: Colors.redAccent,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                  ),
                               ],
                             ),
                           );
                         },
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D8CF0)),
                       ),
-                    ),
-                    error: (err, stack) => Center(
-                      child: Text(
-                        'Error: $err',
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),

@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../shared/widgets/gradient_top_bar.dart';
+import '../../domain/notification/notification_model.dart';
+import '../../domain/notification/notification_providers.dart';
 import '../../domain/friendship/friendship_providers.dart';
+import 'widgets/notification_tiles.dart';
+import 'widgets/navigation_tile.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final notificationsAsync = ref.watch(notificationsProvider);
     final countAsync = ref.watch(incomingRequestsCountProvider);
 
     return Container(
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          // Atmospheric Gradient Background (Stays at original height)
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,
@@ -44,152 +48,166 @@ class NotificationsScreen extends ConsumerWidget {
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            body: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              children: [
-                // Friend Requests Tile
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.push('/notifications/friend-requests'),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Ink(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Color(0xFFF04A9F), // Custom pink
-                            child: Icon(
-                              Icons.people_alt,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Friend requests',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                countAsync.when(
-                                  data: (count) {
-                                    final hasRequests = count > 0;
-                                    return Text(
-                                      hasRequests
-                                          ? '$count new friend request${count > 1 ? 's' : ''}'
-                                          : 'You have no new friend requests',
-                                      style: TextStyle(
-                                        color: hasRequests
-                                            ? Colors.white
-                                            : Colors.white.withValues(alpha: 0.38),
-                                        fontWeight: hasRequests
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        fontSize: 14,
-                                      ),
-                                    );
-                                  },
-                                  loading: () => Text(
-                                    'Checking requests...',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.38),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  error: (err, stack) => Text(
-                                    'Failed to load requests',
-                                    style: TextStyle(
-                                      color: Colors.redAccent.withValues(alpha: 0.8),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.white.withValues(alpha: 0.3),
-                            size: 22,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+            body: notificationsAsync.when(
+              data: (notifications) {
+                // Group notifications
+                final now = DateTime.now();
+                final today = <AppNotification>[];
+                final last7Days = <AppNotification>[];
+                final last30Days = <AppNotification>[];
+                int pendingInvitesCount = 0;
 
-                // Event Invitations Tile
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => context.push('/notifications/event-invitations'),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Ink(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Color(0xFFB087F5), // Custom purple
-                            child: Icon(
-                              Icons.mail,
-                              color: Colors.white,
-                              size: 22,
+                for (var n in notifications) {
+                  // We still count them for the headers, but we DO NOT skip them for the feed
+                  if (n.type == NotificationType.eventInvite || n.type == NotificationType.coHostInvite) {
+                    pendingInvitesCount++;
+                  }
+
+                  final diff = now.difference(n.createdAt);
+                  if (diff.inHours < 24 && now.day == n.createdAt.day) {
+                    today.add(n);
+                  } else if (diff.inDays <= 7) {
+                    last7Days.add(n);
+                  } else {
+                    last30Days.add(n);
+                  }
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  children: [
+                    // Friend Requests Tile
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: NavigationTile(
+                        onTap: () => context.push('/notifications/friend-requests'),
+                        icon: const Icon(Icons.people_alt, color: Colors.white, size: 22),
+                        iconBackgroundColor: const Color(0xFFF04A9F), // Custom pink
+                        title: 'Friend requests',
+                        subtitle: countAsync.when(
+                          data: (count) {
+                            final hasRequests = count > 0;
+                            return Text(
+                              hasRequests
+                                  ? '$count new friend request${count > 1 ? 's' : ''}'
+                                  : 'You have no new friend requests',
+                              style: TextStyle(
+                                color: hasRequests
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.38),
+                                fontWeight: hasRequests
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            );
+                          },
+                          loading: () => Text(
+                            'Checking requests...',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.38),
+                              fontSize: 14,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Event invitations',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'You have no pending invitations',
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.38),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                          error: (err, stack) => Text(
+                            'Failed to load requests',
+                            style: TextStyle(
+                              color: Colors.redAccent.withValues(alpha: 0.8),
+                              fontSize: 14,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.white.withValues(alpha: 0.3),
-                            size: 22,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+
+                    // Event Invitations Tile
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: NavigationTile(
+                        onTap: () => context.push('/notifications/event-invitations'),
+                        icon: const Icon(Icons.mail, color: Colors.white, size: 22),
+                        iconBackgroundColor: const Color(0xFFB087F5), // Custom purple
+                        title: 'Event invitations',
+                        subtitle: Text(
+                          pendingInvitesCount > 0 
+                              ? '$pendingInvitesCount new invitation${pendingInvitesCount > 1 ? 's' : ''}'
+                              : 'You have no pending invitations',
+                          style: TextStyle(
+                            color: pendingInvitesCount > 0 
+                                ? Colors.white 
+                                : Colors.white.withValues(alpha: 0.38),
+                            fontWeight: pendingInvitesCount > 0 
+                                ? FontWeight.bold 
+                                : FontWeight.normal,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    if (today.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _SectionHeader(title: 'Today'),
+                      ),
+                      ...today.map((n) => NotificationTile(notification: n)),
+                      const SizedBox(height: 16),
+                    ],
+                    if (last7Days.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _SectionHeader(title: 'Last 7 days'),
+                      ),
+                      ...last7Days.map((n) => NotificationTile(notification: n)),
+                      const SizedBox(height: 16),
+                    ],
+                    if (last30Days.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: _SectionHeader(title: 'Last 30 days'),
+                      ),
+                      ...last30Days.map((n) => NotificationTile(notification: n)),
+                    ],
+                    
+                    if (notifications.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 120),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.notifications_off_rounded,
+                                color: Colors.white24,
+                                size: 64,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No new notifications',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+              error: (err, stack) => Center(
+                child: Text(
+                  'Failed to load notifications: $err',
+                  style: const TextStyle(color: Colors.redAccent),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -197,3 +215,24 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 }
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
