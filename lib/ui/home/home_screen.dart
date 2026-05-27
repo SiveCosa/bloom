@@ -15,6 +15,7 @@ import 'package:bloom/domain/calendar/scheduled_event.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import 'widgets/create_event_cta.dart';
+import 'widgets/discover_more_widget.dart';
 import 'upcoming_events.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -110,9 +111,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       await ref.read(locationServiceProvider).updateUserLocation();
       ref.invalidate(forYouRawFeedProvider);
       ref.invalidate(eventsInAreaRawFeedProvider);
+      ref.invalidate(friendsAndMutualsRawFeedProvider);
       await Future.wait([
         ref.read(forYouRawFeedProvider.future),
         ref.read(eventsInAreaRawFeedProvider.future),
+        ref.read(friendsAndMutualsRawFeedProvider.future),
       ]);
     } catch (_) {}
 
@@ -286,6 +289,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
                     errorPrefix: 'Error loading In your Area feed',
                   ),
+                  const SizedBox(height: 24),
+                  HomeFeedCarouselSection(
+                    title: 'Friends & Mutuals',
+                    subtitle: 'Your inner circle’s outer circle',
+                    iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
+                    detailRoute: '/home/friends-and-mutuals',
+                    rawFeedProvider: friendsAndMutualsRawFeedProvider,
+                    scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
+                    errorPrefix: 'Error loading Friends & Mutuals feed',
+                  ),
+                  const SizedBox(height: 24),
+                  const DiscoverMoreWidget(),
                 ],
               ),
             ),
@@ -575,15 +590,10 @@ class HomeFeedCarouselSection extends ConsumerWidget {
         );
       },
       loading: () => _buildLoadingState(context),
-      error: (err, stack) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-        child: Center(
-          child: Text(
-            '$errorPrefix: $err',
-            style: const TextStyle(color: Colors.redAccent),
-          ),
-        ),
-      ),
+      error: (err, stack) {
+        debugPrint('$errorPrefix: $err');
+        return const SizedBox.shrink();
+      },
     );
   }
 }

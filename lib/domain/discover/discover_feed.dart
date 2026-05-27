@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import '../calendar/scheduled_event.dart';
 import '../event/event.dart';
 import '../event/event_location.dart';
@@ -70,6 +70,8 @@ class DiscoverFeedCard {
         return 'fitness';
       case 'Food':
         return 'food';
+      case 'Education':
+        return 'education';
       default:
         return null;
     }
@@ -136,22 +138,24 @@ class DiscoverFeedCard {
 /// Structured response when tab is `All`.
 class DiscoverFeedAllResponse {
   final List<DiscoverFeedCard> weekendForecast;
-  final List<DiscoverFeedCard> meetNewPeople;
-  final List<DiscoverFeedCard> soundcheck;
-  final List<DiscoverFeedCard> modernRenaissance;
-  final List<DiscoverFeedCard> notForTheWeak;
-  final List<DiscoverFeedCard> foodieFrenzy;
-  final List<DiscoverFeedCard> silverScreening;
+  final List<DiscoverFeedCard> community;
+  final List<DiscoverFeedCard> music;
+  final List<DiscoverFeedCard> arts;
+  final List<DiscoverFeedCard> fitness;
+  final List<DiscoverFeedCard> food;
+  final List<DiscoverFeedCard> film;
+  final List<DiscoverFeedCard> education;
   final List<DiscoverFeedCard> feed;
 
   const DiscoverFeedAllResponse({
     required this.weekendForecast,
-    required this.meetNewPeople,
-    required this.soundcheck,
-    required this.modernRenaissance,
-    required this.notForTheWeak,
-    required this.foodieFrenzy,
-    required this.silverScreening,
+    required this.community,
+    required this.music,
+    required this.arts,
+    required this.fitness,
+    required this.food,
+    required this.film,
+    required this.education,
     required this.feed,
   });
 
@@ -175,24 +179,26 @@ class DiscoverFeedAllResponse {
 
     return DiscoverFeedAllResponse(
       weekendForecast: parseList('weekend_forecast'),
-      meetNewPeople: parseList('meet_new_people'),
-      soundcheck: parseList('soundcheck'),
-      modernRenaissance: parseList('modern_renaissance'),
-      notForTheWeak: parseList('not_for_the_weak'),
-      foodieFrenzy: parseList('foodie_frenzy'),
-      silverScreening: parseList('silver_screening'),
+      community: parseList('community'),
+      music: parseList('music'),
+      arts: parseList('arts'),
+      fitness: parseList('fitness'),
+      food: parseList('food'),
+      film: parseList('film'),
+      education: parseList('education'),
       feed: parseList('feed'),
     );
   }
 
   Iterable<List<DiscoverFeedCard>> get carouselLists => [
         weekendForecast,
-        meetNewPeople,
-        soundcheck,
-        modernRenaissance,
-        notForTheWeak,
-        foodieFrenzy,
-        silverScreening,
+        community,
+        music,
+        arts,
+        fitness,
+        food,
+        film,
+        education,
       ];
 }
 

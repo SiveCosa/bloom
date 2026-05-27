@@ -463,3 +463,48 @@ final eventsInAreaEventsProvider = Provider<List<Event>>((ref) {
     error: (err, stack) => [],
   );
 });
+
+final friendsAndMutualsRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  try {
+    List<Map<String, dynamic>> feed = [];
+    final location = await _ensureUserGeoPoint(ref);
+    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+    final result = await functions.httpsCallable('getFriendsAndMutualsFeed').call({
+      if (location != null) 'latitude': location.latitude,
+      if (location != null) 'longitude': location.longitude,
+    });
+    final data = result.data as List<dynamic>;
+    feed = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return feed;
+  } catch (e) {
+    debugPrint('Error fetching friends and mutuals feed: $e');
+    return [];
+  }
+});
+
+final friendsAndMutualsScheduledEventsProvider = Provider<List<ScheduledEvent>>((
+  ref,
+) {
+  final rawFeedAsync = ref.watch(friendsAndMutualsRawFeedProvider);
+
+  return rawFeedAsync.when(
+    data: (rawList) => _mapRawFeedToScheduledEvents(
+      rawList,
+      ref,
+    ).take(kHomeFeedCarouselLimit).toList(),
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});
+
+final friendsAndMutualsEventsProvider = Provider<List<Event>>((ref) {
+  final rawFeedAsync = ref.watch(friendsAndMutualsRawFeedProvider);
+
+  return rawFeedAsync.when(
+    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
+    loading: () => [],
+    error: (err, stack) => [],
+  );
+});

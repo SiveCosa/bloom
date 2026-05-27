@@ -43,6 +43,8 @@ import '../../ui/notifications/sub_screens/pending_requests_screen.dart';
 import '../../ui/discover/for_you_screen.dart';
 import '../../ui/discover/in_your_area_screen.dart';
 import '../../ui/discover/category_events_screen.dart';
+import '../../ui/discover/friends_and_mutuals_screen.dart';
+
 
 
 // No longer using PlaceholderScreen
@@ -312,6 +314,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
       ),
+      GoRoute(
+        path: '/home/friends-and-mutuals',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const FriendsAndMutualsScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
+      ),
+
       GoRoute(
         path: '/discover/category/:category',
         builder: (context, state) {

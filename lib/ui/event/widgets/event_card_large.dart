@@ -138,20 +138,22 @@ class EventCardLarge extends ConsumerWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15), // Fit cleanly inside border
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 0,
-            children: [
-              // Host bar
-              Container(
-                height: hostBarHeight,
-                padding: const EdgeInsets.only(left: 12, right: 8),
-                decoration: BoxDecoration(
-                  gradient: hostBarGradient,
-                ),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15), // Fit cleanly inside border
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 0,
+              children: [
+                // Host bar
+                Container(
+                  height: hostBarHeight,
+                  padding: const EdgeInsets.only(left: 12, right: 8),
+                  decoration: BoxDecoration(
+                    gradient: hostBarGradient,
+                  ),
                 child: Row(
                   children: [
                     Expanded(
@@ -264,19 +266,33 @@ class EventCardLarge extends ConsumerWidget {
 
               // Details container, flush below poster
               Container(
-                padding: const EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 12,
-                  bottom: 12,
-                ),
                 decoration: BoxDecoration(
                   gradient: infoGradient,
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(15),
                   ),
                 ),
-                child: Column(
+                child: Container(
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 12,
+                    bottom: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.6),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(15),
+                    ),
+                  ),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -348,9 +364,11 @@ class EventCardLarge extends ConsumerWidget {
                   ],
                 ),
               ),
+              ),
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -15,6 +15,7 @@ const List<String> discoverCategories = [
   'Arts',
   'Fitness',
   'Food',
+  'Education',
 ];
 
 const double kDiscoverDefaultLatitude = -26.2041;
@@ -145,12 +146,13 @@ class DiscoverFeedCacheNotifier extends AsyncNotifier<DiscoverFeedCache?> {
         );
         allResponse = const DiscoverFeedAllResponse(
           weekendForecast: [],
-          meetNewPeople: [],
-          soundcheck: [],
-          modernRenaissance: [],
-          notForTheWeak: [],
-          foodieFrenzy: [],
-          silverScreening: [],
+          community: [],
+          music: [],
+          arts: [],
+          fitness: [],
+          food: [],
+          film: [],
+          education: [],
           feed: [],
         );
       }
@@ -216,17 +218,19 @@ List<DiscoverFeedCard> spotlightCardsForFilter(
 ) {
   switch (filter) {
     case 'Community':
-      return all.meetNewPeople;
+      return all.community;
     case 'Music':
-      return all.soundcheck;
+      return all.music;
     case 'Film':
-      return all.silverScreening;
+      return all.film;
     case 'Arts':
-      return all.modernRenaissance;
+      return all.arts;
     case 'Fitness':
-      return all.notForTheWeak;
+      return all.fitness;
     case 'Food':
-      return all.foodieFrenzy;
+      return all.food;
+    case 'Education':
+      return all.education;
     default:
       return [];
   }
@@ -264,6 +268,10 @@ List<DiscoverFeedCard> cardsForRouteCategory(
     case 'feast & flavor':
     case 'feast-&-flavor':
       return categoryCardsFromAll(all, 'Food');
+    case 'education':
+    case 'feed your curiosity':
+    case 'feed-your-curiosity':
+      return categoryCardsFromAll(all, 'Education');
     default:
       if (discoverCategories.contains(routeCategory)) {
         return categoryCardsFromAll(all, routeCategory);
@@ -356,7 +364,7 @@ final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
 final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.soundcheck,
+    (r) => r.music,
     fallbackCategory: 'Music',
   );
 });
@@ -364,7 +372,7 @@ final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
 final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.silverScreening,
+    (r) => r.film,
     fallbackCategory: 'Film',
   );
 });
@@ -372,7 +380,7 @@ final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
 final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.modernRenaissance,
+    (r) => r.arts,
     fallbackCategory: 'Arts',
   );
 });
@@ -380,7 +388,7 @@ final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
 final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.notForTheWeak,
+    (r) => r.fitness,
     fallbackCategory: 'Fitness',
   );
 });
@@ -388,7 +396,7 @@ final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
 final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.foodieFrenzy,
+    (r) => r.food,
     fallbackCategory: 'Food',
   );
 });
@@ -396,8 +404,16 @@ final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
 final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
   return _carouselFromCache(
     ref,
-    (r) => r.meetNewPeople,
+    (r) => r.community,
     fallbackCategory: 'Community',
+  );
+});
+
+final discoverEducationEventsProvider = Provider<List<Event>>((ref) {
+  return _carouselFromCache(
+    ref,
+    (r) => r.education,
+    fallbackCategory: 'Education',
   );
 });
 

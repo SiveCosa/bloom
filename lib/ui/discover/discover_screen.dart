@@ -275,6 +275,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                         ('Modern Renaissance', 'Arts', discoverArtsEventsProvider),
                         ('Peak Performance', 'Fitness', discoverFitnessEventsProvider),
                         ('Feast & Flavor', 'Food', discoverFoodEventsProvider),
+                        ('Feed your curiosity', 'Education', discoverEducationEventsProvider),
                       ].map((c) => _buildRealCarousel(
                             ref: ref,
                             title: c.$1,
@@ -285,20 +286,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   ),
                 ),
 
-                // Title header for the Vertical Feed under "All"
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.only(left: 16.0, top: 12.0, bottom: 12.0),
-                    child: Text(
-                      'Explore Events',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+
               ] else ...[
                 // Category selected: Show single carousel at the top if it has events
                 SliverToBoxAdapter(
@@ -515,6 +503,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                           'arts': 'assets/icons/discover/art_icon.svg',
                           'fitness': 'assets/icons/discover/fitness_icon.svg',
                           'food': 'assets/icons/discover/food_icon.svg',
+                          'education': 'assets/icons/discover/education_icon.svg',
                         }[lowerCat];
 
                         return GestureDetector(
@@ -608,6 +597,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
     if (activeFilter.toLowerCase() == 'film') title = 'Silver Screen';
     if (activeFilter.toLowerCase() == 'fitness') title = 'Peak Performance';
     if (activeFilter.toLowerCase() == 'food') title = 'Feast & Flavor';
+    if (activeFilter.toLowerCase() == 'education') title = 'Feed your curiosity';
 
     final carouselEvents =
         ref.watch(discoverCategoryCarouselProvider(activeFilter));
@@ -654,7 +644,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

@@ -531,7 +531,7 @@ class _RsvpButton extends StatelessWidget {
                     ? Colors.white.withValues(alpha: 0.2)
                     : isSelected
                         ? Colors.black
-                        : Colors.white.withValues(alpha: 0.8),
+                        : Colors.white.withValues(alpha: 0.9),
               ),
               const SizedBox(height: 4),
               Text(
@@ -542,7 +542,7 @@ class _RsvpButton extends StatelessWidget {
                       ? Colors.white.withValues(alpha: 0.2)
                       : isSelected
                           ? const Color(0xFF4B5563)
-                          : Colors.white.withValues(alpha: 0.8),
+                          : Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),

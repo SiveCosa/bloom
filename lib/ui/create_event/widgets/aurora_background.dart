@@ -4,8 +4,13 @@ import '../../../domain/event/create_event_state.dart';
 
 class AuroraBackground extends ConsumerWidget {
   final List<Color>? colors;
+  final bool showDarkOverlay;
 
-  const AuroraBackground({super.key, this.colors});
+  const AuroraBackground({
+    super.key,
+    this.colors,
+    this.showDarkOverlay = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,9 +60,10 @@ class AuroraBackground extends ConsumerWidget {
               // Removed BackdropFilter for performance. 
               // The smooth RadialGradients in _AuroraBlob provide the soft look for free.
               
-              Positioned.fill(
-                child: Container(color: Colors.black.withValues(alpha: 0.2)),
-              ),
+              if (showDarkOverlay)
+                Positioned.fill(
+                  child: Container(color: Colors.black.withValues(alpha: 0.2)),
+                ),
             ],
           ),
         ),

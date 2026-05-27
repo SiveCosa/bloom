@@ -105,7 +105,7 @@ async function emailDomainAllowed(email, institutionId = DEFAULT_INSTITUTION_ID)
 // --- Discover feed helpers ---
 /** Sort events without map coords after located events (must be finite for JSON). */
 const DISCOVER_NO_COORD_DISTANCE_KM = 99999;
-const DISCOVER_TABS = new Set(["All", "Community", "Music", "Film", "Arts", "Fitness", "Food"]);
+const DISCOVER_TABS = new Set(["All", "Community", "Music", "Film", "Arts", "Fitness", "Food", "Education"]);
 const DISCOVER_TAG_BY_TAB = {
   Community: "community",
   Music: "music",
@@ -113,7 +113,10 @@ const DISCOVER_TAG_BY_TAB = {
   Arts: "arts",
   Fitness: "fitness",
   Food: "food",
+  Education: "education",
 };
+
+const EDUCATION_TAGS = ["education", "law", "stem", "coding", "biology", "technology", "engineering", "science", "math", "history"];
 
 function parseFirestoreDate(field) {
   if (!field) return null;
@@ -1701,39 +1704,44 @@ exports.getDiscoverFeed = onCall(
 
     const feed = allCards.map(stripInternalFields);
     const weekend_forecast = weekendCards.map(stripInternalFields);
-    const meet_new_people = takeTopNByDistance(
+    const community = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "community")),
       10
     ).map(stripInternalFields);
-    const soundcheck = takeTopNByDistance(
+    const music = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "music")),
       10
     ).map(stripInternalFields);
-    const modern_renaissance = takeTopNByDistance(
+    const arts = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "arts")),
       10
     ).map(stripInternalFields);
-    const not_for_the_weak = takeTopNByDistance(
+    const fitness = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "fitness")),
       10
     ).map(stripInternalFields);
-    const foodie_frenzy = takeTopNByDistance(
+    const food = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "food")),
       10
     ).map(stripInternalFields);
-    const silver_screening = takeTopNByDistance(
+    const film = takeTopNByDistance(
       allCards.filter((c) => eventHasTag(c._eventData, "film")),
+      10
+    ).map(stripInternalFields);
+    const education = takeTopNByDistance(
+      allCards.filter((c) => EDUCATION_TAGS.some(tag => eventHasTag(c._eventData, tag))),
       10
     ).map(stripInternalFields);
 
     return {
       weekend_forecast,
-      meet_new_people,
-      soundcheck,
-      modern_renaissance,
-      not_for_the_weak,
-      foodie_frenzy,
-      silver_screening,
+      community,
+      music,
+      arts,
+      fitness,
+      food,
+      film,
+      education,
       feed,
     };
   }
@@ -2176,5 +2184,150 @@ exports.onGuestRSVPUpdate = onDocumentWritten(
         });
       }
     });
+  }
+);
+
+// 16. Friends & Mutuals Discovery Engine
+exports.getFriendsAndMutualsFeed = onCall(
+  { region: "africa-south1" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in to get friends and mutuals feed.");
+    }
+
+    const currentUserId = request.auth.uid;
+    const reqLat = request.data?.latitude;
+    const reqLng = request.data?.longitude;
+
+    try {
+      const userSnap = await db.collection("users").doc(currentUserId).get();
+      if (!userSnap.exists) {
+        throw new HttpsError("not-found", "User profile not found.");
+      }
+
+      let lat;
+      let lng;
+      if (typeof reqLat === "number" && typeof reqLng === "number") {
+        lat = reqLat;
+        lng = reqLng;
+      } else {
+        const coords = readLatLngFromLocation(userSnap.data().location);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+        }
+      }
+
+      const friendsAndMutualsUids = new Set();
+      
+      // 1. Fetch direct friends
+      const connectionsSnap = await db
+        .collection("users")
+        .doc(currentUserId)
+        .collection("connections")
+        .where("status", "==", "connected")
+        .get();
+
+      const directFriendIds = connectionsSnap.docs.map(doc => doc.id);
+      for (const fid of directFriendIds) {
+        friendsAndMutualsUids.add(fid);
+      }
+
+      // 2. Fetch mutuals (friends of friends), limit to prevent excessive reads
+      const maxDirectFriendsToTraverse = 30; // To keep execution time reasonable
+      const friendsToTraverse = directFriendIds.slice(0, maxDirectFriendsToTraverse);
+      
+      // We can parallelize some of this safely
+      const mutualPromises = friendsToTraverse.map(fid => 
+        db.collection("users").doc(fid).collection("connections").where("status", "==", "connected").get()
+          .then(snap => snap.docs.map(doc => doc.id))
+          .catch(e => { console.error(`Error fetching connections for ${fid}:`, e); return []; })
+      );
+      
+      const mutualResults = await Promise.all(mutualPromises);
+      for (const mutualIds of mutualResults) {
+        for (const mid of mutualIds) {
+           if (mid !== currentUserId) {
+             friendsAndMutualsUids.add(mid);
+           }
+        }
+      }
+
+      if (friendsAndMutualsUids.size === 0) {
+        return []; // No friends or mutuals found
+      }
+
+      // 3. Load Discover Context
+      const ctxBase = await loadUserDiscoverContext(currentUserId);
+      const ctx = {
+        currentUserId,
+        gender: ctxBase.gender,
+        friendsSet: ctxBase.friendsSet,
+        invitesSet: ctxBase.invitesSet,
+      };
+
+      // 4. Fetch Active Events
+      const activeEventsSnap = await db
+        .collection("events")
+        .where("metadata.status", "==", "active")
+        .limit(500)
+        .get();
+
+      const now = new Date();
+      const hostFriendsCache = new Map();
+      const hostDataCache = new Map();
+      const candidates = [];
+
+      for (const eventDoc of activeEventsSnap.docs) {
+        const eventData = eventDoc.data();
+        if (!isEventUpcoming(eventData, now)) continue;
+
+        const hostId = eventData.metadata?.hostId || eventData.metadata?.host_id;
+        if (!hostId) continue;
+        if (hostId === currentUserId) continue; // Exclude user's own events
+        if (!friendsAndMutualsUids.has(hostId)) continue; // Must be hosted by friend or mutual
+
+        const coHostIds = getCoHostIds(eventData);
+        if (coHostIds.includes(currentUserId)) continue; // Exclude if user is co-hosting
+
+        const visible = await passesVisibilityFilter(
+          eventData,
+          eventDoc.id,
+          ctx,
+          hostFriendsCache
+        );
+        if (!visible) continue;
+
+        const loc = eventData.location || {};
+        const eventLat = loc.latitude ?? loc.lat;
+        const eventLng = loc.longitude ?? loc.lng;
+        let distanceInKm = DISCOVER_NO_COORD_DISTANCE_KM;
+
+        if (typeof lat === "number" && typeof lng === "number" && typeof eventLat === "number" && typeof eventLng === "number") {
+          distanceInKm = haversineKm(lat, lng, eventLat, eventLng);
+        }
+
+        candidates.push({ eventDoc, distanceKm: distanceInKm, eventData });
+      }
+
+      candidates.sort((a, b) => {
+        const timeA = parseFirestoreDate(a.eventData.timing?.startDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        const timeB = parseFirestoreDate(b.eventData.timing?.startDate)?.getTime() || Number.MAX_SAFE_INTEGER;
+        return timeA - timeB;
+      });
+
+      const topCandidates = candidates.slice(0, 10);
+      const hostIds = topCandidates.map((c) => c.eventData.metadata?.hostId).filter(Boolean);
+      await resolveHostProfiles(hostIds, hostDataCache);
+
+      const cards = topCandidates.map((c) =>
+        formatDiscoverCard(c.eventDoc, c.distanceKm, hostDataCache)
+      );
+
+      return cards.map(stripInternalFields);
+    } catch (error) {
+      console.error("Error getting friends and mutuals feed:", error);
+      throw new HttpsError("internal", "Failed to get friends and mutuals feed.");
+    }
   }
 );
