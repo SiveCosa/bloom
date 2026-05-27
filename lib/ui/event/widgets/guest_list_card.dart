@@ -209,8 +209,8 @@ class GuestListCard extends ConsumerWidget {
 
   Widget _buildFooterText() {
     final int capacity = event.audience.capacity ?? 0;
-    // Add 1 to include the host
-    final int going = event.liveCounts.going + 1;
+    // Strictly count those who are RSVP'd as "going"
+    final int going = event.liveCounts.going;
     final int spotsLeft = capacity - going;
     
     final parts = <String>[];

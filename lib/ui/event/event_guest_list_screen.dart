@@ -130,7 +130,7 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
           );
         }
 
-        final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+        final guestsAsync = ref.watch(eventGuestFilterProvider(event.id));
         final guests = guestsAsync.value ?? [];
 
         int getCountForTab(String tabName) {

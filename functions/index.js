@@ -794,13 +794,22 @@ exports.cleanupUserOnDelete = auth.user().onDelete(async (user) => {
   // Delete user document
   await db.collection("users").doc(uid).delete();
   
-  // Optional: Delete other subcollections or associated data
+  // Cleanup schedule and associated RSVPs
   const scheduleSnap = await db.collection("users").doc(uid).collection("schedule").get();
   const batch = db.batch();
-  scheduleSnap.docs.forEach(doc => batch.delete(doc.ref));
+  
+  scheduleSnap.docs.forEach(doc => {
+    const eventId = doc.id;
+    // Delete the schedule doc
+    batch.delete(doc.ref);
+    // Delete the RSVP in the event, triggering onGuestRSVPUpdate to decrement live counts
+    const rsvpRef = db.collection("events").doc(eventId).collection("guests").doc(uid);
+    batch.delete(rsvpRef);
+  });
+  
   await batch.commit();
 
-  console.log(`Cleaned up profile and schedule for deleted user: ${uid}`);
+  console.log(`Cleaned up profile, schedule, and RSVPs for deleted user: ${uid}`);
 });
 
 // 11. Delete User Account (Explicit Rollback)

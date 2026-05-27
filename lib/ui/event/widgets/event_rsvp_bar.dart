@@ -294,7 +294,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                         if (isAlreadyGoing)
                           _RsvpButton(
                             label: 'Going',
-                            icon: Icons.check_circle,
+                            icon: Icons.check_circle_outline,
                             isSelected: activeIndex == 0,
                             onPressed: () => _handleRemoveRsvp(userId),
                           )
@@ -318,9 +318,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                         else
                           _RsvpButton(
                             label: 'Going',
-                            icon: currentStatus == 'going'
-                                ? Icons.check_circle
-                                : Icons.check_circle_outline,
+                            icon: Icons.check_circle_outline,
                             isSelected: activeIndex == 0,
                             onPressed: () {
                               if (currentStatus == 'going') {
@@ -334,9 +332,7 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                           _buildRSVPDivider(),
                           _RsvpButton(
                             label: 'Maybe',
-                            icon: currentStatus == 'maybe'
-                                ? Icons.help
-                                : Icons.help_outline,
+                            icon: Icons.help_outline,
                             isSelected: activeIndex == 1,
                             isDisabled: isFull &&
                                 !isAlreadyGoing &&
