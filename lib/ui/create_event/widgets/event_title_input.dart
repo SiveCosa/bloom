@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class EventTitleInput extends StatefulWidget {
@@ -40,50 +39,41 @@ class _EventTitleInputState extends State<EventTitleInput> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: SizedBox(
-          height: 60,
-          child: TextFormField(
-            controller: _controller,
-            focusNode: _focusNode,
-            onChanged: null, // Global state updated on unfocus
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: _controller.text.isNotEmpty
-                  ? FontWeight.bold
-                  : FontWeight.w400,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Event title',
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 24,
-                fontWeight: FontWeight.w400,
-              ),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.15),
-              contentPadding: EdgeInsets.zero,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-            ),
+    return Container(
+      height: 60,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: TextFormField(
+        controller: _controller,
+        focusNode: _focusNode,
+        onChanged: null, // Global state updated on unfocus
+        maxLength: 50,
+        textInputAction: TextInputAction.done,
+        textCapitalization: TextCapitalization.sentences,
+        onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Event title',
+          hintStyle: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
+          filled: false,
+          counterText: '', // Hide the bottom character counter
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );

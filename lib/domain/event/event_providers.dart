@@ -357,26 +357,13 @@ final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
 });
 
 final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
-  final rawFeedAsync = ref.watch(forYouRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(
-      rawList,
-      ref,
-    ).take(kHomeFeedCarouselLimit).toList(),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
 });
 
 final forYouEventsProvider = Provider<List<Event>>((ref) {
-  final rawFeedAsync = ref.watch(forYouRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToEvents(rawList, ref);
 });
 
 bool _isEligibleForInYourAreaCarousel(Map<String, dynamic> map) {
@@ -442,26 +429,13 @@ final eventsInAreaRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
 final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((
   ref,
 ) {
-  final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(
-      rawList,
-      ref,
-    ).take(kHomeFeedCarouselLimit).toList(),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
 });
 
 final eventsInAreaEventsProvider = Provider<List<Event>>((ref) {
-  final rawFeedAsync = ref.watch(eventsInAreaRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToEvents(rawList, ref);
 });
 
 final friendsAndMutualsRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
@@ -487,24 +461,11 @@ final friendsAndMutualsRawFeedProvider = FutureProvider<List<Map<String, dynamic
 final friendsAndMutualsScheduledEventsProvider = Provider<List<ScheduledEvent>>((
   ref,
 ) {
-  final rawFeedAsync = ref.watch(friendsAndMutualsRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToScheduledEvents(
-      rawList,
-      ref,
-    ).take(kHomeFeedCarouselLimit).toList(),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(friendsAndMutualsRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
 });
 
 final friendsAndMutualsEventsProvider = Provider<List<Event>>((ref) {
-  final rawFeedAsync = ref.watch(friendsAndMutualsRawFeedProvider);
-
-  return rawFeedAsync.when(
-    data: (rawList) => _mapRawFeedToEvents(rawList, ref),
-    loading: () => [],
-    error: (err, stack) => [],
-  );
+  final rawList = ref.watch(friendsAndMutualsRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToEvents(rawList, ref);
 });

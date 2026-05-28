@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -71,62 +70,46 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
       onTap: () => ref.invalidate(weatherForecastProvider),
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
+        padding: const EdgeInsets.all(15),
+        width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.08),
-              Colors.white.withValues(alpha: 0.02),
-            ],
-          ),
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              width: double.infinity,
-              color: Colors.black.withValues(alpha: 0.2),
-              child: Column(
-                children: [
-                  const Text(
-                    'Weather Failed to load',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Icon(Icons.refresh_rounded, color: Colors.white, size: 28),
-                  const SizedBox(height: 12),
-                  Text(
-                    err.toString(),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.4),
-                      fontSize: 11,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap to Reload',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+        child: Column(
+          children: [
+            const Text(
+              'Weather Failed to load',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
               ),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Icon(Icons.refresh_rounded, color: Colors.white, size: 28),
+            const SizedBox(height: 12),
+            Text(
+              err.toString(),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tap to Reload',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -135,37 +118,21 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
   Widget _buildCard(BuildContext context, WeatherForecast forecast) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.08),
-            Colors.white.withValues(alpha: 0.02),
-          ],
-        ),
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            padding: const EdgeInsets.all(15),
-            color: Colors.black.withValues(alpha: 0.2),
-            child: Column(
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 20),
-                if (forecast.isDistantFuture)
-                  _buildDistantFuture()
-                else
-                  _buildForecastBody(forecast),
-              ],
-            ),
-          ),
-        ),
+      child: Column(
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 20),
+          if (forecast.isDistantFuture)
+            _buildDistantFuture()
+          else
+            _buildForecastBody(forecast),
+        ],
       ),
     );
   }

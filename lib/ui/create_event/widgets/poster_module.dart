@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/create_event_state.dart';
@@ -25,11 +24,7 @@ class PosterModule extends ConsumerWidget {
     return Column(
       children: [
         Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: AnimatedContainer(
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeInOutCubic,
             width: targetWidth,
@@ -79,69 +74,67 @@ class PosterModule extends ConsumerWidget {
                         ),
                       ),
                     ),
-                // Aspect Ratio Toggle (Bottom Right)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => ref.read(createEventProvider.notifier).toggleAspectRatio(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black45,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: AnimatedRotation(
-                        duration: const Duration(milliseconds: 400),
-                        turns: aspectRatio == 1.0 ? 0 : 0.25,
-                        child: const Icon(
-                          Icons.crop_free,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (!state.isGeneratingPoster)
+                  // Aspect Ratio Toggle (Bottom Right)
                   Positioned(
-                    bottom: 12,
-                    left: 12,
+                    bottom: 8,
+                    right: 8,
                     child: GestureDetector(
-                      onTap: onEditPoster,
+                      onTap: () => ref.read(createEventProvider.notifier).toggleAspectRatio(),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.black45,
-                          borderRadius: BorderRadius.circular(20),
+                          shape: BoxShape.circle,
                           border: Border.all(color: Colors.white10),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Edit poster',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                        child: AnimatedRotation(
+                          duration: const Duration(milliseconds: 400),
+                          turns: aspectRatio == 1.0 ? 0 : 0.25,
+                          child: const Icon(
+                            Icons.crop_free,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
                   ),
-              ],
+                  if (!state.isGeneratingPoster)
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      child: GestureDetector(
+                        onTap: onEditPoster,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Edit poster',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    ),
-  ),
 ],
 );
 }

@@ -64,9 +64,9 @@ class EventsJoinedScreen extends ConsumerWidget {
                       IconButton(
                         onPressed: () => context.pop(),
                         icon: const Icon(
-                          Icons.chevron_left,
+                          Icons.arrow_back_ios_new,
                           color: Colors.white,
-                          size: 24,
+                          size: 20,
                         ),
                       ),
                       const SizedBox(width: 8),

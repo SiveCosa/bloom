@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class EventSectionCard extends StatelessWidget {
@@ -17,54 +16,48 @@ class EventSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (headerIcon != null || title != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: backgroundColor ?? Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (headerIcon != null || title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          if (headerIcon != null) ...[
-                            Icon(headerIcon, color: Colors.white, size: 20),
-                            const SizedBox(width: 8),
-                          ],
-                          if (title != null)
-                            Text(
-                              title!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
+                      if (headerIcon != null) ...[
+                        Icon(headerIcon, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                      ],
+                      if (title != null)
+                        Text(
+                          title!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                     ],
                   ),
-                ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(16, (headerIcon != null || title != null) ? 0 : 16, 16, 16),
-                child: body,
+                  const SizedBox(height: 16),
+                ],
               ),
-            ],
+            ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, (headerIcon != null || title != null) ? 0 : 16, 16, 16),
+            child: body,
           ),
-        ),
+        ],
       ),
     );
   }

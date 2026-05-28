@@ -14,6 +14,7 @@ import '../../domain/auth/auth_providers.dart';
 import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
+import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/event/event_providers.dart';
 import '../../domain/friendship/friendship_providers.dart';
 import '../../domain/navigation/navigation_providers.dart';
@@ -780,9 +781,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: Colors.white.withValues(alpha: 0.5),
+              BloomIconButton(
+                icon: Icons.search,
+                onTap: () {
+                  ref.invalidate(recommendedFriendsProvider);
+                  context.push('/profile/search');
+                },
               ),
             ],
           ),

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -35,43 +34,37 @@ class DateTimeRow extends ConsumerWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 60),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_month, color: Colors.white, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildContent(state, isUnset, isSingleDay, isMultiDay),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_month, color: Colors.white, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildContent(state, isUnset, isSingleDay, isMultiDay),
-                ),
-                if (isUnset) ...[
-                  Text(
-                    'Set a date',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Icon(
-                  Icons.chevron_right,
+            if (isUnset) ...[
+              Text(
+                'Set a date',
+                style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.5),
-                  size: 20,
+                  fontSize: 14,
                 ),
-              ],
+              ),
+              const SizedBox(width: 4),
+            ],
+            Icon(
+              Icons.chevron_right,
+              color: Colors.white.withValues(alpha: 0.5),
+              size: 20,
             ),
-          ),
+          ],
         ),
       ),
     );

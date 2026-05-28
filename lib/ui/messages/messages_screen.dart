@@ -28,6 +28,7 @@ class MessagesScreen extends StatelessWidget {
               ),
               backgroundColor: Colors.transparent,
               elevation: 0,
+              scrolledUnderElevation: 0,
               centerTitle: false,
               leadingWidth: 48,
               leading: IconButton(

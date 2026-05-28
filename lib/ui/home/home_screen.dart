@@ -30,9 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
-  double _dragOffset = 0.0;
-  bool _isRefreshing = false;
-  bool _showIndicator = false;
+  final ValueNotifier<double> _dragOffset = ValueNotifier(0.0);
+  final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
+  final ValueNotifier<bool> _showIndicator = ValueNotifier(false);
 
   @override
   void initState() {
@@ -55,6 +55,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _scrollController.dispose();
     _spinController.dispose();
+    _dragOffset.dispose();
+    _isRefreshing.dispose();
+    _showIndicator.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -67,45 +70,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollUpdateNotification) {
-      if (!_isRefreshing) {
-        final double offset = _scrollController.offset;
-        if (offset < 0) {
-          setState(() {
-            _dragOffset = -offset;
-            _showIndicator = true;
-          });
-        } else {
-          if (_dragOffset != 0.0) {
-            setState(() {
-              _dragOffset = 0.0;
-              _showIndicator = false;
-            });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (notification is ScrollUpdateNotification) {
+        if (!_isRefreshing.value) {
+          final double offset = _scrollController.offset;
+          if (offset < 0) {
+            _dragOffset.value = -offset;
+            _showIndicator.value = true;
+          } else {
+            if (_dragOffset.value != 0.0) {
+              _dragOffset.value = 0.0;
+              _showIndicator.value = false;
+            }
           }
         }
+      } else if (notification is UserScrollNotification &&
+          notification.direction == ScrollDirection.idle) {
+        if (!_isRefreshing.value && _scrollController.offset <= -90.0) {
+          _triggerRefresh();
+        } else if (!_isRefreshing.value && _dragOffset.value > 0.0) {
+          _dragOffset.value = 0.0;
+          _showIndicator.value = false;
+        }
       }
-    } else if (notification is UserScrollNotification &&
-        notification.direction == ScrollDirection.idle) {
-      if (!_isRefreshing && _scrollController.offset <= -90.0) {
-        _triggerRefresh();
-      } else if (!_isRefreshing && _dragOffset > 0.0) {
-        setState(() {
-          _dragOffset = 0.0;
-          _showIndicator = false;
-        });
-      }
-    }
+    });
     return false;
   }
 
   Future<void> _triggerRefresh() async {
-    if (_isRefreshing) return;
+    if (_isRefreshing.value) return;
 
-    setState(() {
-      _isRefreshing = true;
-      _showIndicator = true;
-      _dragOffset = 90.0;
-    });
+    _isRefreshing.value = true;
+    _showIndicator.value = true;
+    _dragOffset.value = 90.0;
     _spinController.repeat();
 
     try {
@@ -123,17 +121,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (mounted) {
-      setState(() {
-        _isRefreshing = false;
-        _showIndicator = false;
-        _dragOffset = 0.0;
-      });
+      _isRefreshing.value = false;
+      _showIndicator.value = false;
+      _dragOffset.value = 0.0;
       _spinController.stop();
     }
   }
 
   void _handleHomeTabTap() {
-    if (_isRefreshing) return;
+    if (_isRefreshing.value) return;
 
     if (_scrollController.hasClients) {
       if (_scrollController.offset > 0) {
@@ -152,90 +148,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  double _getIndicatorTop(double topPadding, double maskHeight) {
+  double _getIndicatorTop(double topPadding, double maskHeight, double dragOffset, bool isRefreshing) {
     const double indicatorHeight = 42.0;
     final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
 
-    if (_isRefreshing) {
+    if (isRefreshing) {
       return topPadding + maskHeight + 16.0;
     }
 
-    final double dragAmount = _dragOffset.clamp(0.0, 120.0);
+    final double dragAmount = dragOffset.clamp(0.0, 120.0);
     return hiddenPosition + dragAmount;
   }
 
   Widget _buildReloadIndicator(double topPadding, double maskHeight) {
-    if (!_showIndicator && !_isRefreshing) {
-      return const SizedBox.shrink();
-    }
+    return AnimatedBuilder(
+      animation: Listenable.merge([_dragOffset, _isRefreshing, _showIndicator]),
+      builder: (context, _) {
+        final dragOffset = _dragOffset.value;
+        final isRefreshing = _isRefreshing.value;
+        final showIndicator = _showIndicator.value;
 
-    final double pullProgress = (_dragOffset / 90.0).clamp(0.0, 1.0);
+        if (!showIndicator && !isRefreshing) {
+          return const SizedBox.shrink();
+        }
 
-    final double indicatorTop = _getIndicatorTop(topPadding, maskHeight);
-    final double opacity = _isRefreshing ? 1.0 : pullProgress;
-    final double scale = _isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
+        final double pullProgress = (dragOffset / 90.0).clamp(0.0, 1.0);
 
-    const Color iconColor = Colors.white;
+        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, dragOffset, isRefreshing);
+        final double opacity = isRefreshing ? 1.0 : pullProgress;
+        final double scale = isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
 
-    return AnimatedPositioned(
-      duration: _isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
-      curve: Curves.easeOutCubic,
-      top: indicatorTop,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
-          opacity: opacity,
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF161A22).withValues(alpha: 0.85),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+        const Color iconColor = Colors.white;
+
+        return AnimatedPositioned(
+          duration: isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
+          curve: Curves.easeOutCubic,
+          top: indicatorTop,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 150),
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF161A22).withValues(alpha: 0.85),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(21),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Center(
-                    child: _isRefreshing
-                        ? RotationTransition(
-                            turns: _spinController,
-                            child: const Icon(
-                              Icons.refresh_rounded,
-                              color: iconColor,
-                              size: 22,
-                            ),
-                          )
-                        : Transform.rotate(
-                            angle: pullProgress * 2 * math.pi,
-                            child: const Icon(
-                              Icons.refresh_rounded,
-                              color: iconColor,
-                              size: 22,
-                            ),
-                          ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(21),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Center(
+                        child: isRefreshing
+                            ? RotationTransition(
+                                turns: _spinController,
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: iconColor,
+                                  size: 22,
+                                ),
+                              )
+                            : Transform.rotate(
+                                angle: pullProgress * 2 * math.pi,
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: iconColor,
+                                  size: 22,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -272,6 +277,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   const UpcomingEventsSection(),
                   const SizedBox(height: 24),
                   HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_for_you'),
                     title: 'For You',
                     subtitle: 'Your social life curated',
                     iconAsset: 'assets/icons/home/fyp_icon.svg',
@@ -282,6 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 24),
                   HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_in_your_area'),
                     title: 'In your Area',
                     subtitle: 'The Streets are calling',
                     iconAsset: 'assets/icons/home/area_icon.svg',
@@ -292,6 +299,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   ),
                   const SizedBox(height: 24),
                   HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_friends_and_mutuals'),
                     title: 'Friends & Mutuals',
                     subtitle: 'Your inner circle’s outer circle',
                     iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
@@ -563,11 +571,8 @@ class HomeFeedCarouselSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rawFeedAsync = ref.watch(rawFeedProvider);
 
-    if (rawFeedAsync.isLoading) {
-      return _buildLoadingState(context);
-    }
-
     return rawFeedAsync.when(
+      skipLoadingOnRefresh: true,
       data: (rawList) {
         if (rawList.isEmpty) {
           return const SizedBox.shrink();
@@ -579,25 +584,30 @@ class HomeFeedCarouselSection extends ConsumerWidget {
         }
 
         return Column(
+          key: ValueKey('${title}_column'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
             const SizedBox(height: 16),
             SizedBox(
               height: EventCardLarge.carouselHeight,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: events.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  return EventCardLarge(
-                    event: events[index],
-                    onOptionTap: () {},
-                    onInterestedTap: () {},
-                  );
-                },
+              child: RepaintBoundary(
+                child: ListView.separated(
+                  key: PageStorageKey('${title}_list'),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  addRepaintBoundaries: false,
+                  itemCount: events.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return EventCardLarge(
+                      event: events[index],
+                      onOptionTap: () {},
+                      onInterestedTap: () {},
+                    );
+                  },
+                ),
               ),
             ),
           ],

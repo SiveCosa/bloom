@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/media/image_loader_helper.dart';
 
@@ -55,6 +54,49 @@ class HostInviteSection extends StatelessWidget {
   }
 }
 
+class HostPreviewWidget extends StatelessWidget {
+  final Map<String, dynamic>? userProfile;
+  final List<Map<String, dynamic>> coHosts;
+
+  const HostPreviewWidget({
+    super.key,
+    this.userProfile,
+    this.coHosts = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _PreviewBaseCard(
+      title: 'Hosted by',
+      headerIcon: null,
+      isFormMode: false,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _AvatarWithLabel(
+              imageUrl: userProfile?['profile_image_url'],
+              label: userProfile?['username'] ?? 'username',
+              isHost: true,
+            ),
+            ...coHosts.map(
+              (coHost) => Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: _AvatarWithLabel(
+                  imageUrl: coHost['profile_image_url'],
+                  label: coHost['username'] ?? 'username',
+                  isHost: false,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _HostedByCardPreview extends StatelessWidget {
   final Map<String, dynamic>? userProfile;
   final List<Map<String, dynamic>> coHosts;
@@ -72,6 +114,7 @@ class _HostedByCardPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PreviewBaseCard(
       title: 'Hosted by',
+      headerIcon: Icons.workspace_premium,
       isFormMode: isFormMode,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -195,43 +238,58 @@ class _PreviewBaseCard extends StatelessWidget {
   final String title;
   final Widget child;
   final bool isFormMode;
+  final IconData? headerIcon;
 
   const _PreviewBaseCard({
     required this.title, 
     required this.child,
     this.isFormMode = false,
+    this.headerIcon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
-            borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
-            border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
+        borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
+        border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: isFormMode ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          if (isFormMode)
+            Row(
+              children: [
+                if (headerIcon != null) ...[
+                  Icon(headerIcon, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                ],
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              ],
+            )
+          else
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 24),
-              child,
-            ],
-          ),
-        ),
+            ),
+          SizedBox(height: isFormMode ? 16 : 24),
+          Center(child: child),
+        ],
       ),
     );
   }

@@ -27,7 +27,8 @@ bool matchesHomeFilter(
 ) {
   switch (filter) {
     case HomeScheduleFilter.upcoming:
-      return true;
+      if (isHosting(event, uid)) return true;
+      return event.rsvpStatus == 'going';
     case HomeScheduleFilter.hosting:
       return isHosting(event, uid);
     case HomeScheduleFilter.invites:

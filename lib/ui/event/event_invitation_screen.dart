@@ -22,6 +22,7 @@ import 'widgets/guest_list_card.dart';
 import 'widgets/host_control_bar.dart';
 import 'widgets/invite_friends_sheet.dart';
 import '../create_event/widgets/host_invite_section.dart';
+import 'package:bloom/ui/create_event/widgets/rsvp_option_preview.dart';
 import '../shared/widgets/event_map_card.dart';
 class EventInvitationScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -159,11 +160,12 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   final double sheetTopMinimized = screenHeight * (1.0 - 0.28);
                   final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
                   
+                  final double statusBarHeight = MediaQuery.of(context).padding.top;
                   final double targetTop = isSquare 
                     ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
                     : topBarHeight;
 
-                  final double posterTop = ui.lerpDouble(0, targetTop, minimizedProgress) ?? 0;
+                  final double posterTop = ui.lerpDouble(statusBarHeight, targetTop, minimizedProgress) ?? statusBarHeight;
 
                   return Positioned(
                     top: posterTop,
@@ -262,34 +264,33 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                             // 1. Aurora Background (Reactive)
                             ValueListenableBuilder<double>(
                               valueListenable: _sheetSize,
-                              builder: (context, size, child) {
+                              child: AuroraBackground(
+                                colors: event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList(),
+                              ),
+                              builder: (context, size, childWidget) {
                                 final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                return Positioned(
-                                  top: -(MediaQuery.of(context).size.height * (1.0 - size)),
-                                  left: 0,
-                                  right: 0,
-                                  height: MediaQuery.of(context).size.height,
-                                  child: Opacity(
-                                    opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                    child: AuroraBackground(
-                                      colors: event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList(),
+                                final double opacity = (1.0 - minimizedProgress).clamp(0.0, 1.0);
+                                return Stack(
+                                  children: [
+                                    Positioned(
+                                      top: -(MediaQuery.of(context).size.height * (1.0 - size)),
+                                      left: 0,
+                                      right: 0,
+                                      height: MediaQuery.of(context).size.height,
+                                      child: Opacity(
+                                        opacity: opacity,
+                                        child: childWidget,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                            // 2. Subtle Glass Overlay (Reactive)
-                            ValueListenableBuilder<double>(
-                              valueListenable: _sheetSize,
-                              builder: (context, size, child) {
-                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                return Positioned.fill(
-                                  child: Opacity(
-                                    opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                    child: Container(
-                                      color: Colors.white.withValues(alpha: 0.08),
+                                    Positioned.fill(
+                                      child: Opacity(
+                                        opacity: opacity,
+                                        child: Container(
+                                          color: Colors.white.withValues(alpha: 0.08),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 );
                               },
                             ),
@@ -321,7 +322,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                           padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
                                           child: Column(
                                             children: [
-                                              const SizedBox(height: 10),
+                                              const SizedBox(height: 12),
                                               _buildVisibilityPill(event),
                                               const SizedBox(height: 16),
                                               // Event Title
@@ -353,11 +354,13 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                   return Column(
                                                     children: [
                                                       _buildDateRow(event),
-                                                      const SizedBox(height: 10),
-                                                      Opacity(
-                                                        opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                                        child: _buildLocationRow(event),
-                                                      ),
+                                                      if (event.location != null) ...[
+                                                        const SizedBox(height: 10),
+                                                        Opacity(
+                                                          opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                                          child: _buildLocationRow(event),
+                                                        ),
+                                                      ],
                                                       const SizedBox(height: 25),
                                                     ],
                                                   );
@@ -370,62 +373,64 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                       SliverToBoxAdapter(
                                         child: ValueListenableBuilder<double>(
                                           valueListenable: _sheetSize,
-                                          builder: (context, size, child) {
-                                            if (size < 0.4) return const SizedBox.shrink();
-                                            
-                                            return Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 15),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  _buildDescriptionCard(event),
-                                                  const SizedBox(height: 16),
-                                                  _buildGuestList(event),
-                                                  const SizedBox(height: 16),
-                                                   Consumer(
-                                                     builder: (context, ref, child) {
-                                                       final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
-                                                       final List<Map<String, dynamic>> resolvedCoHosts = [];
-                                                       for (final coHostId in event.coHostIds) {
-                                                         final coHostProfileAsync = ref.watch(userProfileStreamProvider(coHostId));
-                                                         final coHostProfile = coHostProfileAsync.value;
-                                                         if (coHostProfile != null) {
-                                                           resolvedCoHosts.add({
-                                                             'uid': coHostId,
-                                                             ...coHostProfile,
-                                                           });
-                                                         }
-                                                       }
-                                                       return HostInviteSection(
-                                                         userProfile: hostProfile, 
-                                                         coHosts: resolvedCoHosts,
-                                                         onAddCoHost: () {},
-                                                         showInviteFriends: false,
-                                                       );
-                                                     },
-                                                   ),
-                                                  if (event.location != null) ...[
-                                                    const SizedBox(height: 16),
-                                                    _buildWeatherCard(event),
-                                                    const SizedBox(height: 16),
-                                                    Builder(
-                                                      builder: (context) {
-                                                        final parsedColors = event.visuals.auroraColors.map((c) {
-                                                          var hexString = c.replaceAll('#', '');
-                                                          if (hexString.length == 6) hexString = 'FF$hexString';
-                                                          return Color(int.parse(hexString, radix: 16));
-                                                        }).toList();
-                                                        return EventMapCard(
-                                                          event: event,
-                                                          themeColor: parsedColors.isNotEmpty ? parsedColors.first : Colors.blue,
-                                                        );
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                _buildDescriptionCard(event),
+                                                const SizedBox(height: 16),
+                                                _buildGuestList(event),
+                                                const SizedBox(height: 16),
+                                                Consumer(
+                                                  builder: (context, ref, child) {
+                                                    final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
+                                                    final List<Map<String, dynamic>> resolvedCoHosts = [];
+                                                    for (final coHostId in event.coHostIds) {
+                                                      final coHostProfileAsync = ref.watch(userProfileStreamProvider(coHostId));
+                                                      final coHostProfile = coHostProfileAsync.value;
+                                                      if (coHostProfile != null) {
+                                                        resolvedCoHosts.add({
+                                                          'uid': coHostId,
+                                                          ...coHostProfile,
+                                                        });
                                                       }
-                                                    ),
-                                                  ],
-                                                  const SizedBox(height: 120),
+                                                    }
+                                                    return HostPreviewWidget(
+                                                      userProfile: hostProfile, 
+                                                      coHosts: resolvedCoHosts,
+                                                    );
+                                                  },
+                                                ),
+                                                if (event.location != null) ...[
+                                                  const SizedBox(height: 16),
+                                                  _buildWeatherCard(event),
+                                                  const SizedBox(height: 16),
+                                                  Builder(
+                                                    builder: (context) {
+                                                      final parsedColors = event.visuals.auroraColors.map((c) {
+                                                        var hexString = c.replaceAll('#', '');
+                                                        if (hexString.length == 6) hexString = 'FF$hexString';
+                                                        return Color(int.parse(hexString, radix: 16));
+                                                      }).toList();
+                                                      return EventMapCard(
+                                                        event: event,
+                                                        themeColor: parsedColors.isNotEmpty ? parsedColors.first : Colors.blue,
+                                                      );
+                                                    }
+                                                  ),
                                                 ],
-                                              ),
-                                            );
+                                                if (isHost) ...[
+                                                  const SizedBox(height: 16),
+                                                  _buildRsvpOptionPreview(event),
+                                                ],
+                                                const SizedBox(height: 120),
+                                              ],
+                                            ),
+                                          ),
+                                          builder: (context, size, childWidget) {
+                                            if (size < 0.4) return const SizedBox.shrink();
+                                            return childWidget!;
                                           },
                                         ),
                                       ),
@@ -624,8 +629,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       child: const Icon(Icons.reply_rounded, color: Colors.black, size: 22),
                     ),
                     () {
-                      // Share logic
-                      Share.share('Check out ${event.title} on Bloom!');
+                      _showInviteFriendsSheet(context, event);
                     },
                   ),
                   const SizedBox(width: 10),
@@ -679,48 +683,43 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     final useAccent = timeStatus.isNotEmpty && status != EventStatus.active; // For Cancelled/Ended
     final isSpecial = isLive || useAccent;
 
-    return ValueListenableBuilder<double>(
-      valueListenable: _sheetSize,
-      builder: (context, size, child) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
-                  width: 0.5,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
+              width: 0.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: FittedBox(
+                  child: Icon(visibility.outlinedIcon, color: isSpecial ? accentColor : Colors.white, size: 28),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: FittedBox(
-                      child: Icon(visibility.outlinedIcon, color: isSpecial ? accentColor : Colors.white, size: 28),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: TextStyle(
+                  color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -841,103 +840,100 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasTags) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: event.tags.map((tag) => _buildTagChip(tag)).toList(),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasTags) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: event.tags.map((tag) => _buildTagChip(tag)).toList(),
                   ),
-                  const SizedBox(height: 25),
-                  _buildSeparator(),
-                  const SizedBox(height: 25),
-                ],
+                ),
+                const SizedBox(height: 25),
+                _buildSeparator(),
+                const SizedBox(height: 25),
+              ],
 
-                _buildLogisticsSection(event),
-                
-                if (hasExtras) ...[
-                  const SizedBox(height: 25),
-                  ...(() {
-                    final auroraColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-                    final sortedExtras = [...event.extras]..sort((a, b) {
-                      final aIsLink = a.url != null && a.url!.isNotEmpty;
-                      final bIsLink = b.url != null && b.url!.isNotEmpty;
-                      if (aIsLink && !bIsLink) return -1;
-                      if (!aIsLink && bIsLink) return 1;
-                      return 0;
-                    });
-                    
-                    return List.generate(sortedExtras.length, (index) {
-                      final extra = sortedExtras[index];
-                      final bool isLink = extra.url != null && extra.url!.isNotEmpty;
-                      final Color textColor = isLink ? _getBestExtraColor(auroraColors) : Colors.white;
-                      final bool isLast = index == sortedExtras.length - 1;
-  
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: isLink ? () async {
-                              final url = extra.url!.trim();
-                              final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
-                              try {
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.platformDefault);
-                                }
-                              } catch (e) {
-                                debugPrint('Error launching $uri: $e');
+              _buildLogisticsSection(event),
+              
+              if (hasExtras) ...[
+                const SizedBox(height: 25),
+                ...(() {
+                  final auroraColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+                  final sortedExtras = [...event.extras]..sort((a, b) {
+                    final aIsLink = a.url != null && a.url!.isNotEmpty;
+                    final bIsLink = b.url != null && b.url!.isNotEmpty;
+                    if (aIsLink && !bIsLink) return -1;
+                    if (!aIsLink && bIsLink) return 1;
+                    return 0;
+                  });
+                  
+                  return List.generate(sortedExtras.length, (index) {
+                    final extra = sortedExtras[index];
+                    final bool isLink = extra.url != null && extra.url!.isNotEmpty;
+                    final Color textColor = isLink ? _getBestExtraColor(auroraColors) : Colors.white;
+                    final bool isLast = index == sortedExtras.length - 1;
+
+                    return Column(
+                      children: [
+                        GestureDetector(
+                          onTap: isLink ? () async {
+                            final url = extra.url!.trim();
+                            final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
+                            try {
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.platformDefault);
                               }
-                            } : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  isLink ? Icons.link : extra.type.icon,
-                                  color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    extra.displayText,
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 14,
-                                      fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
-                                    ),
+                            } catch (e) {
+                              debugPrint('Error launching $uri: $e');
+                            }
+                          } : null,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Icon(
+                                isLink ? Icons.link : extra.type.icon,
+                                color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  extra.displayText,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14,
+                                    fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
                                   ),
                                 ),
-                                if (isLink) ...[
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
-                                ],
+                              ),
+                              if (isLink) ...[
+                                const SizedBox(width: 4),
+                                Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
                               ],
-                            ),
+                            ],
                           ),
-                          if (!isLast) const SizedBox(height: 25),
-                        ],
-                      );
-                    });
-                  })(),
-                ],
-
-                if (hasDesc) ...[
-                  const SizedBox(height: 25),
-                  _buildSeparator(),
-                  const SizedBox(height: 25),
-                  _buildExpandableDescription(event.description),
-                ],
+                        ),
+                        if (!isLast) const SizedBox(height: 25),
+                      ],
+                    );
+                  });
+                })(),
               ],
-            ),
+
+              if (hasDesc) ...[
+                const SizedBox(height: 25),
+                _buildSeparator(),
+                const SizedBox(height: 25),
+                _buildExpandableDescription(event.description),
+              ],
+            ],
           ),
         ),
       ),
@@ -1789,6 +1785,78 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRsvpOptionPreview(Event event) {
+    final requireApproval = event.audience.requireApproval;
+    final allowMaybe = event.audience.allowMaybe;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+          child: Text(
+            'RSVP SETTING',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        Container(
+          height: 75,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(37.5),
+            border: Border.all(
+              color: Colors.white.withValues(
+                alpha: 0.15,
+              ),
+            ),
+          ),
+          child: requireApproval
+              ? const Row(
+                  children: [
+                    RsvpOptionPreview(
+                      icon: Icons.add_circle_outline,
+                      label: 'Get on the list',
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    const RsvpOptionPreview(
+                      icon: Icons.check_circle_outline,
+                      label: 'Going',
+                    ),
+                    _buildVerticalDivider(),
+                    if (allowMaybe) ...[
+                      const RsvpOptionPreview(
+                        icon: Icons.help_outline,
+                        label: 'Maybe',
+                      ),
+                      _buildVerticalDivider(),
+                    ],
+                    const RsvpOptionPreview(
+                      icon: Icons.cancel_outlined,
+                      label: 'Decline',
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(
+      width: 1,
+      height: 24,
+      color: Colors.white.withValues(alpha: 0.1),
     );
   }
 }
