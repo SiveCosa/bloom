@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/media/image_loader_helper.dart';
 
@@ -204,34 +203,28 @@ class _PreviewBaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
-            borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
-            border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
+        borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
+        border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 24),
-              child,
-            ],
-          ),
-        ),
+          const SizedBox(height: 24),
+          child,
+        ],
       ),
     );
   }

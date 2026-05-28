@@ -30,9 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
-  double _dragOffset = 0.0;
-  bool _isRefreshing = false;
-  bool _showIndicator = false;
+  final ValueNotifier<double> _dragOffsetNotifier = ValueNotifier<double>(0.0);
+  final ValueNotifier<bool> _isRefreshingNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<bool> _showIndicatorNotifier = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -55,6 +55,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _scrollController.dispose();
     _spinController.dispose();
+    _dragOffsetNotifier.dispose();
+    _isRefreshingNotifier.dispose();
+    _showIndicatorNotifier.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -68,44 +71,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
-      if (!_isRefreshing) {
+      if (!_isRefreshingNotifier.value) {
         final double offset = _scrollController.offset;
         if (offset < 0) {
-          setState(() {
-            _dragOffset = -offset;
-            _showIndicator = true;
-          });
+          _dragOffsetNotifier.value = -offset;
+          _showIndicatorNotifier.value = true;
         } else {
-          if (_dragOffset != 0.0) {
-            setState(() {
-              _dragOffset = 0.0;
-              _showIndicator = false;
-            });
+          if (_dragOffsetNotifier.value != 0.0) {
+            _dragOffsetNotifier.value = 0.0;
+            _showIndicatorNotifier.value = false;
           }
         }
       }
     } else if (notification is UserScrollNotification &&
         notification.direction == ScrollDirection.idle) {
-      if (!_isRefreshing && _scrollController.offset <= -90.0) {
+      if (!_isRefreshingNotifier.value && _scrollController.offset <= -90.0) {
         _triggerRefresh();
-      } else if (!_isRefreshing && _dragOffset > 0.0) {
-        setState(() {
-          _dragOffset = 0.0;
-          _showIndicator = false;
-        });
+      } else if (!_isRefreshingNotifier.value && _dragOffsetNotifier.value > 0.0) {
+        _dragOffsetNotifier.value = 0.0;
+        _showIndicatorNotifier.value = false;
       }
     }
     return false;
   }
 
   Future<void> _triggerRefresh() async {
-    if (_isRefreshing) return;
+    if (_isRefreshingNotifier.value) return;
 
-    setState(() {
-      _isRefreshing = true;
-      _showIndicator = true;
-      _dragOffset = 90.0;
-    });
+    _isRefreshingNotifier.value = true;
+    _showIndicatorNotifier.value = true;
+    _dragOffsetNotifier.value = 90.0;
     _spinController.repeat();
 
     try {
@@ -123,17 +118,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (mounted) {
-      setState(() {
-        _isRefreshing = false;
-        _showIndicator = false;
-        _dragOffset = 0.0;
-      });
+      _isRefreshingNotifier.value = false;
+      _showIndicatorNotifier.value = false;
+      _dragOffsetNotifier.value = 0.0;
       _spinController.stop();
     }
   }
 
   void _handleHomeTabTap() {
-    if (_isRefreshing) return;
+    if (_isRefreshingNotifier.value) return;
 
     if (_scrollController.hasClients) {
       if (_scrollController.offset > 0) {
@@ -152,90 +145,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  double _getIndicatorTop(double topPadding, double maskHeight) {
+  double _getIndicatorTop(double topPadding, double maskHeight, bool isRefreshing, double dragOffset) {
     const double indicatorHeight = 42.0;
     final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
 
-    if (_isRefreshing) {
+    if (isRefreshing) {
       return topPadding + maskHeight + 16.0;
     }
 
-    final double dragAmount = _dragOffset.clamp(0.0, 120.0);
+    final double dragAmount = dragOffset.clamp(0.0, 120.0);
     return hiddenPosition + dragAmount;
   }
 
   Widget _buildReloadIndicator(double topPadding, double maskHeight) {
-    if (!_showIndicator && !_isRefreshing) {
-      return const SizedBox.shrink();
-    }
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _dragOffsetNotifier,
+        _showIndicatorNotifier,
+        _isRefreshingNotifier,
+      ]),
+      builder: (context, child) {
+        final showIndicator = _showIndicatorNotifier.value;
+        final isRefreshing = _isRefreshingNotifier.value;
+        final dragOffset = _dragOffsetNotifier.value;
 
-    final double pullProgress = (_dragOffset / 90.0).clamp(0.0, 1.0);
+        if (!showIndicator && !isRefreshing) {
+          return const SizedBox.shrink();
+        }
 
-    final double indicatorTop = _getIndicatorTop(topPadding, maskHeight);
-    final double opacity = _isRefreshing ? 1.0 : pullProgress;
-    final double scale = _isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
+        final double pullProgress = (dragOffset / 90.0).clamp(0.0, 1.0);
+        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, isRefreshing, dragOffset);
+        final double opacity = isRefreshing ? 1.0 : pullProgress;
+        final double scale = isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
 
-    const Color iconColor = Colors.white;
+        const Color iconColor = Colors.white;
 
-    return AnimatedPositioned(
-      duration: _isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
-      curve: Curves.easeOutCubic,
-      top: indicatorTop,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
-          opacity: opacity,
-          child: Transform.scale(
-            scale: scale,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF161A22).withValues(alpha: 0.85),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
+        return AnimatedPositioned(
+          duration: isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
+          curve: Curves.easeOutCubic,
+          top: indicatorTop,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 150),
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF161A22).withValues(alpha: 0.85),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(21),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Center(
-                    child: _isRefreshing
-                        ? RotationTransition(
-                            turns: _spinController,
-                            child: const Icon(
-                              Icons.refresh_rounded,
-                              color: iconColor,
-                              size: 22,
-                            ),
-                          )
-                        : Transform.rotate(
-                            angle: pullProgress * 2 * math.pi,
-                            child: const Icon(
-                              Icons.refresh_rounded,
-                              color: iconColor,
-                              size: 22,
-                            ),
-                          ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(21),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Center(
+                        child: isRefreshing
+                            ? RotationTransition(
+                                turns: _spinController,
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: iconColor,
+                                  size: 22,
+                                ),
+                              )
+                            : Transform.rotate(
+                                angle: pullProgress * 2 * math.pi,
+                                child: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: iconColor,
+                                  size: 22,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -268,47 +273,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CreateEventCTA(),
-                  const UpcomingEventsSection(),
+                  const RepaintBoundary(child: CreateEventCTA()),
+                  const RepaintBoundary(child: UpcomingEventsSection()),
                   const SizedBox(height: 24),
-                  HomeFeedCarouselSection(
-                    title: 'For You',
-                    subtitle: 'Your social life curated',
-                    iconAsset: 'assets/icons/home/fyp_icon.svg',
-                    detailRoute: '/home/for-you',
-                    rawFeedProvider: forYouRawFeedProvider,
-                    scheduledEventsProvider: forYouScheduledEventsProvider,
-                    errorPrefix: 'Error loading For You feed',
+                  RepaintBoundary(
+                    child: HomeFeedCarouselSection(
+                      title: 'For You',
+                      subtitle: 'Your social life curated',
+                      iconAsset: 'assets/icons/home/fyp_icon.svg',
+                      detailRoute: '/home/for-you',
+                      rawFeedProvider: forYouRawFeedProvider,
+                      scheduledEventsProvider: forYouScheduledEventsProvider,
+                      errorPrefix: 'Error loading For You feed',
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  HomeFeedCarouselSection(
-                    title: 'In your Area',
-                    subtitle: 'The Streets are calling',
-                    iconAsset: 'assets/icons/home/area_icon.svg',
-                    detailRoute: '/home/in-your-area',
-                    rawFeedProvider: eventsInAreaRawFeedProvider,
-                    scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
-                    errorPrefix: 'Error loading In your Area feed',
+                  RepaintBoundary(
+                    child: HomeFeedCarouselSection(
+                      title: 'In your Area',
+                      subtitle: 'The Streets are calling',
+                      iconAsset: 'assets/icons/home/area_icon.svg',
+                      detailRoute: '/home/in-your-area',
+                      rawFeedProvider: eventsInAreaRawFeedProvider,
+                      scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
+                      errorPrefix: 'Error loading In your Area feed',
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  HomeFeedCarouselSection(
-                    title: 'Friends & Mutuals',
-                    subtitle: 'Your inner circle’s outer circle',
-                    iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
-                    detailRoute: '/home/friends-and-mutuals',
-                    rawFeedProvider: friendsAndMutualsRawFeedProvider,
-                    scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
-                    errorPrefix: 'Error loading Friends & Mutuals feed',
+                  RepaintBoundary(
+                    child: HomeFeedCarouselSection(
+                      title: 'Friends & Mutuals',
+                      subtitle: 'Your inner circle’s outer circle',
+                      iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
+                      detailRoute: '/home/friends-and-mutuals',
+                      rawFeedProvider: friendsAndMutualsRawFeedProvider,
+                      scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
+                      errorPrefix: 'Error loading Friends & Mutuals feed',
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  const DiscoverMoreWidget(),
+                  const RepaintBoundary(child: DiscoverMoreWidget()),
                 ],
               ),
             ),
           ),
 
           // Custom Reload Indicator (Emerges from below the app header)
-          _buildReloadIndicator(topPadding, maskHeight),
+          RepaintBoundary(child: _buildReloadIndicator(topPadding, maskHeight)),
 
           // 2. Solid Masking Layer (Sharp cut-off 5dp below pills)
           Positioned(

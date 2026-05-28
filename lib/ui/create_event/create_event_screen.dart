@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,7 +147,6 @@ class CreateEventScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(createEventProvider);
     final userProfile = ref.watch(currentUserProfileProvider).value;
 
     return PopScope(
@@ -261,11 +259,16 @@ class CreateEventScreen extends ConsumerWidget {
                           const SizedBox(height: 10),
 
                           // Event Title Input
-                          EventTitleInput(
-                            initialValue: state.title,
-                            onChanged: (val) => ref
-                                .read(createEventProvider.notifier)
-                                .updateTitle(val),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final title = ref.watch(createEventProvider.select((s) => s.title));
+                              return EventTitleInput(
+                                initialValue: title,
+                                onChanged: (val) => ref
+                                    .read(createEventProvider.notifier)
+                                    .updateTitle(val),
+                              );
+                            },
                           ),
 
                           const SizedBox(
@@ -286,250 +289,273 @@ class CreateEventScreen extends ConsumerWidget {
                           const SizedBox(height: 10),
 
                           // Location Section
-                          GestureDetector(
-                            onTap: () async {
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              final result =
-                                  await showModalBottomSheet<EventLocation>(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    useSafeArea: true,
-                                    backgroundColor: Colors.transparent,
-                                    builder: (context) =>
-                                        LocationSelectionModal(
-                                      initialLocation: state.location,
-                                    ),
-                                  );
-                              if (result != null) {
-                                ref
-                                    .read(createEventProvider.notifier)
-                                    .updateLocation(result);
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.location_on,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  if (!state.isLocationSet) ...[
-                                    const Text(
-                                      'Location',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      'Set the location',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.5,
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final location = ref.watch(createEventProvider.select((s) => s.location));
+                              final isLocationSet = ref.watch(createEventProvider.select((s) => s.isLocationSet));
+                              return GestureDetector(
+                                onTap: () async {
+                                  FocusManager.instance.primaryFocus?.unfocus();
+                                  final result =
+                                      await showModalBottomSheet<EventLocation>(
+                                        context: context,
+                                        isScrollControlled: true,
+                                        useSafeArea: true,
+                                        backgroundColor: Colors.transparent,
+                                        builder: (context) =>
+                                            LocationSelectionModal(
+                                          initialLocation: location,
                                         ),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            state.location?.displayName ?? '',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            state.location?.formattedAddress ??
-                                                '',
-                                            style: TextStyle(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.8,
-                                              ),
-                                              fontSize: 14,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    size: 20,
+                                      );
+                                  if (result != null) {
+                                    ref
+                                        .read(createEventProvider.notifier)
+                                        .updateLocation(result);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
                                   ),
-                                ],
-                              ),
-                            ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.location_on,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      if (!isLocationSet) ...[
+                                        const Text(
+                                          'Location',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Text(
+                                          'Set the location',
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                location?.displayName ?? '',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                location?.formattedAddress ??
+                                                    '',
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.8,
+                                                  ),
+                                                  fontSize: 14,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.white.withValues(alpha: 0.5),
+                                        size: 20,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
                           ),
 
                           const SizedBox(height: 10),
 
-                          HostInviteSection(
-                            showInviteFriends: false,
-                            isFormMode: true,
-                            userProfile: userProfile,
-                            coHosts: state.coHosts,
-                            onAddCoHost: () => _showCoHostSelection(context),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final coHosts = ref.watch(createEventProvider.select((s) => s.coHosts));
+                              return HostInviteSection(
+                                showInviteFriends: false,
+                                isFormMode: true,
+                                userProfile: userProfile,
+                                coHosts: coHosts,
+                                onAddCoHost: () => _showCoHostSelection(context),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 10),
 
                           // Audience Section
-                          EventSectionCard(
-                            headerIcon: Icons.people,
-                            title: 'Audience',
-                            body: Column(
-                              children: [
-                                _buildTappableRow(
-                                  context: context,
-                                  icon: state.audience.visibility.filledIconData,
-                                  title: state.audience.visibility.title,
-                                  trailing: 'Set Visibility',
-                                  onTap: () =>
-                                      _showVisibilitySelection(context),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final visibility = ref.watch(createEventProvider.select((s) => s.audience.visibility));
+                              final maxPlusOnes = ref.watch(createEventProvider.select((s) => s.audience.maxPlusOnes));
+                              return EventSectionCard(
+                                headerIcon: Icons.people,
+                                title: 'Audience',
+                                body: Column(
+                                  children: [
+                                    _buildTappableRow(
+                                      context: context,
+                                      icon: visibility.filledIconData,
+                                      title: visibility.title,
+                                      trailing: 'Set Visibility',
+                                      onTap: () =>
+                                          _showVisibilitySelection(context),
+                                    ),
+                                    const _AvailableSpotsRow(),
+                                    _buildTappableRow(
+                                      context: context,
+                                      icon: Icons.person_add,
+                                      title: maxPlusOnes > 0
+                                          ? '+$maxPlusOnes allowed'
+                                          : 'No plus ones',
+                                      trailing: 'Plus ones',
+                                      onTap: () => _showPlusOnesSelection(context),
+                                    ),
+                                  ],
                                 ),
-                                const _AvailableSpotsRow(),
-                                _buildTappableRow(
-                                  context: context,
-                                  icon: Icons.person_add,
-                                  title: state.audience.maxPlusOnes > 0
-                                      ? '+${state.audience.maxPlusOnes} allowed'
-                                      : 'No plus ones',
-                                  trailing: 'Plus ones',
-                                  onTap: () => _showPlusOnesSelection(context),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 10),
 
                           // Extras Section
-                          EventSectionCard(
-                            headerIcon: Icons.auto_awesome,
-                            title: 'Extras',
-                            body: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final extras = ref.watch(createEventProvider.select((s) => s.extras));
+                              final auroraColors = ref.watch(createEventProvider.select((s) => s.auroraColors));
+                              return EventSectionCard(
+                                headerIcon: Icons.auto_awesome,
+                                title: 'Extras',
+                                body: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildPillButton(
-                                      context,
-                                      ref,
-                                      'Link',
-                                      ExtraType.link,
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        _buildPillButton(
+                                          context,
+                                          ref,
+                                          'Link',
+                                          ExtraType.link,
+                                        ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.playlist,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Playlist',
+                                            ExtraType.playlist,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.dressCode,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Dress code',
+                                            ExtraType.dressCode,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.food,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Food',
+                                            ExtraType.food,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.drinks,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Drinks',
+                                            ExtraType.drinks,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.parking,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Parking',
+                                            ExtraType.parking,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.accommodation,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Accommodation',
+                                            ExtraType.accommodation,
+                                          ),
+                                        if (!extras.any(
+                                          (e) => e.type == ExtraType.giftRegistry,
+                                        ))
+                                          _buildPillButton(
+                                            context,
+                                            ref,
+                                            'Gift Registry',
+                                            ExtraType.giftRegistry,
+                                          ),
+                                      ],
                                     ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.playlist,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Playlist',
-                                        ExtraType.playlist,
+                                    if (extras.isNotEmpty) ...[
+                                      const SizedBox(height: 16),
+                                      const Divider(
+                                        color: Colors.white12,
+                                        height: 1,
                                       ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.dressCode,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Dress code',
-                                        ExtraType.dressCode,
+                                      const SizedBox(height: 16),
+                                      ...extras.map(
+                                        (extra) => _buildExtraItem(
+                                          context,
+                                          ref,
+                                          extra,
+                                          auroraColors,
+                                        ),
                                       ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.food,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Food',
-                                        ExtraType.food,
-                                      ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.drinks,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Drinks',
-                                        ExtraType.drinks,
-                                      ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.parking,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Parking',
-                                        ExtraType.parking,
-                                      ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.accommodation,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Accommodation',
-                                        ExtraType.accommodation,
-                                      ),
-                                    if (!state.extras.any(
-                                      (e) => e.type == ExtraType.giftRegistry,
-                                    ))
-                                      _buildPillButton(
-                                        context,
-                                        ref,
-                                        'Gift Registry',
-                                        ExtraType.giftRegistry,
-                                      ),
+                                    ],
                                   ],
                                 ),
-                                if (state.extras.isNotEmpty) ...[
-                                  const SizedBox(height: 16),
-                                  const Divider(
-                                    color: Colors.white12,
-                                    height: 1,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ...state.extras.map(
-                                    (extra) => _buildExtraItem(
-                                      context,
-                                      ref,
-                                      extra,
-                                      state.auroraColors,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 10),
@@ -537,231 +563,244 @@ class CreateEventScreen extends ConsumerWidget {
                           EventSectionCard(
                             headerIcon: Icons.edit_note_outlined,
                             title: 'Event Details',
-                            body: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
+                            body: Consumer(
+                              builder: (context, ref, _) {
+                                final tags = ref.watch(createEventProvider.select((s) => s.tags));
+                                final description = ref.watch(createEventProvider.select((s) => s.description));
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    ...state.tags.map(
-                                      (tag) => GestureDetector(
-                                        onTap: () => ref
-                                            .read(createEventProvider.notifier)
-                                            .toggleTag(tag),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.10,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              100,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                tag,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        ...tags.map(
+                                          (tag) => GestureDetector(
+                                            onTap: () => ref
+                                                .read(createEventProvider.notifier)
+                                                .toggleTag(tag),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 8,
                                               ),
-                                              const SizedBox(width: 8),
-                                              const Icon(
-                                                Icons.close,
-                                                color: Colors.white,
-                                                size: 14,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (state.tags.length < 5)
-                                      GestureDetector(
-                                        onTap: () => _showTagSelection(context),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              100,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              style: BorderStyle.solid,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.add,
+                                              decoration: BoxDecoration(
                                                 color: Colors.white.withValues(
-                                                  alpha: 0.6,
+                                                  alpha: 0.10,
                                                 ),
-                                                size: 14,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Add Tag',
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.6),
-                                                  fontSize: 12,
+                                                borderRadius: BorderRadius.circular(
+                                                  100,
+                                                ),
+                                                border: Border.all(
+                                                  color: Colors.white54,
                                                 ),
                                               ),
-                                            ],
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    tag,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Icon(
+                                                    Icons.close,
+                                                    color: Colors.white,
+                                                    size: 14,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                EventDescriptionInput(
-                                  initialValue: state.description,
-                                  onChanged: (val) => ref
-                                      .read(createEventProvider.notifier)
-                                      .updateDescription(val),
-                                ),
-                                const SizedBox(height: 4),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Text(
-                                    '${state.description.length} / 2 000',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.40,
-                                      ),
-                                      fontSize: 10,
+                                        if (tags.length < 5)
+                                          GestureDetector(
+                                            onTap: () => _showTagSelection(context),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.05,
+                                                ),
+                                                borderRadius: BorderRadius.circular(
+                                                  100,
+                                                ),
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(
+                                                    alpha: 0.1,
+                                                  ),
+                                                  style: BorderStyle.solid,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.add,
+                                                    color: Colors.white.withValues(
+                                                      alpha: 0.6,
+                                                    ),
+                                                    size: 14,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Add Tag',
+                                                    style: TextStyle(
+                                                      color: Colors.white
+                                                          .withValues(alpha: 0.6),
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                  ),
-                                ),
-                              ],
+                                    const SizedBox(height: 16),
+                                    EventDescriptionInput(
+                                      initialValue: description,
+                                      onChanged: (val) => ref
+                                          .read(createEventProvider.notifier)
+                                          .updateDescription(val),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: Text(
+                                        '${description.length} / 2 000',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.40,
+                                          ),
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 10),
 
                           // RSVP Options Section
-                          EventSectionCard(
-                            headerIcon: Icons.tune,
-                            title: 'RSVP Options',
-                            body: Column(
-                              children: [
-                                // RSVP Preview Pill
-                                Container(
-                                  height: state.audience.requireApproval ? 50 : null,
-                                  padding: EdgeInsets.symmetric(
-                                    vertical: state.audience.requireApproval ? 0 : 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(100),
-                                    border: Border.all(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.15,
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final requireApproval = ref.watch(createEventProvider.select((s) => s.audience.requireApproval));
+                              final allowMaybe = ref.watch(createEventProvider.select((s) => s.audience.allowMaybe));
+                              final rsvpDeadline = ref.watch(createEventProvider.select((s) => s.audience.rsvpDeadline));
+                              return EventSectionCard(
+                                headerIcon: Icons.tune,
+                                title: 'RSVP Options',
+                                body: Column(
+                                  children: [
+                                    // RSVP Preview Pill
+                                    Container(
+                                      height: requireApproval ? 50 : null,
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: requireApproval ? 0 : 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(100),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                        ),
+                                      ),
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        child: requireApproval
+                                            ? Row(
+                                                key: const ValueKey('approval'),
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.add_circle_outline,
+                                                    color: Colors.white.withValues(
+                                                      alpha: 0.54,
+                                                    ),
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'Get on the list',
+                                                    style: TextStyle(
+                                                      color: Colors.white.withValues(
+                                                        alpha: 0.54,
+                                                      ),
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : Row(
+                                                key: const ValueKey('standard'),
+                                                children: [
+                                                  const RsvpOptionPreview(
+                                                    icon: Icons.check_circle_outline,
+                                                    label: 'Going',
+                                                  ),
+                                                  _buildVerticalDivider(),
+                                                  if (allowMaybe) ...[
+                                                    const RsvpOptionPreview(
+                                                      icon: Icons.help_outline,
+                                                      label: 'Maybe',
+                                                    ),
+                                                    _buildVerticalDivider(),
+                                                  ],
+                                                  const RsvpOptionPreview(
+                                                    icon: Icons.cancel_outlined,
+                                                    label: 'Not Going',
+                                                  ),
+                                                ],
+                                              ),
                                       ),
                                     ),
-                                  ),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    child: state.audience.requireApproval
-                                        ? Row(
-                                            key: const ValueKey('approval'),
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Icons.add_circle_outline,
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.54,
-                                                ),
-                                                size: 20,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                'Get on the list',
-                                                style: TextStyle(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.54,
-                                                  ),
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          )
-                                        : Row(
-                                            key: const ValueKey('standard'),
-                                            children: [
-                                              const RsvpOptionPreview(
-                                                icon: Icons.check_circle_outline,
-                                                label: 'Going',
-                                              ),
-                                              _buildVerticalDivider(),
-                                              if (state.audience.allowMaybe) ...[
-                                                const RsvpOptionPreview(
-                                                  icon: Icons.help_outline,
-                                                  label: 'Maybe',
-                                                ),
-                                                _buildVerticalDivider(),
-                                              ],
-                                              const RsvpOptionPreview(
-                                                icon: Icons.cancel_outlined,
-                                                label: 'Not Going',
-                                              ),
-                                            ],
-                                          ),
-                                  ),
+                                    const SizedBox(height: 16),
+                                    _buildToggleRow(
+                                      'Require guest approval',
+                                      requireApproval,
+                                      (val) {
+                                        ref
+                                            .read(createEventProvider.notifier)
+                                            .setRequireApproval(val);
+                                      },
+                                    ),
+                                    if (!requireApproval)
+                                      _buildToggleRow(
+                                        "Guest can RSVP 'Maybe'",
+                                        allowMaybe,
+                                        (val) {
+                                          ref
+                                              .read(createEventProvider.notifier)
+                                              .setAllowMaybe(val);
+                                        },
+                                      ),
+                                    _buildTappableRow(
+                                      context: context,
+                                      icon: Icons.access_time,
+                                      title: 'RSVP Deadline',
+                                      trailing: rsvpDeadline != null
+                                          ? DateFormat('d MMM yyyy').format(rsvpDeadline)
+                                          : 'Optional',
+                                      onTap: () => _showRSVPDeadlineSelection(context),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 16),
-                                _buildToggleRow(
-                                  'Require guest approval',
-                                  state.audience.requireApproval,
-                                  (val) {
-                                    ref
-                                        .read(createEventProvider.notifier)
-                                        .setRequireApproval(val);
-                                  },
-                                ),
-                                if (!state.audience.requireApproval)
-                                  _buildToggleRow(
-                                    "Guest can RSVP 'Maybe'",
-                                    state.audience.allowMaybe,
-                                    (val) {
-                                      ref
-                                          .read(createEventProvider.notifier)
-                                          .setAllowMaybe(val);
-                                    },
-                                  ),
-                                _buildTappableRow(
-                                  context: context,
-                                  icon: Icons.access_time,
-                                  title: 'RSVP Deadline',
-                                  trailing: state.audience.rsvpDeadline != null
-                                      ? DateFormat('d MMM yyyy').format(state.audience.rsvpDeadline!)
-                                      : 'Optional',
-                                  onTap: () => _showRSVPDeadlineSelection(context),
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 40),
@@ -990,9 +1029,9 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(createEventProvider);
-    final isEditing = state.isEditingSpots;
-    final availableSpots = state.audience.capacity;
+    final isEditing = ref.watch(createEventProvider.select((s) => s.isEditingSpots));
+    final availableSpots = ref.watch(createEventProvider.select((s) => s.audience.capacity));
+    final waitlistEnabled = ref.watch(createEventProvider.select((s) => s.audience.waitlistEnabled));
 
     // Trigger focus if entering editing state
     if (isEditing && !_focusNode.hasFocus) {
@@ -1041,7 +1080,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
             Text('Waitlist', style: mutedStyle),
             const SizedBox(width: 8),
             BloomToggle(
-              value: state.audience.waitlistEnabled,
+              value: waitlistEnabled,
               onChanged: (val) => ref
                   .read(createEventProvider.notifier)
                   .setWaitlistEnabled(val),
@@ -1067,7 +1106,7 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
             Text('Waitlist', style: mutedStyle),
             const SizedBox(width: 8),
             BloomToggle(
-              value: state.audience.waitlistEnabled,
+              value: waitlistEnabled,
               onChanged: (val) => ref
                   .read(createEventProvider.notifier)
                   .setWaitlistEnabled(val),
@@ -1106,27 +1145,21 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
     VoidCallback? onTap,
     required bool isEditing,
   }) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(15),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(15),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: child,
-            ),
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: child,
         ),
       ),
     );
