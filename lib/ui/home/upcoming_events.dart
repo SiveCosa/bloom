@@ -32,6 +32,7 @@ class UpcomingEventsSection extends ConsumerWidget {
     final filteredEvents = ref.watch(homeFilteredWeekScheduleProvider);
 
     return scheduleAsync.when(
+      skipLoadingOnRefresh: true,
       data: (_) {
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);

@@ -30,9 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
-  final ValueNotifier<double> _dragOffsetNotifier = ValueNotifier<double>(0.0);
-  final ValueNotifier<bool> _isRefreshingNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _showIndicatorNotifier = ValueNotifier<bool>(false);
+  final ValueNotifier<double> _dragOffset = ValueNotifier(0.0);
+  final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
+  final ValueNotifier<bool> _showIndicator = ValueNotifier(false);
 
   @override
   void initState() {
@@ -55,9 +55,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _scrollController.dispose();
     _spinController.dispose();
-    _dragOffsetNotifier.dispose();
-    _isRefreshingNotifier.dispose();
-    _showIndicatorNotifier.dispose();
+    _dragOffset.dispose();
+    _isRefreshing.dispose();
+    _showIndicator.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -71,36 +71,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   bool _handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
-      if (!_isRefreshingNotifier.value) {
+      if (!_isRefreshing.value) {
         final double offset = _scrollController.offset;
         if (offset < 0) {
-          _dragOffsetNotifier.value = -offset;
-          _showIndicatorNotifier.value = true;
+          _dragOffset.value = -offset;
+          _showIndicator.value = true;
         } else {
-          if (_dragOffsetNotifier.value != 0.0) {
-            _dragOffsetNotifier.value = 0.0;
-            _showIndicatorNotifier.value = false;
+          if (_dragOffset.value != 0.0) {
+            _dragOffset.value = 0.0;
+            _showIndicator.value = false;
           }
         }
       }
     } else if (notification is UserScrollNotification &&
         notification.direction == ScrollDirection.idle) {
-      if (!_isRefreshingNotifier.value && _scrollController.offset <= -90.0) {
+      if (!_isRefreshing.value && _scrollController.offset <= -90.0) {
         _triggerRefresh();
-      } else if (!_isRefreshingNotifier.value && _dragOffsetNotifier.value > 0.0) {
-        _dragOffsetNotifier.value = 0.0;
-        _showIndicatorNotifier.value = false;
+      } else if (!_isRefreshing.value && _dragOffset.value > 0.0) {
+        _dragOffset.value = 0.0;
+        _showIndicator.value = false;
       }
     }
     return false;
   }
 
   Future<void> _triggerRefresh() async {
-    if (_isRefreshingNotifier.value) return;
+    if (_isRefreshing.value) return;
 
-    _isRefreshingNotifier.value = true;
-    _showIndicatorNotifier.value = true;
-    _dragOffsetNotifier.value = 90.0;
+    _isRefreshing.value = true;
+    _showIndicator.value = true;
+    _dragOffset.value = 90.0;
     _spinController.repeat();
 
     try {
@@ -118,15 +118,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await Future.delayed(const Duration(milliseconds: 600));
 
     if (mounted) {
-      _isRefreshingNotifier.value = false;
-      _showIndicatorNotifier.value = false;
-      _dragOffsetNotifier.value = 0.0;
+      _isRefreshing.value = false;
+      _showIndicator.value = false;
+      _dragOffset.value = 0.0;
       _spinController.stop();
     }
   }
 
   void _handleHomeTabTap() {
-    if (_isRefreshingNotifier.value) return;
+    if (_isRefreshing.value) return;
 
     if (_scrollController.hasClients) {
       if (_scrollController.offset > 0) {
@@ -145,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
-  double _getIndicatorTop(double topPadding, double maskHeight, bool isRefreshing, double dragOffset) {
+  double _getIndicatorTop(double topPadding, double maskHeight, double dragOffset, bool isRefreshing) {
     const double indicatorHeight = 42.0;
     final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
 
@@ -158,23 +158,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildReloadIndicator(double topPadding, double maskHeight) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        _dragOffsetNotifier,
-        _showIndicatorNotifier,
-        _isRefreshingNotifier,
-      ]),
-      builder: (context, child) {
-        final showIndicator = _showIndicatorNotifier.value;
-        final isRefreshing = _isRefreshingNotifier.value;
-        final dragOffset = _dragOffsetNotifier.value;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_dragOffset, _isRefreshing, _showIndicator]),
+      builder: (context, _) {
+        final dragOffset = _dragOffset.value;
+        final isRefreshing = _isRefreshing.value;
+        final showIndicator = _showIndicator.value;
 
         if (!showIndicator && !isRefreshing) {
           return const SizedBox.shrink();
         }
 
         final double pullProgress = (dragOffset / 90.0).clamp(0.0, 1.0);
-        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, isRefreshing, dragOffset);
+
+        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, dragOffset, isRefreshing);
         final double opacity = isRefreshing ? 1.0 : pullProgress;
         final double scale = isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
 
@@ -273,53 +270,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const RepaintBoundary(child: CreateEventCTA()),
-                  const RepaintBoundary(child: UpcomingEventsSection()),
+                  const CreateEventCTA(),
+                  const UpcomingEventsSection(),
                   const SizedBox(height: 24),
-                  RepaintBoundary(
-                    child: HomeFeedCarouselSection(
-                      title: 'For You',
-                      subtitle: 'Your social life curated',
-                      iconAsset: 'assets/icons/home/fyp_icon.svg',
-                      detailRoute: '/home/for-you',
-                      rawFeedProvider: forYouRawFeedProvider,
-                      scheduledEventsProvider: forYouScheduledEventsProvider,
-                      errorPrefix: 'Error loading For You feed',
-                    ),
+                  HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_for_you'),
+                    title: 'For You',
+                    subtitle: 'Your social life curated',
+                    iconAsset: 'assets/icons/home/fyp_icon.svg',
+                    detailRoute: '/home/for-you',
+                    rawFeedProvider: forYouRawFeedProvider,
+                    scheduledEventsProvider: forYouScheduledEventsProvider,
+                    errorPrefix: 'Error loading For You feed',
                   ),
                   const SizedBox(height: 24),
-                  RepaintBoundary(
-                    child: HomeFeedCarouselSection(
-                      title: 'In your Area',
-                      subtitle: 'The Streets are calling',
-                      iconAsset: 'assets/icons/home/area_icon.svg',
-                      detailRoute: '/home/in-your-area',
-                      rawFeedProvider: eventsInAreaRawFeedProvider,
-                      scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
-                      errorPrefix: 'Error loading In your Area feed',
-                    ),
+                  HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_in_your_area'),
+                    title: 'In your Area',
+                    subtitle: 'The Streets are calling',
+                    iconAsset: 'assets/icons/home/area_icon.svg',
+                    detailRoute: '/home/in-your-area',
+                    rawFeedProvider: eventsInAreaRawFeedProvider,
+                    scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
+                    errorPrefix: 'Error loading In your Area feed',
                   ),
                   const SizedBox(height: 24),
-                  RepaintBoundary(
-                    child: HomeFeedCarouselSection(
-                      title: 'Friends & Mutuals',
-                      subtitle: 'Your inner circle’s outer circle',
-                      iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
-                      detailRoute: '/home/friends-and-mutuals',
-                      rawFeedProvider: friendsAndMutualsRawFeedProvider,
-                      scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
-                      errorPrefix: 'Error loading Friends & Mutuals feed',
-                    ),
+                  HomeFeedCarouselSection(
+                    key: const ValueKey('carousel_friends_and_mutuals'),
+                    title: 'Friends & Mutuals',
+                    subtitle: 'Your inner circle’s outer circle',
+                    iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
+                    detailRoute: '/home/friends-and-mutuals',
+                    rawFeedProvider: friendsAndMutualsRawFeedProvider,
+                    scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
+                    errorPrefix: 'Error loading Friends & Mutuals feed',
                   ),
                   const SizedBox(height: 24),
-                  const RepaintBoundary(child: DiscoverMoreWidget()),
+                  const DiscoverMoreWidget(),
                 ],
               ),
             ),
           ),
 
           // Custom Reload Indicator (Emerges from below the app header)
-          RepaintBoundary(child: _buildReloadIndicator(topPadding, maskHeight)),
+          _buildReloadIndicator(topPadding, maskHeight),
 
           // 2. Solid Masking Layer (Sharp cut-off 5dp below pills)
           Positioned(
@@ -574,11 +568,8 @@ class HomeFeedCarouselSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rawFeedAsync = ref.watch(rawFeedProvider);
 
-    if (rawFeedAsync.isLoading) {
-      return _buildLoadingState(context);
-    }
-
     return rawFeedAsync.when(
+      skipLoadingOnRefresh: true,
       data: (rawList) {
         if (rawList.isEmpty) {
           return const SizedBox.shrink();
@@ -590,25 +581,30 @@ class HomeFeedCarouselSection extends ConsumerWidget {
         }
 
         return Column(
+          key: ValueKey('${title}_column'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
             const SizedBox(height: 16),
             SizedBox(
               height: EventCardLarge.carouselHeight,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: events.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  return EventCardLarge(
-                    event: events[index],
-                    onOptionTap: () {},
-                    onInterestedTap: () {},
-                  );
-                },
+              child: RepaintBoundary(
+                child: ListView.separated(
+                  key: PageStorageKey('${title}_list'),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  addRepaintBoundaries: false,
+                  itemCount: events.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return EventCardLarge(
+                      event: events[index],
+                      onOptionTap: () {},
+                      onInterestedTap: () {},
+                    );
+                  },
+                ),
               ),
             ),
           ],

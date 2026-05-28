@@ -384,6 +384,20 @@ class _InterestedButton extends ConsumerStatefulWidget {
 }
 
 class _InterestedButtonState extends ConsumerState<_InterestedButton> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(canRequestFocus: false);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final rsvpStatus = ref.watch(userEventRsvpProvider(widget.eventId)).value;
@@ -433,6 +447,7 @@ class _InterestedButtonState extends ConsumerState<_InterestedButton> {
     }
 
     return TextButton.icon(
+      focusNode: _focusNode,
       onPressed: hasActiveRsvp ? null : () {
         final newInterested = !isInterested;
         final newCount = newInterested ? displayCount + 1 : displayCount - 1;

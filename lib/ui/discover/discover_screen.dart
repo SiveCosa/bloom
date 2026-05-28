@@ -670,6 +670,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
         SizedBox(
           height: EventCardLarge.carouselHeight,
           child: ListView.separated(
+            key: PageStorageKey('discover_${title}_list'),
             physics: const BouncingScrollPhysics(),
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
