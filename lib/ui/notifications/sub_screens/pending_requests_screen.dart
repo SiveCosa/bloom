@@ -6,6 +6,8 @@ import '../../../core/media/image_loader_helper.dart';
 import '../../../domain/friendship/friendship_providers.dart';
 import '../../../domain/auth/auth_providers.dart';
 import '../../../data/connection_repository.dart';
+import '../../../domain/notification/notification_providers.dart';
+import '../../../domain/notification/notification_model.dart';
 import '../../shared/widgets/gradient_top_bar.dart';
 import '../../shared/widgets/container_placeholder.dart';
 
@@ -17,6 +19,17 @@ class PendingRequestsScreen extends ConsumerStatefulWidget {
 }
 
 class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationControllerProvider)?.markAsReadByType([
+        NotificationType.eventRequestToJoin,
+        NotificationType.eventWaitlist,
+      ]);
+    });
+  }
+
   String _getElapsedTime(DateTime? dateTime) {
     if (dateTime == null) return '';
     final difference = DateTime.now().difference(dateTime);

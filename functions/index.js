@@ -1,7 +1,7 @@
 const { auth } = require("firebase-functions/v1");
 const { logger } = require("firebase-functions/v2");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
-const { onDocumentWritten } = require("firebase-functions/v2/firestore");
+const { onDocumentWritten, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
@@ -1533,6 +1533,34 @@ exports.onEventDelete = onDocumentWritten(
         } catch (e) {
           console.error(`Failed to delete poster from Storage: ${e}`);
         }
+      }
+
+      // 4. Delete all notifications referencing this event
+      try {
+        const notifsSnap = await db.collectionGroup("notifications")
+          .where("target_id", "==", eventId)
+          .get();
+
+        if (!notifsSnap.empty) {
+          const docs = notifsSnap.docs;
+          const chunkSize = 400;
+          let deletedCount = 0;
+
+          for (let i = 0; i < docs.length; i += chunkSize) {
+            const batch = db.batch();
+            const chunk = docs.slice(i, i + chunkSize);
+
+            chunk.forEach((doc) => {
+              batch.delete(doc.ref);
+              deletedCount++;
+            });
+
+            await batch.commit();
+          }
+          console.log(`Cleaned up ${deletedCount} notifications for deleted event ${eventId}`);
+        }
+      } catch (e) {
+        console.error(`Failed to clean up notifications for event ${eventId}:`, e);
       }
     }
   }

@@ -17,13 +17,6 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
-  void dispose() {
-    // Mark all notifications as read when the user leaves the page
-    ref.read(notificationControllerProvider)?.markAllAsRead();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final notificationsAsync = ref.watch(notificationsProvider);
     final countAsync = ref.watch(incomingRequestsCountProvider);
@@ -36,31 +29,39 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             height: 100,
             showDarkOverlay: false,
           ),
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(
-              title: const Text(
-                'Notifications',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
+          PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, result) {
+              ref.read(notificationControllerProvider)?.markAllAsRead();
+            },
+            child: Scaffold(
               backgroundColor: Colors.transparent,
-              elevation: 0,
-              centerTitle: false,
-              leadingWidth: 48,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.white,
-                  size: 20,
+              appBar: AppBar(
+                title: const Text(
+                  'Notifications',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                  ),
                 ),
-                onPressed: () => Navigator.of(context).pop(),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                centerTitle: false,
+                leadingWidth: 48,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    ref.read(notificationControllerProvider)?.markAllAsRead();
+                    Navigator.of(context).pop();
+                  },
+                ),
               ),
-            ),
-            body: notificationsAsync.when(
+              body: notificationsAsync.when(
               data: (notifications) {
                 // Group notifications
                 final now = DateTime.now();
@@ -68,11 +69,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 final last7Days = <AppNotification>[];
                 final last30Days = <AppNotification>[];
                 int pendingInvitesCount = 0;
+                int unreadInvitesCount = 0;
+                int unreadFriendRequests = 0;
 
                 for (var n in notifications) {
                   // We still count them for the headers, but we DO NOT skip them for the feed
                   if (n.type == NotificationType.eventInvite || n.type == NotificationType.coHostInvite) {
                     pendingInvitesCount++;
+                    if (!n.isRead) unreadInvitesCount++;
+                  }
+                  
+                  if (n.type == NotificationType.friendRequest && !n.isRead) {
+                    unreadFriendRequests++;
                   }
 
                   final diff = now.difference(n.createdAt);
@@ -98,16 +106,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         title: 'Friend requests',
                         subtitle: countAsync.when(
                           data: (count) {
-                            final hasRequests = count > 0;
+                            final hasUnread = unreadFriendRequests > 0;
                             return Text(
-                              hasRequests
-                                  ? '$count new friend request${count > 1 ? 's' : ''}'
-                                  : 'You have no new friend requests',
+                              hasUnread
+                                  ? '$unreadFriendRequests new friend request${unreadFriendRequests > 1 ? 's' : ''}'
+                                  : (count > 0 ? '$count pending friend request${count > 1 ? 's' : ''}' : 'You have no new friend requests'),
                               style: TextStyle(
-                                color: hasRequests
+                                color: hasUnread
                                     ? Colors.white
                                     : Colors.white.withValues(alpha: 0.38),
-                                fontWeight: hasRequests
+                                fontWeight: hasUnread
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                                 fontSize: 14,
@@ -142,14 +150,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         iconBackgroundColor: const Color(0xFFB087F5), // Custom purple
                         title: 'Event invitations',
                         subtitle: Text(
-                          pendingInvitesCount > 0 
-                              ? '$pendingInvitesCount new invitation${pendingInvitesCount > 1 ? 's' : ''}'
-                              : 'You have no pending invitations',
+                          unreadInvitesCount > 0 
+                              ? '$unreadInvitesCount new invitation${unreadInvitesCount > 1 ? 's' : ''}'
+                              : (pendingInvitesCount > 0 ? '$pendingInvitesCount pending invitation${pendingInvitesCount > 1 ? 's' : ''}' : 'You have no pending invitations'),
                           style: TextStyle(
-                            color: pendingInvitesCount > 0 
+                            color: unreadInvitesCount > 0 
                                 ? Colors.white 
                                 : Colors.white.withValues(alpha: 0.38),
-                            fontWeight: pendingInvitesCount > 0 
+                            fontWeight: unreadInvitesCount > 0 
                                 ? FontWeight.bold 
                                 : FontWeight.normal,
                             fontSize: 14,
@@ -221,7 +229,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
               ),
             ),
-          ),
+          ), // Close Scaffold
+          ), // Close PopScope
         ],
       ),
     );

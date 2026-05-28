@@ -71,6 +71,42 @@ class NotificationController {
     }
   }
 
+  Future<void> markAsReadByType(List<NotificationType> types) async {
+    final typeStrs = types.map((t) {
+      switch (t) {
+        case NotificationType.friendRequest: return 'friend_request';
+        case NotificationType.eventInvite: return 'event_invite';
+        case NotificationType.friendPostedEvent: return 'friend_posted_event';
+        case NotificationType.eventRsvp: return 'event_rsvp';
+        case NotificationType.eventWaitlist: return 'event_waitlist';
+        case NotificationType.eventRequestToJoin: return 'event_request_to_join';
+        case NotificationType.friendRequestAccepted: return 'friend_request_accepted';
+        case NotificationType.eventUpdate: return 'event_update';
+        case NotificationType.eventReminder: return 'event_reminder';
+        case NotificationType.waitlistApproved: return 'waitlist_approved';
+        case NotificationType.coHostInvite: return 'co_host_invite';
+        default: return 'unknown';
+      }
+    }).toList();
+
+    final batch = FirebaseFirestore.instance.batch();
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('notifications')
+        .where('is_read', isEqualTo: false)
+        .where('type', whereIn: typeStrs)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'is_read': true});
+    }
+
+    if (snapshot.docs.isNotEmpty) {
+      await batch.commit();
+    }
+  }
+
   Future<void> deleteNotification(String notificationId) async {
     await FirebaseFirestore.instance
         .collection('users')

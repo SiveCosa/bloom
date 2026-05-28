@@ -5,11 +5,27 @@ import '../../../domain/notification/notification_providers.dart';
 import '../../../domain/notification/notification_model.dart';
 import '../widgets/notification_tiles.dart';
 
-class EventInvitationsScreen extends ConsumerWidget {
+class EventInvitationsScreen extends ConsumerStatefulWidget {
   const EventInvitationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EventInvitationsScreen> createState() => _EventInvitationsScreenState();
+}
+
+class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationControllerProvider)?.markAsReadByType([
+        NotificationType.eventInvite,
+        NotificationType.coHostInvite,
+      ]);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Container(

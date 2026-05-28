@@ -435,12 +435,20 @@ class EventRepository {
 
       for (final rawEvent in latestSchedule!) {
         final id = rawEvent['id'] as String;
-        if (eventSubs.containsKey(id)) continue;
+        if (eventSubs.containsKey(id)) {
+          if (validatedEvents.containsKey(id)) {
+            validatedEvents[id] = rawEvent;
+          }
+          continue;
+        }
 
         eventSubs[id] = getEventStream(id).listen(
           (event) {
             if (event != null) {
-              validatedEvents[id] = rawEvent;
+              final currentRawEvent = latestSchedule?.firstWhere((e) => e['id'] == id, orElse: () => rawEvent);
+              if (currentRawEvent != null) {
+                validatedEvents[id] = currentRawEvent;
+              }
             } else {
               validatedEvents.remove(id);
             }
@@ -509,12 +517,20 @@ class EventRepository {
 
       for (final rawEvent in latestSchedule!) {
         final id = rawEvent['id'] as String;
-        if (eventSubs.containsKey(id)) continue;
+        if (eventSubs.containsKey(id)) {
+          if (validatedEvents.containsKey(id)) {
+            validatedEvents[id] = rawEvent;
+          }
+          continue;
+        }
 
         eventSubs[id] = getEventStream(id).listen(
           (event) {
             if (event != null) {
-              validatedEvents[id] = rawEvent;
+              final currentRawEvent = latestSchedule?.firstWhere((e) => e['id'] == id, orElse: () => rawEvent);
+              if (currentRawEvent != null) {
+                validatedEvents[id] = currentRawEvent;
+              }
             } else {
               validatedEvents.remove(id);
             }
