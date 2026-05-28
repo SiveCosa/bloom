@@ -279,15 +279,7 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
             height: 48,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFFE91E63),
-                  Color(0xFF9C27B0),
-                  Color(0xFFFF9800),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: Color(0xFF0086D8),
             ),
             child: const Icon(Icons.share, color: Colors.white, size: 24),
           ),

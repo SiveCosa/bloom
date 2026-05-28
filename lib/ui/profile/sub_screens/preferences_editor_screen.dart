@@ -251,7 +251,7 @@ class _PreferencesEditorScreenState
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.chevron_left, color: Colors.white, size: 24),
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 8),
           const Text(

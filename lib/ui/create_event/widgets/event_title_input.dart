@@ -64,7 +64,7 @@ class _EventTitleInputState extends State<EventTitleInput> {
         decoration: InputDecoration(
           hintText: 'Event title',
           hintStyle: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),

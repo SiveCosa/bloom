@@ -22,6 +22,7 @@ import 'widgets/guest_list_card.dart';
 import 'widgets/host_control_bar.dart';
 import 'widgets/invite_friends_sheet.dart';
 import '../create_event/widgets/host_invite_section.dart';
+import 'package:bloom/ui/create_event/widgets/rsvp_option_preview.dart';
 import '../shared/widgets/event_map_card.dart';
 class EventInvitationScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -159,11 +160,12 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   final double sheetTopMinimized = screenHeight * (1.0 - 0.28);
                   final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
                   
+                  final double statusBarHeight = MediaQuery.of(context).padding.top;
                   final double targetTop = isSquare 
                     ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
                     : topBarHeight;
 
-                  final double posterTop = ui.lerpDouble(0, targetTop, minimizedProgress) ?? 0;
+                  final double posterTop = ui.lerpDouble(statusBarHeight, targetTop, minimizedProgress) ?? statusBarHeight;
 
                   return Positioned(
                     top: posterTop,
@@ -320,7 +322,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                           padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
                                           child: Column(
                                             children: [
-                                              const SizedBox(height: 10),
+                                              const SizedBox(height: 12),
                                               _buildVisibilityPill(event),
                                               const SizedBox(height: 16),
                                               // Event Title
@@ -352,11 +354,13 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                   return Column(
                                                     children: [
                                                       _buildDateRow(event),
-                                                      const SizedBox(height: 10),
-                                                      Opacity(
-                                                        opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                                        child: _buildLocationRow(event),
-                                                      ),
+                                                      if (event.location != null) ...[
+                                                        const SizedBox(height: 10),
+                                                        Opacity(
+                                                          opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                                                          child: _buildLocationRow(event),
+                                                        ),
+                                                      ],
                                                       const SizedBox(height: 25),
                                                     ],
                                                   );
@@ -415,6 +419,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                       );
                                                     }
                                                   ),
+                                                ],
+                                                if (isHost) ...[
+                                                  const SizedBox(height: 16),
+                                                  _buildRsvpOptionPreview(event),
                                                 ],
                                                 const SizedBox(height: 120),
                                               ],
@@ -621,8 +629,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       child: const Icon(Icons.reply_rounded, color: Colors.black, size: 22),
                     ),
                     () {
-                      // Share logic
-                      Share.share('Check out ${event.title} on Bloom!');
+                      _showInviteFriendsSheet(context, event);
                     },
                   ),
                   const SizedBox(width: 10),
@@ -1778,6 +1785,78 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRsvpOptionPreview(Event event) {
+    final requireApproval = event.audience.requireApproval;
+    final allowMaybe = event.audience.allowMaybe;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
+          child: Text(
+            'RSVP SETTING',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.4),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        Container(
+          height: 75,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(37.5),
+            border: Border.all(
+              color: Colors.white.withValues(
+                alpha: 0.15,
+              ),
+            ),
+          ),
+          child: requireApproval
+              ? const Row(
+                  children: [
+                    RsvpOptionPreview(
+                      icon: Icons.add_circle_outline,
+                      label: 'Get on the list',
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    const RsvpOptionPreview(
+                      icon: Icons.check_circle_outline,
+                      label: 'Going',
+                    ),
+                    _buildVerticalDivider(),
+                    if (allowMaybe) ...[
+                      const RsvpOptionPreview(
+                        icon: Icons.help_outline,
+                        label: 'Maybe',
+                      ),
+                      _buildVerticalDivider(),
+                    ],
+                    const RsvpOptionPreview(
+                      icon: Icons.cancel_outlined,
+                      label: 'Decline',
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerticalDivider() {
+    return Container(
+      width: 1,
+      height: 24,
+      color: Colors.white.withValues(alpha: 0.1),
     );
   }
 }

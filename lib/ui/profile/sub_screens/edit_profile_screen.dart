@@ -467,7 +467,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 8),
           const Text(

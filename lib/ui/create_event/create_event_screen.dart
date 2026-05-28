@@ -194,9 +194,9 @@ class CreateEventScreen extends ConsumerWidget {
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
-                                    Icons.chevron_left,
+                                    Icons.arrow_back_ios_new,
                                     color: Colors.black,
-                                    size: 24,
+                                    size: 18,
                                   ),
                                 ),
                               ),
@@ -704,9 +704,8 @@ class CreateEventScreen extends ConsumerWidget {
                                   children: [
                                     // RSVP Preview Pill
                                     Container(
-                                      height: requireApproval ? 50 : null,
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: requireApproval ? 0 : 12,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
                                       ),
                                       decoration: BoxDecoration(
                                         color: Colors.white.withValues(alpha: 0.15),
@@ -720,28 +719,12 @@ class CreateEventScreen extends ConsumerWidget {
                                       child: AnimatedSwitcher(
                                         duration: const Duration(milliseconds: 300),
                                         child: requireApproval
-                                            ? Row(
-                                                key: const ValueKey('approval'),
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
+                                            ? const Row(
+                                                key: ValueKey('approval'),
                                                 children: [
-                                                  Icon(
-                                                    Icons.add_circle_outline,
-                                                    color: Colors.white.withValues(
-                                                      alpha: 0.54,
-                                                    ),
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    'Get on the list',
-                                                    style: TextStyle(
-                                                      color: Colors.white.withValues(
-                                                        alpha: 0.54,
-                                                      ),
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
+                                                  RsvpOptionPreview(
+                                                    icon: Icons.add_circle_outline,
+                                                    label: 'Get on the list',
                                                   ),
                                                 ],
                                               )
@@ -762,7 +745,7 @@ class CreateEventScreen extends ConsumerWidget {
                                                   ],
                                                   const RsvpOptionPreview(
                                                     icon: Icons.cancel_outlined,
-                                                    label: 'Not Going',
+                                                    label: 'Decline',
                                                   ),
                                                 ],
                                               ),

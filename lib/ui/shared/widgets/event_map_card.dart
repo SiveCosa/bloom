@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -188,83 +187,80 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Column(
-              children: [
-                AspectRatio(
-                  aspectRatio: 2.1,
-                  child: Container(
-                    color: const Color(0xFF0F1113),
-                    child: Stack(
-                      children: [
-                        // Static Map Background / Shimmer / Fallback Custom Paint Grid
-                        Positioned.fill(
-                          child: _buildMapBackground(),
-                        ),
+          child: Column(
+            children: [
+              AspectRatio(
+                aspectRatio: 2.1,
+                child: Container(
+                  color: const Color(0xFF0F1113),
+                  child: Stack(
+                    children: [
+                      // Static Map Background / Shimmer / Fallback Custom Paint Grid
+                      Positioned.fill(
+                        child: _buildMapBackground(),
+                      ),
 
-                        // Tap overlay button / premium tooltip
-                        if (widget.event.location != null)
-                          Positioned(
-                            right: 12,
-                            bottom: 12,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.navigation_outlined, color: Colors.white, size: 12),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Navigate',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                      // Tap overlay button / premium tooltip
+                      if (widget.event.location != null)
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                width: 0.5,
                               ),
                             ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.navigation_outlined, color: Colors.white, size: 12),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Navigate',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 20),
-                  child: Column(
-                    children: [
-                      Text(
-                        widget.event.location!.displayName,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.event.location!.formattedAddress,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 12,
-                        ),
-                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(15, 15, 15, 20),
+                child: Column(
+                  children: [
+                    Text(
+                      widget.event.location!.displayName,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.event.location!.formattedAddress,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

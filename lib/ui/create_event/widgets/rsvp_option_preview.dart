@@ -30,7 +30,7 @@ class RsvpOptionPreview extends StatelessWidget {
               label,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.54),
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),

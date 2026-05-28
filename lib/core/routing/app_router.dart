@@ -28,6 +28,7 @@ import '../../ui/profile/sub_screens/events_joined_screen.dart';
 import '../../ui/profile/sub_screens/interested_events_screen.dart';
 import '../../ui/profile/sub_screens/preferences_editor_screen.dart';
 import '../../ui/profile/sub_screens/edit_profile_screen.dart';
+import '../../ui/profile/sub_screens/search_people_screen.dart';
 import '../../ui/profile/public_profile_screen.dart';
 import '../../ui/create_event/create_event_screen.dart';
 import '../../ui/create_event/event_preview_screen.dart';
@@ -200,6 +201,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile/edit',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/search',
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const SearchPeopleScreen(),
+        ),
       ),
       GoRoute(
         path: '/profile/preferences',
