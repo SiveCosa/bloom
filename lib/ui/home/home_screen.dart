@@ -70,28 +70,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
-    if (notification is ScrollUpdateNotification) {
-      if (!_isRefreshing.value) {
-        final double offset = _scrollController.offset;
-        if (offset < 0) {
-          _dragOffset.value = -offset;
-          _showIndicator.value = true;
-        } else {
-          if (_dragOffset.value != 0.0) {
-            _dragOffset.value = 0.0;
-            _showIndicator.value = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (notification is ScrollUpdateNotification) {
+        if (!_isRefreshing.value) {
+          final double offset = _scrollController.offset;
+          if (offset < 0) {
+            _dragOffset.value = -offset;
+            _showIndicator.value = true;
+          } else {
+            if (_dragOffset.value != 0.0) {
+              _dragOffset.value = 0.0;
+              _showIndicator.value = false;
+            }
           }
         }
+      } else if (notification is UserScrollNotification &&
+          notification.direction == ScrollDirection.idle) {
+        if (!_isRefreshing.value && _scrollController.offset <= -90.0) {
+          _triggerRefresh();
+        } else if (!_isRefreshing.value && _dragOffset.value > 0.0) {
+          _dragOffset.value = 0.0;
+          _showIndicator.value = false;
+        }
       }
-    } else if (notification is UserScrollNotification &&
-        notification.direction == ScrollDirection.idle) {
-      if (!_isRefreshing.value && _scrollController.offset <= -90.0) {
-        _triggerRefresh();
-      } else if (!_isRefreshing.value && _dragOffset.value > 0.0) {
-        _dragOffset.value = 0.0;
-        _showIndicator.value = false;
-      }
-    }
+    });
     return false;
   }
 

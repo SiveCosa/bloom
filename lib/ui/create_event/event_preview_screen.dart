@@ -166,6 +166,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             snapSizes: [0.28, 0.55, 0.88 - (10 / MediaQuery.of(context).size.height)],
             builder: (context, scrollController) {
               final double screenHeight = MediaQuery.of(context).size.height;
+              final mockEvent = _getMockEvent(state, userProfile);
               
               return GestureDetector(
                 onTap: () {
@@ -186,86 +187,52 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                     child: Stack(
                       children: [
-                        // Sheet's Aurora Background (Reactive)
+                        // Sheet's Aurora Background & Overlay (Reactive, Optimized)
                         ValueListenableBuilder<double>(
                           valueListenable: _sheetSize,
-                          builder: (context, size, child) {
+                          child: AuroraBackground(colors: state.auroraColors),
+                          builder: (context, size, childWidget) {
                             final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                            return Positioned(
-                              top: -(MediaQuery.of(context).size.height * (1.0 - size)),
-                              left: 0,
-                              right: 0,
-                              height: MediaQuery.of(context).size.height,
-                              child: Opacity(
-                                opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                child: AuroraBackground(colors: state.auroraColors),
-                              ),
-                            );
-                          },
-                        ),
-                        // Subtle Glass Overlay (Reactive)
-                        ValueListenableBuilder<double>(
-                          valueListenable: _sheetSize,
-                          builder: (context, size, child) {
-                            final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                            return Positioned.fill(
-                              child: Opacity(
-                                opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                child: Container(
-                                  color: Colors.white.withValues(alpha: 0.08),
+                            final double opacity = (1.0 - minimizedProgress).clamp(0.0, 1.0);
+                            return Stack(
+                              children: [
+                                Positioned(
+                                  top: -(MediaQuery.of(context).size.height * (1.0 - size)),
+                                  left: 0,
+                                  right: 0,
+                                  height: MediaQuery.of(context).size.height,
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: childWidget,
+                                  ),
                                 ),
-                              ),
+                                Positioned.fill(
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: Container(
+                                      color: Colors.white.withValues(alpha: 0.08),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             );
                           },
                         ),
                         
                         Column(
                           children: [
-                            // Fixed Transparent Header with Rotating Chevron Gripper
+                            // Fixed Transparent Header with Gripper
                             SizedBox(
                               height: 25,
                               width: double.infinity,
                               child: Center(
-                                child: ValueListenableBuilder<double>(
-                                  valueListenable: _sheetSize,
-                                  builder: (context, size, child) {
-                                    final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                    final double maxSheetSize = 0.88 - (10 / screenHeight);
-                                    final double expandedProgress = ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
-                                    
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 0),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Transform.rotate(
-                                            angle: (ui.lerpDouble(0, -0.5, minimizedProgress) ?? 0) + 
-                                                   (ui.lerpDouble(0, 0.5, expandedProgress) ?? 0),
-                                            child: Container(
-                                              width: 20,
-                                              height: 4,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.3),
-                                                borderRadius: const BorderRadius.horizontal(left: Radius.circular(2)),
-                                              ),
-                                            ),
-                                          ),
-                                          Transform.rotate(
-                                            angle: (ui.lerpDouble(0, 0.5, minimizedProgress) ?? 0) + 
-                                                   (ui.lerpDouble(0, -0.5, expandedProgress) ?? 0),
-                                            child: Container(
-                                              width: 20,
-                                              height: 4,
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(alpha: 0.3),
-                                                borderRadius: const BorderRadius.horizontal(right: Radius.circular(2)),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
                                 ),
                               ),
                             ),
@@ -288,7 +255,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                             },
                                           ),
                                           
-                                          _buildVisibilityPill(state),
+                                          _buildVisibilityPill(mockEvent),
                                           const SizedBox(height: 16),
                                           
                                           ShaderMask(
@@ -338,48 +305,44 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                   SliverToBoxAdapter(
                                     child: ValueListenableBuilder<double>(
                                       valueListenable: _sheetSize,
-                                      builder: (context, size, child) {
-                                        if (size < 0.4) return const SizedBox.shrink();
-                                        
-                                        final mockEvent = _getMockEvent(state, userProfile);
-                                        
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 15),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
-                                                _buildDescriptionCard(state),
-                                                const SizedBox(height: 16),
-                                              ],
-                                              GuestListCard(
-                                                event: mockEvent,
-                                                onInvitePressed: () {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(content: Text('This is a preview. Share action is disabled.')),
-                                                  );
-                                                },
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
+                                              _buildDescriptionCard(state),
+                                              const SizedBox(height: 16),
+                                            ],
+                                            GuestListCard(
+                                              event: mockEvent,
+                                              onInvitePressed: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('This is a preview. Share action is disabled.')),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(height: 16),
+                                            HostPreviewWidget(
+                                              userProfile: userProfile,
+                                              coHosts: state.coHosts,
+                                            ),
+                                            if (state.location != null) ...[
+                                              const SizedBox(height: 16),
+                                              EventWeatherCard(
+                                                location: state.location,
+                                                startDate: state.timing.startDate,
                                               ),
                                               const SizedBox(height: 16),
-                                              HostInviteSection(
-                                                userProfile: userProfile,
-                                                coHosts: state.coHosts,
-                                                onAddCoHost: () {},
-                                                showInviteFriends: false,
-                                              ),
-                                              if (state.location != null) ...[
-                                                const SizedBox(height: 16),
-                                                EventWeatherCard(
-                                                  location: state.location,
-                                                  startDate: state.timing.startDate,
-                                                ),
-                                                const SizedBox(height: 16),
-                                                _buildMapCard(mockEvent),
-                                              ],
-                                              const SizedBox(height: 120),
+                                              _buildMapCard(mockEvent),
                                             ],
-                                          ),
-                                        );
+                                            const SizedBox(height: 120),
+                                          ],
+                                        ),
+                                      ),
+                                      builder: (context, size, childWidget) {
+                                        if (size < 0.4) return const SizedBox.shrink();
+                                        return childWidget!;
                                       },
                                     ),
                                   ),
@@ -633,9 +596,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Padding(
+        child: Padding(
             padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,7 +684,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -977,59 +937,87 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
   Widget _buildRSVPActionBar(CreateEventState state) {
     final allowMaybe = state.audience.allowMaybe;
+    final colors = state.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
     
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32.5),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          height: state.audience.requireApproval ? 50 : 65,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(state.audience.requireApproval ? 25 : 32.5),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 20,
-                spreadRadius: 0,
-                offset: const Offset(0, 8),
-              ),
-            ],
+    List<Color> gradientColors;
+    if (colors.length >= 2) {
+      gradientColors = [colors[0], colors[1]];
+    } else if (colors.length == 1) {
+      gradientColors = [colors[0], colors[0].withValues(alpha: 0.8)];
+    } else {
+      gradientColors = [const Color(0xFF6366f1), const Color(0xFFa855f7)];
+    }
+
+    final double barHeight = 75;
+    final double borderRadiusVal = 37.5;
+    
+    return Container(
+      height: barHeight,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadiusVal),
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: state.audience.requireApproval
-              ? Row(
+        ],
+      ),
+      child: state.audience.requireApproval
+          ? GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('This is a preview. RSVP actions are disabled.')),
+                );
+              },
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                alignment: Alignment.center,
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(34),
+                ),
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       Icons.add_circle_outline,
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white,
                       size: 24,
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Get on the list',
+                    SizedBox(height: 4),
+                    Text(
+                      'Get on List',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
-                )
-              : Row(
-                  children: [
-                    _buildRSVPButton(Icons.check_circle_outline, 'Going'),
-                    if (allowMaybe) ...[
-                      _buildRSVPDivider(),
-                      _buildRSVPButton(Icons.help_outline, 'Maybe'),
-                    ],
-                    _buildRSVPDivider(),
-                    _buildRSVPButton(Icons.highlight_off, 'Decline'),
-                  ],
                 ),
-        ),
-      ),
+              ),
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildRSVPButton(Icons.check_circle_outline, 'Going'),
+                if (allowMaybe) ...[
+                  _buildRSVPDivider(),
+                  _buildRSVPButton(Icons.help_outline, 'Maybe'),
+                ],
+                _buildRSVPDivider(),
+                _buildRSVPButton(Icons.highlight_off, 'Decline'),
+              ],
+            ),
     );
   }
 
@@ -1041,63 +1029,125 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             const SnackBar(content: Text('This is a preview. RSVP actions are disabled.')),
           );
         },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-          ],
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          color: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildVisibilityPill(CreateEventState state) {
-    final visibility = state.audience.visibility;
+  String _getTimeStatusText(Event event) {
+    if (event.metadata.status == EventStatus.cancelled) return 'Cancelled';
+    if (event.timing.isPast) return 'Ended';
+    
+    final now = DateTime.now();
+    if (event.timing.isOngoing) return 'Live now';
+    
+    final start = event.timing.startDate;
+    if (start != null && event.timing.isUpcoming) {
+      final diff = start.difference(now);
+      if (diff.inHours < 24) {
+        if (diff.inHours >= 1) {
+          return 'Starts in ${diff.inHours}h';
+        } else if (diff.inMinutes >= 1) {
+          return 'Starts in ${diff.inMinutes}m';
+        } else {
+          return 'Starting now';
+        }
+      }
+    }
+    return '';
+  }
+
+  Widget _buildVisibilityPill(Event event) {
+    final visibility = event.audience.visibility;
+    final timeStatus = _getTimeStatusText(event);
+    final status = event.computedStatus;
+    final isLive = status == EventStatus.active && event.timing.isOngoing;
+    
     String text = visibility.title;
     if (visibility == EventVisibility.public || visibility == EventVisibility.private) {
       text += ' event';
     }
+    
+    if (timeStatus.isNotEmpty) {
+      text += ' • $timeStatus';
+    }
 
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: FittedBox(
-                child: Icon(visibility.outlinedIcon, color: Colors.white, size: 28),
-              ),
+    final accentColor = Color(event.statusColorValue);
+    final useAccent = timeStatus.isNotEmpty && status != EventStatus.active;
+    final isSpecial = isLive || useAccent;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
+              width: 0.5,
             ),
-            const SizedBox(width: 8),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: FittedBox(
+                  child: Icon(visibility.outlinedIcon, color: isSpecial ? accentColor : Colors.white, size: 28),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: TextStyle(
+                  color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildRSVPDivider() {
-    return Container(
-      width: 1,
-      height: 30,
-      color: Colors.white.withValues(alpha: 0.1),
+    return Center(
+      child: Container(
+        width: 1,
+        height: 30,
+        color: Colors.white.withValues(alpha: 0.1),
+      ),
     );
   }
 
@@ -1341,9 +1391,7 @@ class _PulsingMapCardState extends State<_PulsingMapCard> with SingleTickerProvi
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Column(
+          child: Column(
               children: [
                 AspectRatio(
                   aspectRatio: 2.1,
@@ -1419,7 +1467,6 @@ class _PulsingMapCardState extends State<_PulsingMapCard> with SingleTickerProvi
             ),
           ),
         ),
-      ),
     );
   }
 }

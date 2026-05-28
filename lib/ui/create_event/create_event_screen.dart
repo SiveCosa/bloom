@@ -272,8 +272,8 @@ class CreateEventScreen extends ConsumerWidget {
                           ),
 
                           const SizedBox(
-                            height: 0,
-                          ), //leave as sero please incase i want to chane the gap
+                            height: 10,
+                          ), //leave as gap for spacing
                           // Poster Module
                           PosterModule(
                             onEditPoster: () => _showPosterSelection(context),

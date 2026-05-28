@@ -39,44 +39,41 @@ class _EventTitleInputState extends State<EventTitleInput> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       height: 60,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
       child: TextFormField(
         controller: _controller,
         focusNode: _focusNode,
         onChanged: null, // Global state updated on unfocus
+        maxLength: 50,
         textInputAction: TextInputAction.done,
+        textCapitalization: TextCapitalization.sentences,
         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 24,
-          fontWeight: _controller.text.isNotEmpty
-              ? FontWeight.bold
-              : FontWeight.w400,
+          fontWeight: FontWeight.bold,
         ),
         decoration: InputDecoration(
           hintText: 'Event title',
           hintStyle: TextStyle(
             color: Colors.white.withValues(alpha: 0.4),
             fontSize: 24,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.bold,
           ),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.15),
-          contentPadding: EdgeInsets.zero,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-          ),
+          filled: false,
+          counterText: '', // Hide the bottom character counter
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );
