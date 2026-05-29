@@ -160,6 +160,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _logout() async {
     await ref.read(authControllerProvider.notifier).signOut();
     if (mounted) {
+      // The router's AuthState listening should theoretically handle this,
+      // but explicitly going to the new unified entry point prevents errors.
       context.go('/auth/login');
     }
   }

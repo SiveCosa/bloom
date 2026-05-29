@@ -130,6 +130,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // OTP Codes collection (Backend only)
+    match /otp_codes/{email} {
+      allow read, write: if false;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

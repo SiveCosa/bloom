@@ -6,12 +6,17 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { geohashQueryBounds, distanceBetween } = require("geofire-common");
+const nodemailer = require("nodemailer");
 
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
 const COMETCHAT_APP_ID = defineSecret("COMETCHAT_APP_ID");
 const COMETCHAT_REGION = defineSecret("COMETCHAT_REGION");
 const COMETCHAT_AUTH_KEY = defineSecret("COMETCHAT_AUTH_KEY");
+const SMTP_HOST = defineSecret("SMTP_HOST");
+const SMTP_PORT = defineSecret("SMTP_PORT");
+const SMTP_USER = defineSecret("SMTP_USER");
+const SMTP_PASS = defineSecret("SMTP_PASS");
 
 const COMETCHAT_SECRETS = [
   COMETCHAT_APP_ID,
@@ -425,9 +430,12 @@ function takeTopNByDistance(cards, n) {
   return sortByDistance([...cards]).slice(0, n);
 }
 
-// 1. Request OTP Function (Locked to JHB)
-exports.requestOtp = onCall(
-  { region: "africa-south1" },
+// 1. Request Email OTP Function (Locked to JHB)
+exports.requestEmailOtp = onCall(
+  { 
+    region: "africa-south1",
+    secrets: [SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS] 
+  },
   async (request) => {
     const email = request.data.email;
     const authFlow = request.data.authFlow;
@@ -468,20 +476,53 @@ exports.requestOtp = onCall(
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 5);
 
-    await db.collection("otps").doc(normalized).set({
+    await db.collection("otp_codes").doc(normalized).set({
       otp: otp,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       expiresAt: expiration,
     });
 
-    // Dev/testing: visible in Cloud Functions logs (remove before production launch).
-    logger.info(`[TESTING] The OTP for ${normalized} is: ${otp}`);
+    // Send Email using Nodemailer
+    try {
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST.value(),
+        port: parseInt(SMTP_PORT.value()),
+        secure: parseInt(SMTP_PORT.value()) === 465,
+        auth: {
+          user: SMTP_USER.value(),
+          pass: SMTP_PASS.value(),
+        },
+      });
+
+      const mailOptions = {
+        from: '"Bloom Auth" <noreply@bloomapp.software>',
+        to: normalized,
+        subject: "Your Bloom Verification Code",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h2 style="color: #333; text-align: center;">Bloom</h2>
+            <p style="color: #555; font-size: 16px;">Here is your 6-digit verification code. It will expire in 5 minutes.</p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 6px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #000;">${otp}</span>
+            </div>
+            <p style="color: #999; font-size: 14px; text-align: center;">If you didn't request this, please ignore this email.</p>
+          </div>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+      logger.info(`Successfully sent OTP to ${normalized}`);
+    } catch (error) {
+      logger.error("Failed to send OTP email:", error);
+      throw new HttpsError("internal", "Failed to send verification email. Please try again.");
+    }
 
     return { success: true };
   }
 );
 
-// 2. Verify OTP Function (Locked to JHB)
-exports.verifyOtp = onCall(
+// 2. Verify Email OTP Function (Locked to JHB)
+exports.verifyEmailOtp = onCall(
   { region: "africa-south1" },
   async (request) => {
     const email = request.data.email;
@@ -493,16 +534,12 @@ exports.verifyOtp = onCall(
 
     const normalized = email.trim().toLowerCase();
 
-    // Fetch OTP (prefer normalized id; fall back to raw email for older requestOtp writes)
-    let otpDocRef = db.collection("otps").doc(normalized);
+    // Fetch OTP
+    let otpDocRef = db.collection("otp_codes").doc(normalized);
     let otpDoc = await otpDocRef.get();
-    if (!otpDoc.exists && email !== normalized) {
-      otpDocRef = db.collection("otps").doc(email);
-      otpDoc = await otpDocRef.get();
-    }
 
     if (!otpDoc.exists) {
-      throw new HttpsError("not-found", "No OTP requested for this email.");
+      throw new HttpsError("not-found", "No active code for this email.");
     }
 
     const otpData = otpDoc.data();
@@ -662,22 +699,12 @@ exports.validateStudentEmail = onCall(
       throw new HttpsError("permission-denied", "Please use your Student Email");
     }
 
-    // Check User Existence
-    let userExists = false;
-    try {
-      await admin.auth().getUserByEmail(normalized);
-      userExists = true;
-    } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        userExists = false;
-      } else {
-        throw new HttpsError("internal", "Error checking user status.");
-      }
-    }
-
-    if (userExists) {
+    // Check User Existence in Firestore (avoiding ghost account trap)
+    const snap = await db.collection("users").where("email", "==", normalized).limit(1).get();
+    if (!snap.empty) {
       throw new HttpsError("already-exists", "This email is already in use.");
     }
+    
     return { success: true };
   }
 );
