@@ -45,7 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         .ref()
         .child('users')
         .child(user.uid)
-        .child('avatar.webp');
+        .child('profile_pic.webp');
         
     await storageRef.putData(
       compressedBytes, 
