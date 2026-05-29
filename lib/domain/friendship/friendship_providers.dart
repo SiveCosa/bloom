@@ -94,8 +94,9 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
   if (currentUid == null ||
       currentUid.trim().isEmpty ||
-      targetUid.trim().isEmpty)
+      targetUid.trim().isEmpty) {
     return '';
+  }
 
   final firestore = FirebaseFirestore.instance;
 

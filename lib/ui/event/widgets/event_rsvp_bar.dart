@@ -311,10 +311,9 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                 final maxLeft = safeMaxWidth - safeButtonWidth;
                 double leftOffset = displayIndex * (safeButtonWidth + 1.0);
                 if (leftOffset.isNaN || leftOffset.isInfinite) leftOffset = 0.0;
-                if (!maxLeft.isNaN &&
-                    !maxLeft.isInfinite &&
-                    leftOffset > maxLeft)
+                if (!maxLeft.isNaN && !maxLeft.isInfinite && leftOffset > maxLeft) {
                   leftOffset = maxLeft;
+                }
                 if (leftOffset < 0) leftOffset = 0.0;
 
                 return Stack(

@@ -88,8 +88,9 @@ class InterestedEventsScreen extends ConsumerWidget {
                           final validEvents = events.where((e) {
                             if (e.timing.isPast) return false;
                             final deadline = e.audience.rsvpDeadline;
-                            if (deadline != null && deadline.isBefore(now))
+                            if (deadline != null && deadline.isBefore(now)) {
                               return false;
+                            }
                             return true;
                           }).toList();
 

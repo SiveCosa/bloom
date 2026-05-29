@@ -353,8 +353,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                           fit: BoxFit.cover,
                                           loadingBuilder:
                                               (context, child, progress) {
-                                                if (progress == null)
+                                                if (progress == null) {
                                                   return child;
+                                                }
                                                 return Stack(
                                                   fit: StackFit.expand,
                                                   children: [
@@ -650,11 +651,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                                     '#',
                                                                     '',
                                                                   );
-                                                              if (hexString
-                                                                      .length ==
-                                                                  6)
-                                                                hexString =
-                                                                    'FF$hexString';
+                                                              if (hexString.length == 6) {
+                                                                hexString = 'FF$hexString';
+                                                              }
                                                               return Color(
                                                                 int.parse(
                                                                   hexString,
@@ -686,8 +685,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                               ),
                                             ),
                                             builder: (context, size, childWidget) {
-                                              if (size < 0.4)
+                                              if (size < 0.4) {
                                                 return const SizedBox.shrink();
+                                              }
                                               return childWidget!;
                                             },
                                           ),

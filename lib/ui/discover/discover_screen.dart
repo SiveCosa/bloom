@@ -706,8 +706,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     if (activeFilter.toLowerCase() == 'film') title = 'Silver Screen';
     if (activeFilter.toLowerCase() == 'fitness') title = 'Peak Performance';
     if (activeFilter.toLowerCase() == 'food') title = 'Feast & Flavor';
-    if (activeFilter.toLowerCase() == 'education')
+    if (activeFilter.toLowerCase() == 'education') {
       title = 'Feed your curiosity';
+    }
 
     final carouselEvents = ref.watch(
       discoverCategoryCarouselProvider(activeFilter),

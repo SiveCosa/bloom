@@ -79,10 +79,11 @@ class CometChatAuthService {
         if (!completer.isCompleted) completer.complete(user);
       },
       onError: (cc.CometChatException e) {
-        if (!completer.isCompleted)
+        if (!completer.isCompleted) {
           completer.completeError(
             Exception('CometChat login failed: ${e.message}'),
           );
+        }
       },
     );
 

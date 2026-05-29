@@ -424,8 +424,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                         ),
                                       ),
                                       builder: (context, size, childWidget) {
-                                        if (size < 0.4)
+                                        if (size < 0.4) {
                                           return const SizedBox.shrink();
+                                        }
                                         return childWidget!;
                                       },
                                     ),

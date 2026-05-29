@@ -825,8 +825,9 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                                       ),
                                       itemCount: categories.length + 1,
                                       itemBuilder: (context, index) {
-                                        if (index == categories.length)
+                                        if (index == categories.length) {
                                           return const SizedBox(height: 40);
+                                        }
 
                                         final category = categories[index];
                                         final filteredTags = query.isEmpty
@@ -839,8 +840,9 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                                                   )
                                                   .toList();
 
-                                        if (filteredTags.isEmpty)
+                                        if (filteredTags.isEmpty) {
                                           return const SizedBox.shrink();
+                                        }
 
                                         return Column(
                                           crossAxisAlignment:

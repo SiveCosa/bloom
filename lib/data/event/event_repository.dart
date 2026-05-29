@@ -638,8 +638,9 @@ class EventRepository {
   }
 
   Stream<String?> getUserRSVPStream(String eventId, String userId) {
-    if (eventId.trim().isEmpty || userId.trim().isEmpty)
+    if (eventId.trim().isEmpty || userId.trim().isEmpty) {
       return Stream.value(null);
+    }
     return _firestore
         .collection('events')
         .doc(eventId)

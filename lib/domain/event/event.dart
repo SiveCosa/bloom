@@ -178,8 +178,9 @@ class Event {
   static RegistrationType _parseRegistrationType(dynamic raw) {
     if (raw == null) return RegistrationType.open;
     final str = raw.toString();
-    if (str == 'getOnList' || str == 'get_on_list')
+    if (str == 'getOnList' || str == 'get_on_list') {
       return RegistrationType.getOnList;
+    }
     if (str == 'ticketed') return RegistrationType.ticketed;
     return RegistrationType.open;
   }

@@ -155,8 +155,9 @@ class _PreferencesEditorScreenState
                                         )
                                         .toList();
 
-                              if (filteredTags.isEmpty)
+                              if (filteredTags.isEmpty) {
                                 return const SizedBox.shrink();
+                              }
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
