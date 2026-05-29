@@ -43,7 +43,7 @@ class GuestListCard extends ConsumerWidget {
           const SizedBox(height: 24),
           _buildAvatarLayout(ref),
           const SizedBox(height: 24),
-          _buildFooterText(),
+          _buildFooterText(ref),
         ],
       ),
     );
@@ -200,15 +200,27 @@ class GuestListCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildFooterText() {
+  Widget _buildFooterText(WidgetRef ref) {
     final int capacity = event.audience.capacity ?? 0;
-    // Strictly count those who are RSVP'd as "going"
-    final int going = event.liveCounts.going;
-    final int spotsLeft = capacity - going;
+    
+    int totalSpotsTaken = event.liveCounts.going;
+    final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+    if (guestsAsync.hasValue) {
+      final guestsData = guestsAsync.value ?? [];
+      int actualGoing = 0;
+      for (final g in guestsData) {
+        if (g['status'] == 'going' || g['rsvp_status'] == 'going') {
+          actualGoing += 1 + ((g['plusOnesCount'] as num?)?.toInt() ?? 0);
+        }
+      }
+      totalSpotsTaken = actualGoing;
+    }
+    
+    final int spotsLeft = capacity - totalSpotsTaken;
     
     final parts = <String>[];
     
-    parts.add('$going going');
+    parts.add('$totalSpotsTaken going');
     
     if (mutualFriendsCount > 0) {
       final String friendLabel = mutualFriendsCount == 1 ? 'friend' : 'friends';

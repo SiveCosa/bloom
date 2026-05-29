@@ -1072,6 +1072,19 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 
   Widget _buildLogisticsSection(Event event) {
+    int totalSpotsTaken = event.liveCounts.going;
+    final guestsAsync = ref.watch(eventGuestsProvider(event.id));
+    if (guestsAsync.hasValue) {
+      final guestsData = guestsAsync.value ?? [];
+      int actualGoing = 0;
+      for (final g in guestsData) {
+        if (g['status'] == 'going' || g['rsvp_status'] == 'going') {
+          actualGoing += 1 + ((g['plusOnesCount'] as num?)?.toInt() ?? 0);
+        }
+      }
+      totalSpotsTaken = actualGoing;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1085,7 +1098,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         _buildAudienceRow(
           icon: Icons.groups_rounded,
           text: event.audience.capacity != null
-              ? '${(event.audience.capacity! - event.liveCounts.going).clamp(0, event.audience.capacity!)}/${event.audience.capacity} spots available'
+              ? '${(event.audience.capacity! - totalSpotsTaken).clamp(0, event.audience.capacity!)}/${event.audience.capacity} spots available'
               : 'Unlimited spots available',
         ),
         const SizedBox(height: 25),

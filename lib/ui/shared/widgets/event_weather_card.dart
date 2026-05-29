@@ -69,7 +69,6 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
     return GestureDetector(
       onTap: () => ref.invalidate(weatherForecastProvider),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 15),
         padding: const EdgeInsets.all(15),
         width: double.infinity,
         decoration: BoxDecoration(
@@ -117,7 +116,6 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
 
   Widget _buildCard(BuildContext context, WeatherForecast forecast) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
@@ -164,30 +162,24 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
 
   Widget _buildForecastBody(WeatherForecast forecast) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Left Side: Icon & Temp
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _getWeatherIcon(forecast.conditionCode),
-            const SizedBox(width: 16),
-            Text(
-              '${forecast.averageTemp}°',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 48,
-                fontWeight: FontWeight.w300, // Light weight for premium feel
-                height: 1.0,
-                letterSpacing: -1,
-              ),
-            ),
-          ],
+        _getWeatherIcon(forecast.conditionCode),
+        const SizedBox(width: 16),
+        Text(
+          '${forecast.averageTemp}°',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 48,
+            fontWeight: FontWeight.w300, // Light weight for premium feel
+            height: 1.0,
+            letterSpacing: -1,
+          ),
         ),
-        // Right Side: Details
+        const SizedBox(width: 20),
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
@@ -264,7 +256,6 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
       animation: _shimmerController,
       builder: (context, child) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 15),
           height: 120,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
