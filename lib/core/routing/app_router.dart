@@ -45,6 +45,7 @@ import '../../ui/discover/for_you_screen.dart';
 import '../../ui/discover/in_your_area_screen.dart';
 import '../../ui/discover/category_events_screen.dart';
 import '../../ui/discover/friends_and_mutuals_screen.dart';
+import '../../ui/calendar/calendar_search_screen.dart';
 
 
 
@@ -339,6 +340,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           final category = state.pathParameters['category']!;
           return CategoryEventsScreen(category: category);
         },
+      ),
+      GoRoute(
+        path: '/calendar/search',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CalendarSearchScreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
+        ),
       ),
       GoRoute(
         path: '/messages',
