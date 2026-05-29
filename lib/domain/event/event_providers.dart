@@ -278,7 +278,7 @@ Event _mapFeedToEvent(Map<String, dynamic> map) {
   return Event(
     id: map['id'] as String? ?? '',
     title: map['title'] as String? ?? '',
-    description: '',
+    description: map['description'] as String? ?? '',
     tags: const [],
     visuals: EventVisuals(
       posterUrl: map['poster_url'] as String?,

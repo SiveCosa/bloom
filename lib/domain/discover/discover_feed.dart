@@ -17,6 +17,7 @@ class DiscoverFeedCard {
   final String hostUsername;
   final String? hostAvatarUrl;
   final List<String> tags;
+  final String description;
 
   const DiscoverFeedCard({
     required this.id,
@@ -30,6 +31,7 @@ class DiscoverFeedCard {
     required this.hostUsername,
     this.hostAvatarUrl,
     this.tags = const [],
+    this.description = '',
   });
 
   factory DiscoverFeedCard.fromMap(Map<String, dynamic> map) {
@@ -45,6 +47,7 @@ class DiscoverFeedCard {
       hostUsername: map['host_username'] as String? ?? '',
       hostAvatarUrl: map['host_avatar_url'] as String?,
       tags: List<String>.from(map['tags'] ?? []),
+      description: map['description'] as String? ?? '',
     );
   }
 
@@ -102,7 +105,7 @@ class DiscoverFeedCard {
     return Event(
       id: id,
       title: title,
-      description: '',
+      description: description,
       tags: tags,
       visuals: EventVisuals(
         posterUrl: posterUrl,

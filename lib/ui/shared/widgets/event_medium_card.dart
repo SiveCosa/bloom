@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/event/event.dart';
+import '../../event/widgets/event_interested_button.dart';
 
 class EventMediumCard extends StatelessWidget {
   final Event event;
@@ -26,6 +27,7 @@ class EventMediumCard extends StatelessWidget {
       RegExp(r'\n\s*\n'),
       '\n',
     );
+    final hasDescription = trimmedDescription.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
@@ -140,82 +142,34 @@ class EventMediumCard extends StatelessWidget {
 
             const Spacer(),
 
-            Text(
-              trimmedDescription.isEmpty
-                  ? 'No description.'
-                  : trimmedDescription,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(
-                  alpha: trimmedDescription.isEmpty ? 0.6 : 0.9,
+            if (hasDescription) ...[
+              Text(
+                trimmedDescription,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 13,
+                  height: 1.4,
                 ),
-                fontSize: 13,
-                fontStyle: trimmedDescription.isEmpty
-                    ? FontStyle.italic
-                    : FontStyle.normal,
-                height: 1.4,
               ),
-            ),
+              const Spacer(),
+            ],
 
-            const Spacer(),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_border,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Interested',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () {},
+                behavior: HitTestBehavior.opaque,
+                child: EventInterestedButton(
+                  eventId: event.id,
+                  iconSize: 22,
+                  padding: EdgeInsets.zero,
                 ),
-
-                _buildAttendeeAvatars(),
-              ],
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAttendeeAvatars() {
-    return SizedBox(
-      height: 32,
-      width: 70,
-      child: Stack(
-        children: [
-          Positioned(right: 0, child: _buildAvatarCircle(0)),
-          Positioned(right: 18, child: _buildAvatarCircle(1)),
-          Positioned(right: 36, child: _buildAvatarCircle(2)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAvatarCircle(int index) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF1A1D21), width: 2),
-        color: Colors.grey[800],
-      ),
-      child: const ClipOval(
-        child: Icon(Icons.person, size: 20, color: Colors.white24),
       ),
     );
   }

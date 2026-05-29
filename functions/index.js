@@ -389,6 +389,7 @@ function formatDiscoverCard(eventDoc, distanceKm, hostDataCache) {
   return {
     id: eventDoc.id,
     title: eventData.title || "",
+    description: eventData.description || "",
     poster_url: eventData.visuals?.posterUrl || eventData.visuals?.poster_url || "",
     start_time: startDate ? startDate.getTime() : null,
     location_name: eventData.location?.displayName || eventData.location?.display_name || "",
@@ -1796,6 +1797,7 @@ exports.getForYouFeed = onCall(
       candidateEvents.push({
         id: eventId,
         title: eventData.title || "",
+        description: eventData.description || "",
         poster_url: eventData.visuals?.posterUrl || "",
         start_time: eventData.timing?.startDate ? (typeof eventData.timing.startDate.toMillis === 'function' ? eventData.timing.startDate.toMillis() : null) : null,
         location_name: eventData.location?.displayName || "",
@@ -1845,6 +1847,7 @@ exports.getForYouFeed = onCall(
       payload.push({
         id: event.id,
         title: event.title,
+        description: event.description || "",
         poster_url: event.poster_url,
         start_time: event.start_time,
         location_name: event.location_name,
@@ -2084,6 +2087,7 @@ exports.getEventsInArea = onCall(
         candidates.push({
           id: eventDoc.id,
           title: eventData.title || "",
+          description: eventData.description || "",
           poster_url:
             eventData.visuals?.posterUrl ||
             eventData.visuals?.poster_url ||
@@ -2118,6 +2122,7 @@ exports.getEventsInArea = onCall(
         return {
           id: event.id,
           title: event.title,
+          description: event.description || "",
           poster_url: event.poster_url,
           start_time: event.start_time,
           location_name: event.location_name,
@@ -2887,4 +2892,4 @@ async function sendReminderToAllGuests(eventId, eventData, phase) {
     for (const batch of batches) {
         await batch.commit();
     }
-}
+}
