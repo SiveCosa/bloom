@@ -14,8 +14,8 @@ Future<void> seedCategories() async {
         'Religion', 'Spirituality', 'Gaming', 'E-Sports', 'Hackathons',
         'Afrikaans', 'isiZulu', 'isiXhosa', 'Sesotho', 'Setswana',
         'English', 'Xitsonga', 'siSwati', 'Tshivenda', 'isiNdebele',
-        'Entrepreneurship', 'Education', 'Mental Health', 'Book Clubs',
-        'Language Exchange', 'Coding', 'Personal Development', 'Mentorship',
+        'Entrepreneurship', 'Mental Health', 'Book Clubs',
+        'Personal Development',
         'Real Estate', 'Investing', 'Freelancing', 'Parents', 'Students', 'Alumni'
       ],
     },
@@ -71,6 +71,15 @@ Future<void> seedCategories() async {
         'Desserts', 'Pastries', 'Seafood', 'Sushi', 'Burgers', 'Pizza',
         'Halal', 'Kosher', 'Gluten-Free', 'Organic', 'Farmers Markets',
         'Food Trucks', 'Cocktails', 'Whiskey Tasting'
+      ],
+    },
+    'education': {
+      'name': 'Education',
+      'tags': [
+        'Education', 'Workshops', 'Seminars', 'Tutoring', 'Language Exchange', 
+        'Coding', 'Mentorship', 'Masterclasses', 'Bootcamps', 'Study Groups', 
+        'Career Fairs', 'Lectures', 'Skill Building', 'EdTech', 'Financial Literacy',
+        'History', 'Science', 'Technology', 'Engineering', 'Mathematics'
       ],
     },
   };
