@@ -1132,7 +1132,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                 width: 16,
                 height: 16,
                 child: FittedBox(
-                  child: Icon(visibility.outlinedIcon, color: isSpecial ? accentColor : Colors.white, size: 28),
+                  child: Icon(visibility.filledIconData, color: isSpecial ? accentColor : Colors.white, size: 28),
                 ),
               ),
               const SizedBox(width: 8),

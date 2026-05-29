@@ -51,7 +51,7 @@ class _EventTitleInputState extends State<EventTitleInput> {
         controller: _controller,
         focusNode: _focusNode,
         onChanged: null, // Global state updated on unfocus
-        maxLength: 50,
+        maxLength: 30,
         textInputAction: TextInputAction.done,
         textCapitalization: TextCapitalization.sentences,
         onFieldSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
