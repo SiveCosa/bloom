@@ -882,31 +882,117 @@ exports.cleanupUserOnDelete = auth.user().onDelete(async (user) => {
 });
 
 // 11. Delete User Account (Explicit Rollback)
-exports.deleteUserAccount = onCall({ region: "africa-south1" }, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Must be signed in to delete account.");
-  }
-
-  const uid = request.auth.uid;
-  const normalizedEmail = request.auth.token.email ? request.auth.token.email.toLowerCase() : "";
-
-  try {
-    // 1. Delete Firestore records
-    await db.collection("users").doc(uid).delete();
-    if (normalizedEmail) {
-      await db.collection("otps").doc(normalizedEmail).delete();
+exports.deleteUserAccount = onCall(
+  { 
+    region: "africa-south1",
+    secrets: COMETCHAT_SECRETS
+  }, 
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in to delete account.");
     }
 
-    // 2. Delete Auth record
-    await admin.auth().deleteUser(uid);
-    
-    console.log(`Successfully rolled back registration for user: ${uid}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting user account:", error);
-    throw new HttpsError("internal", "Failed to delete user account.");
+    const uid = request.auth.uid;
+    const normalizedEmail = request.auth.token.email ? request.auth.token.email.toLowerCase() : "";
+
+    try {
+      // 1. Delete CometChat User
+      try {
+        const appId = COMETCHAT_APP_ID.value();
+        const region = COMETCHAT_REGION.value();
+        const apiKey = COMETCHAT_AUTH_KEY.value();
+        const url = `https://${appId}.api-${region}.cometchat.io/v3/users/${uid}`;
+        
+        const response = await fetch(url, {
+          method: 'DELETE',
+          headers: {
+            'appId': appId,
+            'apiKey': apiKey,
+            'accept': 'application/json',
+            'content-type': 'application/json',
+          }
+        });
+        
+        // Ignore 404s if user doesn't exist in cometchat
+        if (!response.ok && response.status !== 404) {
+          const json = await response.json().catch(() => ({}));
+          console.error("Failed to delete CometChat user:", json);
+        }
+      } catch (err) {
+        console.error("Error calling CometChat DELETE API:", err);
+      }
+
+      // 2. Delete Profile Picture from Cloud Storage
+      try {
+        const bucket = admin.storage().bucket();
+        const file = bucket.file(`users/${uid}/profile_pic.webp`);
+        const [exists] = await file.exists();
+        if (exists) {
+          await file.delete();
+          console.log(`Deleted profile picture for ${uid}`);
+        }
+      } catch (err) {
+        console.error("Error deleting profile picture:", err);
+      }
+
+      // 3. Pre-Deletion Data Gathering
+      const userRef = db.collection("users").doc(uid);
+      
+      // a) Schedule (events RSVP'd to)
+      const scheduleSnap = await userRef.collection("schedule").get();
+      const joinedEventIds = scheduleSnap.docs.map(doc => doc.id);
+
+      // b) Hosted Events
+      const hostedEventsSnap = await db.collection("events").where("hostId", "==", uid).get();
+      
+      // c) Connections and Invites
+      const connectionsSnap = await userRef.collection("connections").get();
+      const connectedUserIds = connectionsSnap.docs.map(doc => doc.id);
+      
+      const invitesSnap = await userRef.collection("invites").get();
+      const invitedUserIds = invitesSnap.docs.map(doc => doc.id);
+
+      // 4. Scrub RSVPs and Linked Users
+      const deletePromises = [];
+      
+      joinedEventIds.forEach(eventId => {
+        deletePromises.push(db.collection("events").doc(eventId).collection("guests").doc(uid).delete());
+      });
+
+      const allLinkedUsers = new Set([...connectedUserIds, ...invitedUserIds]);
+      allLinkedUsers.forEach(linkedUid => {
+        deletePromises.push(db.collection("users").doc(linkedUid).collection("connections").doc(uid).delete());
+        deletePromises.push(db.collection("users").doc(linkedUid).collection("invites").doc(uid).delete());
+      });
+      
+      await Promise.allSettled(deletePromises);
+
+      // 5. Scrub Hosted Events via recursiveDelete
+      for (const doc of hostedEventsSnap.docs) {
+        await db.recursiveDelete(doc.ref);
+      }
+
+      // 6. Scrub Core Profile via recursiveDelete
+      await db.recursiveDelete(userRef);
+
+      // 7. Scrub OTPs
+      if (normalizedEmail) {
+        await db.collection("otp_codes").doc(normalizedEmail).delete().catch(() => {});
+        // Also clean up legacy otps collection just in case
+        await db.collection("otps").doc(normalizedEmail).delete().catch(() => {});
+      }
+
+      // 8. Delete Firebase Auth record
+      await admin.auth().deleteUser(uid);
+      
+      console.log(`Successfully completed comprehensive deletion for user: ${uid}`);
+      return { success: true };
+    } catch (error) {
+      console.error("Error comprehensively deleting user account:", error);
+      throw new HttpsError("internal", "Failed to fully delete user account.");
+    }
   }
-});
+);
 
 // 6. Google Maps Proxy Function
 exports.googleMapsProxy = onCall(

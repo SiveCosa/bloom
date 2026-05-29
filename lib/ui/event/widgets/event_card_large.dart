@@ -206,20 +206,6 @@ class EventCardLarge extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: onOptionTap,
-                      icon: const Icon(
-                        Icons.more_vert,
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                      style: IconButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(32, 32),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ),
                   ],
                 ),
               ),
