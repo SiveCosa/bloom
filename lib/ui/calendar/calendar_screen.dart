@@ -2,12 +2,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../domain/auth/auth_providers.dart';
 import '../../domain/calendar/calendar_providers.dart';
 import '../../domain/calendar/scheduled_event.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import '../../core/theme/app_theme.dart';
+import './widgets/calendar_filter_sheet.dart';
 import './widgets/month_year_picker_modal.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/navigation/navigation_providers.dart';
@@ -65,7 +67,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     });
 
     final selectedDate = ref.watch(selectedDateProvider);
-    final scheduleAsync = ref.watch(scheduleStreamProvider);
+    final scheduleAsync = ref.watch(filteredScheduleProvider);
 
     final days = _generateMonthDays(_displayedMonth);
     final int rowCount = (days[35].month == _displayedMonth.month) ? 6 : 5;
@@ -232,16 +234,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             children: [
               BloomIconButton(
                 icon: Icons.search,
-                onTap: () {
-                  // Handle search
-                },
+                onTap: () => context.push('/calendar/search'),
               ),
               const SizedBox(width: 12),
               BloomIconButton(
                 icon: Icons.tune,
-                onTap: () {
-                  // Handle filter
-                },
+                onTap: () => CalendarFilterSheet.show(context),
               ),
             ],
           ),
@@ -429,7 +427,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isToday = _isSameDay(day, DateTime.now());
     final isOtherMonth = day.month != monthDate.month;
 
-    final scheduleAsync = ref.watch(scheduleStreamProvider);
+    final scheduleAsync = ref.watch(filteredScheduleProvider);
     final events = scheduleAsync.when(
       data: (data) => data.where((e) => e.startTime != null && _isSameDay(e.startTime!, day)).toList(),
       loading: () => <ScheduledEvent>[],

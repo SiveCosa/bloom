@@ -16,6 +16,8 @@ import '../event/widgets/event_card_large.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../shared/widgets/bloom_button.dart';
 import '../shared/widgets/bloom_loading_indicator.dart';
+import './discover_search_screen.dart';
+import './advanced_filter_sheet.dart';
 
 String _discoverErrorMessage(Object? error) {
   final text = error?.toString() ?? '';
@@ -469,14 +471,26 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                               BloomIconButton(
                                 icon: Icons.search,
                                 onTap: () {
-                                  // Empty/Muted handler
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      fullscreenDialog: true,
+                                      builder: (context) =>
+                                          const DiscoverSearchScreen(),
+                                    ),
+                                  );
                                 },
                               ),
                               const SizedBox(width: 12),
                               BloomIconButton(
                                 icon: Icons.tune,
                                 onTap: () {
-                                  // Empty/Muted handler
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      fullscreenDialog: true,
+                                      builder: (context) =>
+                                          const AdvancedFilterSheet(),
+                                    ),
+                                  );
                                 },
                               ),
                             ],

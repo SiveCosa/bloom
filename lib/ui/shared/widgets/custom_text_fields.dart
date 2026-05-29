@@ -12,6 +12,7 @@ class RoundedTextField extends StatelessWidget {
   final Widget? prefixIcon;
   final Widget? suffixIcon;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
   final double height;
   final double borderRadius;
   final EdgeInsetsGeometry contentPadding;
@@ -32,6 +33,7 @@ class RoundedTextField extends StatelessWidget {
     this.prefixIcon,
     this.suffixIcon,
     this.onChanged,
+    this.onSubmitted,
     this.height = 48,
     this.borderRadius = 100, // Default to pill shape
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
@@ -55,6 +57,7 @@ class RoundedTextField extends StatelessWidget {
             inputFormatters: inputFormatters,
             obscureText: obscureText,
             onChanged: onChanged,
+            onSubmitted: onSubmitted,
             maxLength: maxLength,
             maxLines: maxLines,
             style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -120,6 +123,7 @@ class SquareTextField extends RoundedTextField {
     super.prefixIcon,
     super.suffixIcon,
     super.onChanged,
+    super.onSubmitted,
     super.height,
     super.borderRadius = 15, // Square with 15 radius
     super.contentPadding,

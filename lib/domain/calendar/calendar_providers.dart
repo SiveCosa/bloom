@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/event/event_repository.dart';
 import '../auth/auth_providers.dart';
+import 'calendar_filter.dart';
 import 'scheduled_event.dart';
 
 enum CalendarFormat { month, week }
@@ -27,6 +28,25 @@ final calendarFormatProvider = NotifierProvider<CalendarFormatNotifier, Calendar
   return CalendarFormatNotifier();
 });
 
+class CalendarFilterNotifier extends Notifier<Set<CalendarFilterCategory>> {
+  @override
+  Set<CalendarFilterCategory> build() =>
+      Set<CalendarFilterCategory>.from(defaultCalendarFilters);
+
+  void setFilters(Set<CalendarFilterCategory> filters) {
+    state = Set<CalendarFilterCategory>.from(filters);
+  }
+
+  void reset() {
+    state = Set<CalendarFilterCategory>.from(defaultCalendarFilters);
+  }
+}
+
+final calendarFilterProvider =
+    NotifierProvider<CalendarFilterNotifier, Set<CalendarFilterCategory>>(
+  CalendarFilterNotifier.new,
+);
+
 final scheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
   if (user == null) return Stream.value([]);
@@ -35,6 +55,24 @@ final scheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
   return repository.getScheduleStream(user.uid).map((list) {
     return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
   });
+});
+
+final filteredScheduleProvider = Provider<AsyncValue<List<ScheduledEvent>>>((ref) {
+  final scheduleAsync = ref.watch(scheduleStreamProvider);
+  final selectedFilters = ref.watch(calendarFilterProvider);
+  final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+
+  return scheduleAsync.when(
+    data: (events) {
+      if (userId == null) return const AsyncData([]);
+      final filtered = events
+          .where((e) => matchesCalendarFilters(e, userId, selectedFilters))
+          .toList();
+      return AsyncData(filtered);
+    },
+    loading: () => const AsyncLoading(),
+    error: (error, stack) => AsyncError(error, stack),
+  );
 });
 
 final publicScheduleStreamProvider =
