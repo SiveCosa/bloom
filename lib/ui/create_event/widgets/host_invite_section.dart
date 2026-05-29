@@ -38,7 +38,6 @@ class HostInviteSection extends StatelessWidget {
       );
     }
 
-    // Preview Layout: Stacked full-width cards
     return Column(
       children: [
         _InviteFriendsCardPreview(),
@@ -314,7 +313,7 @@ class _AvatarWithLabel extends StatelessWidget {
         _buildAvatar(imageUrl: imageUrl, isHost: isHost),
         const SizedBox(height: 8),
         Text(
-          label,
+          label.replaceAll('@', ''),
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.8),
             fontSize: 13,

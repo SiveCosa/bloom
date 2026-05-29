@@ -183,7 +183,6 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                             ),
                             child: Stack(
                               children: [
-                                // Background Slider (Bottom Layer)
                                 AnimatedAlign(
                                   alignment: _isSelectingStart
                                       ? Alignment.centerLeft
@@ -202,7 +201,6 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                                     ),
                                   ),
                                 ),
-                                // Foreground Content (Top Layer)
                                 Row(
                                   children: [
                                     _buildSegmentedItem(
@@ -534,7 +532,6 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                 ),
               ),
             ),
-            // AM Text
             Align(
               alignment: Alignment.centerLeft,
               child: SizedBox(
@@ -551,7 +548,6 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                 ),
               ),
             ),
-            // PM Text
             Align(
               alignment: Alignment.centerRight,
               child: SizedBox(

@@ -34,7 +34,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
     if (dateTime == null) return '';
     final difference = DateTime.now().difference(dateTime);
     if (difference.inSeconds < 60) {
-      return 'Just now';
+      return 'now';
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m';
     } else if (difference.inHours < 24) {
@@ -54,7 +54,6 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          // Atmospheric Gradient Background (Stays at original height)
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,
@@ -160,7 +159,6 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  // Username and timestamp
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,7 +193,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                               children: [
                                                 if (username != null && username.isNotEmpty) ...[
                                                   Text(
-                                                    '@$username',
+                                                    username.replaceAll('@', ''),
                                                     style: TextStyle(
                                                       color: Colors.white.withValues(alpha: 0.5),
                                                       fontSize: 12,
@@ -215,7 +213,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                                 Text(
                                                   requestedAt != null
                                                       ? _getElapsedTime(requestedAt)
-                                                      : 'Just now',
+                                                      : 'now',
                                                   style: TextStyle(
                                                     color: Colors.white.withValues(alpha: 0.35),
                                                     fontSize: 12,
@@ -228,7 +226,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                           error: (err, stack) => Text(
                                             requestedAt != null
                                                 ? _getElapsedTime(requestedAt)
-                                                : 'Just now',
+                                                : 'now',
                                             style: TextStyle(
                                               color: Colors.white.withValues(alpha: 0.35),
                                               fontSize: 12,

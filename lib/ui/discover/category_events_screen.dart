@@ -48,7 +48,6 @@ class CategoryEventsScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
-          // Atmospheric Gradient Background
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,
@@ -180,7 +179,6 @@ class CategoryEventsScreen extends ConsumerWidget {
                     ),
                   ),
 
-                // Remaining events section header
                 if (remainingEvents.isNotEmpty)
                   const SliverToBoxAdapter(
                     child: Padding(

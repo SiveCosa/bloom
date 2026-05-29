@@ -62,7 +62,6 @@ class GuestListCard extends ConsumerWidget {
         .map((g) => g['uid'] as String)
         .toList();
 
-    // Fetch up to 6 avatars
     final List<String> guests = [];
     for (int i = 0; i < goingUserIds.length && i < 6; i++) {
       final profileAsync = ref.watch(userProfileStreamProvider(goingUserIds[i]));

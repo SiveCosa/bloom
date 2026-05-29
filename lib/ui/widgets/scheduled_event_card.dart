@@ -62,13 +62,11 @@ class ScheduledEventCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 10), // Preserved 10dp gap
-            // Info Section
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Title Row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -123,7 +121,6 @@ class ScheduledEventCard extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 5), // Preserved 5dp gap
-                  // Location
                   Row(
                     children: [
                       const Icon(

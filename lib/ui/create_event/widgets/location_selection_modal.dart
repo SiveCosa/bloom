@@ -24,14 +24,12 @@ class LocationSelectionModal extends StatefulWidget {
 class _LocationSelectionModalState extends State<LocationSelectionModal> {
   LocationModalState _currentState = LocationModalState.search;
   
-  // Search State Variables
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   List<dynamic> _searchResults = [];
   List<EventLocation> _recentLocations = [];
   bool _isSearching = false;
 
-  // Details State Variables
   EventLocation? _selectedLocation;
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _aptController = TextEditingController();
@@ -430,7 +428,6 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Selected Location Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(

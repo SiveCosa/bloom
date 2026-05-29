@@ -32,7 +32,6 @@ class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen>
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          // Atmospheric Gradient Background (Stays at original height)
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,

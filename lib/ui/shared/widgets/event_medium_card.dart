@@ -41,7 +41,6 @@ class EventMediumCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row: Image + Title/Details
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -80,7 +79,6 @@ class EventMediumCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      // Timing Row
                       Row(
                         children: [
                           const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
@@ -96,7 +94,6 @@ class EventMediumCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      // Location Row
                       Row(
                         children: [
                           const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
@@ -125,7 +122,6 @@ class EventMediumCard extends StatelessWidget {
             
             const Spacer(),
             
-            // Description (Standard non-clickable text)
             Text(
               trimmedDescription.isEmpty ? 'No description.' : trimmedDescription,
               maxLines: 2,
@@ -140,11 +136,9 @@ class EventMediumCard extends StatelessWidget {
               
             const Spacer(),
             
-            // Footer: Interested Button + Attendee Avatars
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Interested Button
                 Row(
                   children: [
                     const Icon(Icons.star_border, color: Colors.white, size: 22),
@@ -160,7 +154,6 @@ class EventMediumCard extends StatelessWidget {
                   ],
                 ),
                 
-                // Attendee Avatars (Mock for now)
                 _buildAttendeeAvatars(),
               ],
             ),

@@ -200,7 +200,6 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
                         child: _buildMapBackground(),
                       ),
 
-                      // Tap overlay button / premium tooltip
                       if (widget.event.location != null)
                         Positioned(
                           right: 12,
@@ -281,7 +280,6 @@ class _MapGridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Draw dark background grid lines (orthogonal)
     paint.color = Colors.white.withValues(alpha: 0.05);
     const double gridSize = 25.0;
     for (double i = 0; i < size.width; i += gridSize) {

@@ -117,7 +117,6 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 24),
 
-          // Icon Selector Row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -157,7 +156,6 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
 
           const SizedBox(height: 24),
 
-          // Link Label
           Align(
             alignment: Alignment.centerLeft,
             child: Text(

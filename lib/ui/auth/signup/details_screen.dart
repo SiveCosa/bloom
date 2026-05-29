@@ -184,7 +184,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       appBar: const AuthAppBar(leftAction: AuthAppBarAction.cancel),
       body: Stack(
         children: [
-          // Dynamic Blur Background
           const GradientTopBar(height: 120),
           SafeArea(
             child: Padding(
@@ -234,7 +233,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                           ),
                           const SizedBox(height: 40),
 
-                          // Username Field
                           const Text(
                             'Username',
                             style: TextStyle(
@@ -261,7 +259,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Name Field
                           const Text(
                             'Name:',
                             style: TextStyle(
@@ -278,7 +275,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Birthday Section
                           const Text(
                             'Birthday',
                             style: TextStyle(
@@ -329,7 +325,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Gender Section
                           const Text(
                             'Gender (Optional)',
                             style: TextStyle(
@@ -367,7 +362,6 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
                     ),
                   ),
 
-                  // Primary Action Button
                   BloomButton(
                     text: 'Continue',
                     isLoading: _isSubmitting,

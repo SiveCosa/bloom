@@ -219,7 +219,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                         
                         Column(
                           children: [
-                            // Fixed Transparent Header with Gripper
                             SizedBox(
                               height: 25,
                               width: double.infinity,
@@ -269,7 +268,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                           ),
                                           const SizedBox(height: 25),
                                           
-                                          // Date & Location Rows (Fading)
                                           ValueListenableBuilder<double>(
                                             valueListenable: _sheetSize,
                                             builder: (context, size, child) {

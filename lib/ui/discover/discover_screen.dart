@@ -451,7 +451,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // App Bar title & actions
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: SizedBox(
@@ -502,7 +501,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Category Chips Row
                   Builder(
                     builder: (context) {
                       final filterState = ref.watch(discoverFilterProvider);

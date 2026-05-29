@@ -123,7 +123,7 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                       final username = profile?['username'] as String?;
                       return Text(
                         username != null && username.isNotEmpty
-                            ? '@$username'
+                            ? username.replaceAll('@', '')
                             : 'bloom member',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.5),
@@ -198,7 +198,6 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          // Atmospheric Gradient Background
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,

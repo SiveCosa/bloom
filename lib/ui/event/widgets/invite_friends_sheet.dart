@@ -435,7 +435,7 @@ class _FriendListItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    username.startsWith('@') ? username : '@$username',
+                    username.replaceAll('@', ''),
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 14,

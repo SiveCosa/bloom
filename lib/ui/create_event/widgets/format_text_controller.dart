@@ -18,7 +18,6 @@ class FormatTextController extends TextEditingController {
     int lastMatchEnd = 0;
 
     for (final match in _pattern.allMatches(text)) {
-      // Add text before the match
       if (match.start > lastMatchEnd) {
         children.add(TextSpan(
           text: text.substring(lastMatchEnd, match.start),
@@ -33,7 +32,6 @@ class FormatTextController extends TextEditingController {
       );
 
       if (match.group(1) != null) {
-        // Bold: *text*
         children.add(TextSpan(text: '*', style: ghostStyle));
         children.add(TextSpan(
           text: matchText.substring(1, matchText.length - 1),
@@ -62,7 +60,6 @@ class FormatTextController extends TextEditingController {
       lastMatchEnd = match.end;
     }
 
-    // Add remaining text
     if (lastMatchEnd < text.length) {
       children.add(TextSpan(
         text: text.substring(lastMatchEnd),

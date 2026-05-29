@@ -77,7 +77,6 @@ class ConnectionRepository {
         .collection('connections')
         .doc(targetUserId);
 
-    // Retrieve document to check status before deleting
     final snap = await currentUserConnRef.get();
     final isAlreadyConnected = snap.exists && snap.data()?['status'] == 'connected';
 

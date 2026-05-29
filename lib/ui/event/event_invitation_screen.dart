@@ -389,7 +389,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                             
                             Column(
                               children: [
-                                // Fixed Transparent Header with Gripper
                                 SizedBox(
                                   height: 25,
                                   width: double.infinity,
@@ -438,7 +437,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                               ),
                                               const SizedBox(height: 25),
                                               
-                                              // Date & Location Rows (Fading)
                                               ValueListenableBuilder<double>(
                                                 valueListenable: _sheetSize,
                                                 builder: (context, size, child) {
@@ -619,7 +617,6 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         backgroundColor: const Color(0xFF0B0E12),
         body: Stack(
           children: [
-            // Blurred background
             Positioned.fill(
               child: AuroraBackground(colors: const [Color(0xFF2D2D2D), Color(0xFF1A1A1A)]),
             ),

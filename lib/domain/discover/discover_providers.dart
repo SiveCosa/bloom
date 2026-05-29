@@ -467,7 +467,6 @@ final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
       final all = cache.allResponse;
 
       if (activeFilter == 'Filter') {
-        // Collect all unique cards from everywhere
         final Map<String, DiscoverFeedCard> allCards = {};
         for (final card in all.feed) {
           allCards[card.id] = card;

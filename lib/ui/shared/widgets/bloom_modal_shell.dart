@@ -17,10 +17,8 @@ class BloomModalShell extends StatelessWidget {
   final VoidCallback? onRightActionPressed;
   final Color? rightActionColor;
 
-  // Header bottom spacing
   final double headerBottomSpacing;
 
-  // Padding inside the modal shell
   final EdgeInsetsGeometry? contentPadding;
 
   const BloomModalShell({
@@ -73,7 +71,6 @@ class BloomModalShell extends StatelessWidget {
             const SizedBox(height: 20),
           ],
 
-          // Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Stack(
@@ -123,7 +120,6 @@ class BloomModalShell extends StatelessWidget {
           ),
           SizedBox(height: headerBottomSpacing),
 
-          // Body
           if (height != null)
             Expanded(child: child)
           else

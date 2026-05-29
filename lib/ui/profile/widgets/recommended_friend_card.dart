@@ -62,15 +62,13 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
   @override
   Widget build(BuildContext context) {
     final uid = widget.user['uid'] ?? widget.user['id'] ?? '';
-    final username = widget.user['username'] ?? 'User';
+    final username = (widget.user['username']?.toString() ?? 'User').replaceAll('@', '');
     final imageUrl = widget.user['profile_image_url']?.toString() ?? widget.user['avatar_url']?.toString();
     final defaultContext = widget.user['known_from'] ?? 'Same institution';
 
-    // Watch real-time connection state
     final connectionStateAsync = ref.watch(connectionStateProvider(uid));
     final currentState = _localStateOverride ?? (connectionStateAsync.value ?? FriendshipState.none);
 
-    // Watch dynamic affinity social context
     final affinityAsync = ref.watch(recommendedFriendAffinityProvider(uid));
     final contextText = affinityAsync.value?.isNotEmpty == true 
         ? affinityAsync.value! 
@@ -86,7 +84,6 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
         child: ClipRect(
           child: Stack(
             children: [
-              // Main Card Body
               GestureDetector(
                 onTap: () {
                   if (uid.isNotEmpty) {
@@ -106,14 +103,12 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     child: Column(
                       children: [
-                        // Avatar (Top)
                         buildAvatarImage(
                           source: imageUrl,
                           radius: 35,
                         ),
                         const SizedBox(height: 8),
                         
-                        // Username
                         Text(
                           username,
                           style: const TextStyle(
@@ -126,7 +121,6 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                           overflow: TextOverflow.ellipsis,
                         ),
                         
-                        // Dynamic Context Text (Center)
                         Expanded(
                           child: Center(
                             child: AnimatedSwitcher(
@@ -148,7 +142,6 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                         ),
                         const SizedBox(height: 4),
                         
-                        // Action Button (Bottom)
                         SizedBox(
                           width: double.infinity,
                           height: 32,

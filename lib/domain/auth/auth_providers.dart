@@ -301,7 +301,6 @@ bool isEmailAllowedForInstitution(
 }
 
 // ==========================================
-// OTP TIMER STATE & NOTIFIER
 // ==========================================
 
 class OtpTimerState {
@@ -447,6 +446,8 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
+  // Creates the permanent Firestore user profile record using the collected form data.
+  // This must be called after the user has successfully authenticated with Firebase via OTP.
   Future<void> createUserProfile(SignUpFormState formData) async {
     state = const AsyncLoading();
     try {
@@ -734,7 +735,6 @@ final emailOtpControllerProvider = AsyncNotifierProvider<EmailOtpController, voi
 });
 
 // ==========================================
-// SIGN-UP FORM STATE & NOTIFIER
 // ==========================================
 
 class SignUpFormState {

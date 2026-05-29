@@ -29,28 +29,24 @@ class AuroraBackground extends ConsumerWidget {
             children: [
               Container(color: const Color(0xFF0B0E12)),
               
-              // Top Left Blob (Static at middle-state)
               Positioned(
                 top: -300 + 25,
                 left: -300 + 25,
                 child: _AuroraBlob(color: displayColors[0]),
               ),
               
-              // Top Right Blob (Static at middle-state)
               Positioned(
                 top: -300 + 35,
                 right: -300 + 20,
                 child: _AuroraBlob(color: displayColors[1 % displayColors.length]),
               ),
               
-              // Bottom Left Blob (Static at middle-state)
               Positioned(
                 bottom: -300 + 30,
                 left: -300 + 30,
                 child: _AuroraBlob(color: displayColors[2 % displayColors.length]),
               ),
               
-              // Bottom Right Blob (Static at middle-state)
               Positioned(
                 bottom: -300 + 20,
                 right: -300 + 35,

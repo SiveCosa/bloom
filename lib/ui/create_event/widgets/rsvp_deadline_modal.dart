@@ -146,7 +146,6 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                     },
                   ),
                   const SizedBox(width: 10),
-                  // Month
                   CustomDateWheelScroller(
                     width: 75,
                     items: const [
@@ -216,7 +215,6 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
           const Divider(color: Colors.white12, indent: 20, endIndent: 20),
           const SizedBox(height: 20),
 
-          // Reminders Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
@@ -263,7 +261,6 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
 
                 const SizedBox(height: 20),
                 
-                // Reminders Pills (Now below the button)
                 if (_selectedReminders.isNotEmpty)
                   Wrap(
                     alignment: WrapAlignment.center,

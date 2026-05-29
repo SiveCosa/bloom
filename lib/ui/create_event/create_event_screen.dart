@@ -162,7 +162,6 @@ class CreateEventScreen extends ConsumerWidget {
           onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
           child: Stack(
             children: [
-              // The Full Background Stack
               const Positioned.fill(child: AuroraBackground()),
 
               SafeArea(
@@ -176,7 +175,6 @@ class CreateEventScreen extends ConsumerWidget {
                         width: double.infinity,
                         child: Stack(
                           children: [
-                            // Back Button (Left)
                             Align(
                               alignment: Alignment.centerLeft,
                               child: GestureDetector(
@@ -213,7 +211,6 @@ class CreateEventScreen extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            // Preview Button (Right)
                             Align(
                               alignment: Alignment.centerRight,
                               child: GestureDetector(
@@ -281,14 +278,12 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Date & Time Row
                           DateTimeRow(
                             onTap: () => _showDateTimeSelection(context),
                           ),
 
                           const SizedBox(height: 10),
 
-                          // Location Section
                           Consumer(
                             builder: (context, ref, _) {
                               final location = ref.watch(createEventProvider.select((s) => s.location));
@@ -414,7 +409,6 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Audience Section
                           Consumer(
                             builder: (context, ref, _) {
                               final visibility = ref.watch(createEventProvider.select((s) => s.audience.visibility));
@@ -450,7 +444,6 @@ class CreateEventScreen extends ConsumerWidget {
 
                           const SizedBox(height: 10),
 
-                          // Extras Section
                           Consumer(
                             builder: (context, ref, _) {
                               final extras = ref.watch(createEventProvider.select((s) => s.extras));
@@ -691,7 +684,6 @@ class CreateEventScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 10),
 
-                          // RSVP Options Section
                           Consumer(
                             builder: (context, ref, _) {
                               final requireApproval = ref.watch(createEventProvider.select((s) => s.audience.requireApproval));
@@ -1016,12 +1008,10 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
     final availableSpots = ref.watch(createEventProvider.select((s) => s.audience.capacity));
     final waitlistEnabled = ref.watch(createEventProvider.select((s) => s.audience.waitlistEnabled));
 
-    // Trigger focus if entering editing state
     if (isEditing && !_focusNode.hasFocus) {
       Future.microtask(() => _focusNode.requestFocus());
     }
 
-    // "Visibility" style matching _buildTappableRow title
     const visibilityStyle = TextStyle(
       color: Colors.white,
       fontSize: 14,
@@ -1034,7 +1024,6 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
       fontWeight: FontWeight.normal,
     );
 
-    // State 2: Input/Editing State
     if (isEditing) {
       return _buildCard(
         isEditing: true,
@@ -1073,7 +1062,6 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
       );
     }
 
-    // State 3: Confirmed/Saved State
     if (availableSpots != null) {
       return _buildCard(
         isEditing: false,
@@ -1099,7 +1087,6 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
       );
     }
 
-    // State 1: Empty/Unlimited State
     return _buildCard(
       isEditing: false,
       onTap: () {

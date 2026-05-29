@@ -42,7 +42,6 @@ class ConfirmScreen extends ConsumerWidget {
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _fetchUserData(),
         builder: (context, snapshot) {
-          // Default loading states
           String displayUsername = "Loading...";
           String displayName = "Getting your details...";
           String? profileUrl;

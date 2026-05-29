@@ -170,7 +170,6 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // --- Body Content ---
                   Expanded(
                     child: query.isEmpty
                         // Show recent searches when search bar is empty
@@ -231,7 +230,6 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with clear button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(

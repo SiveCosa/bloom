@@ -98,7 +98,6 @@ class EventsHostedScreen extends ConsumerWidget {
                       return CustomScrollView(
                         physics: const BouncingScrollPhysics(),
                         slivers: [
-                          // Upcoming Section
                           if (upcoming.isNotEmpty)
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
@@ -110,7 +109,6 @@ class EventsHostedScreen extends ConsumerWidget {
                               ),
                             ),
 
-                          // Past Events Section Divider
                           if (past.isNotEmpty)
                             const SliverToBoxAdapter(child: PastEventsDivider()),
 

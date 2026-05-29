@@ -68,7 +68,6 @@ class HostControlBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // Left Section: Invite
           Expanded(
             child: Center(
               child: _buildActionItem(
@@ -80,7 +79,6 @@ class HostControlBar extends ConsumerWidget {
             ),
           ),
 
-          // Center Section: Going (Balanced Island)
           Expanded(
             child: GestureDetector(
               onTap: () {
@@ -144,7 +142,6 @@ class HostControlBar extends ConsumerWidget {
             ),
           ),
 
-          // Right Section: Reminders
           Expanded(
             child: Center(
               child: _buildActionItem(

@@ -1,0 +1,499 @@
+// "Visibility" style matching _buildTappableRow title
+// (Assuming visibility filtering is either not fully supported by DiscoverFeedCard or requires specific logic.
+// +X more button
+// --- 1. SET GENDER ---
+// --- 2. CONVERT BIRTHDAY TO TIMESTAMP (UI: "1999 / Jan / 03" or "1999 / JAN / 03") ---
+// --- 3. PROFILE IMAGE (upload local file to Storage → URL) ---
+// --- 4. FIRESTORE WRITE ---
+// --- Advanced Filter Sheet Widget ---
+// --- Body Content ---
+// --- Date Filter Section ---
+// --- Discover Search Screen ---
+// --- Distance Filter Section ---
+// --- Filter Provider ---
+// --- Filter State Model ---
+// --- Header ---
+// --- Recent Searches Provider ---
+// --- Scrollable Filter Content ---
+// --- Tags Filter Section ---
+// --- Visibility Filter Section ---
+// 1. Aurora Background (Reactive)
+// 1. Check Mutual Connections
+// 1. Distance filter
+// 1. Extract and process color palette
+// 1. If NOT logged in, and trying to access the main app, kick to login
+// 1. Poster Image + Glow (Reactive)
+// 1. Scrollable Content
+// 2+ events
+// 2. Check Shared Interests
+// 2. Draggable Scrollable Sheet
+// 2. If LOGGED IN, and trying to access auth screens
+// 2. Opaque gradient for Host Bar, glassmorphic gradient for bottom Info Box
+// 2. Poster Image + Glow (Reactive)
+// 2. Solid Masking Layer (Sharp cut-off 5dp below pills)
+// 2. Tags filter
+// 2. Upload custom poster if present
+// 3. Atmospheric Gradient Background (Stays at original height)
+// 3. Check Same Campus
+// 3. Compile final event data
+// 3. Date filter
+// 3. Structural Container & Clip
+// 3. Top App Bar
+// 4. Check Event Affiliation
+// 4. Draggable Scrollable Sheet
+// 4. Fixed Header (Title + Categories)
+// 4. Header UI Components
+// 4. Loading Overlay
+// 4. Save to repository
+// 4. Visibility filter
+// 5. Bottom Gradient Grounding (Reactive)
+// 5. Contextual Top App Bar
+// 6 or more
+// 6. Bottom Gradient Grounding (Reactive)
+// 6. Floating RSVP Action Bar
+// 7. Fixed Action Bar (RSVP or Host Controls)
+// ==========================
+// ==========================================
+// AM Text
+// AUTH CONTROLLER (Cloud Functions & Firestore)
+// AUTH FLOWS
+// Accept and Decline Buttons
+// Action Button (Bottom)
+// Action Buttons
+// Add remaining text
+// Add tag button (always at front)
+// Add text before the match
+// Add to top of list
+// Adds a new search to the top of the list
+// After database creation, route to the home shell
+// Aggressive performance compression to WebP (80% quality)
+// Also reset the selected date to today
+// Always position the sheet 20dp below where the 6th week would be
+// App Bar title & actions
+// Aspect Ratio Toggle (Bottom Right)
+// Atmospheric Gradient Background
+// Atmospheric Gradient Background (Stays at original height)
+// Attendee Avatars (Mock for now)
+// Audience Section
+// Auto-delete notifications older than 30 days on the client side during fetch
+// Automatically set the 1st of the new month as the active/selected day
+// Avatar
+// Avatar & Display Name
+// Avatar (Top)
+// Avatar image loading or error states handled cleanly
+// Avoid duplicates by removing existing value (ignoring case)
+// Back Button (Left)
+// Background Gradient (100dp high, matches Messages screen)
+// Background Slider (Bottom Layer)
+// Bio Section
+// Birthday Section
+// Blurred background
+// Body
+// Bold: *text*
+// Bottom Action Bar
+// Bottom Button
+// Bottom Left Blob (Static at middle-state)
+// Bottom Right Blob (Static at middle-state)
+// Builds the recent searches list
+// By directly setting the new state, Riverpod keeps the existing data
+// Calendar rows
+// Calendar size adjustment
+// Cancel Button (Red, elegant, matching the design spec)
+// Capacity / Spots
+// Category Chips Row
+// Category selected: Show single carousel at the top if it has events
+// Center Section: Going (Balanced Island)
+// Center the icon within the circular container
+// Center: Main Logo
+// Centered Title
+// Centralized WebP 80% compression
+// Chat is optional at login — never block Firebase sign-in if CometChat fails.
+// Check if it is a list item
+// Clamped between 0 and 5 as per requirement
+// Clears all recent searches
+// Close Button
+// Collect all unique cards from everywhere
+// Colors
+// Conversation may not exist yet for new chats.
+// CreateEventScreen() is pushed as a full route to hide bottom nav
+// Creates a copy with updated values
+// Currently DiscoverFeedCard does not have visibility info from backend.
+// Custom App Bar (Premium Pill Styling)
+// Custom Reload Indicator (Emerges from below the app header)
+// Date & Location Rows (Fading)
+// Date & Time Row
+// Date Scrollers
+// Date filter options as per acceptance criteria
+// DateTime handles normalization (e.g. Feb 31 -> Mar 3)
+// Dates are already sorted implicitly by the list sorting before grouping,
+// Day
+// Decrement hosted count for the user
+// Default loading states
+// Default to end of day if no end date provided
+// Delete the poster image from Firebase Storage if it has one
+// Description (Standard non-clickable text)
+// Details State Variables
+// Details container, flush below poster
+// Determine row count: 6 rows only if the month extends into the 6th week
+// Display selected tags
+// Down Chevron
+// Drag handle
+// Draw concentric radar-like circles around the event center
+// Draw dark background grid lines (orthogonal)
+// Draw some stylized neon roads/streets
+// Dual-Phase Sorting (viewer pinned first on their RSVP tab)
+// Dynamic Blur Background
+// Dynamic Context Text (Center)
+// Dynamic gender option — only shows if user has a gender set
+// Dynamically watch connection status
+// EMAIL OTP CONTROLLER (Custom Token Flow)
+// Edit Button
+// Edit Profile Button
+// Edit logic
+// Ensure all uploads are WebP 80%
+// Ensure we include at least the selected year and current year
+// Establish CometChat session when Firebase user is signed in.
+// Event Image
+// Event Invitations Tile
+// Event Title
+// Event Title Input
+// Explicitly wipe out the UI placeholder so it isn't saved to the DB
+// Extract colors for the default poster to set the initial aurora background
+// Extras Section
+// Fade out faster than we shrink
+// Fallback icon if platform is unknown
+// Fallback to default colors if extraction fails
+// Fallback: If the file path is invalid, wipe it to prevent DB corruption
+// Fast path: try exact match first
+// Fetch existing event to preserve operational parameters (Immutability Guard)
+// Fetch full profiles for guests
+// Fetch in parallel: current user, target user, current connections, target connections
+// Fetch the actual user data from the Firestore standard schema
+// Fetch up to 6 avatars
+// Fetches the current user's gender from Firestore
+// File generated by FlutterFire CLI.
+// Fill to 5 colors if necessary
+// Filter by search text
+// Filter out target user being friends with the current user themselves
+// Filters
+// Find if this is the row containing the selected date
+// Find the color with the highest luminance that is bright enough
+// Find the first Monday of the week containing the first day of the month
+// Find the index of the row containing the selected date
+// Fixed Transparent Header with Gripper
+// Flawless background update via palette_generator
+// Footer: Interested Button + Attendee Avatars
+// For now, we'll just allow it if visibilityFilters is not completely overriding.)
+// Foreground Content (Top Layer)
+// Form Mode: Just show the hosted by card with form styling
+// Friend List
+// Friend Requests Tile
+// Gender Section
+// Generate years from 5 years ago to 10 years in the future
+// Ghost account protection
+// Gradients
+// Grid
+// Group events: Upcoming (Future or Ongoing) vs Past
+// Group notifications
+// Guard against race conditions when editing an event with a custom poster
+// Handle and Title
+// Handle file paths (with or without 'file://' prefix)
+// Header
+// Header Row: Image + Title/Details
+// Header Search
+// Header bottom spacing
+// Header with clear button
+// Heading: !Heading!
+// Height of one week view (approx: AppBar 50 + Spacer 15 + Toggle 50 + Spacer 10 + Weekdays 25 + Spacer 16 + Week 46 + Margin 12)
+// Helper to avoid lints for unawaited futures
+// History icon on the left as per acceptance criteria
+// Host Profile Picture with ripple
+// Host bar
+// Icon Selector Row
+// If DiscoverFeedCard had a visibility property, we would filter here.
+// If at max (1000km), show "Any distance"
+// If every event appears in a carousel, still show the full feed below.
+// If file doesn't exist or deletion fails, log and continue
+// If it's today, also set it as the active/selected day
+// If it's too dark (against our dark background), use brand blue or a default
+// If same day, only show time
+// If they were friends, decrement the counts safely (avoid going below 0 for legacy users)
+// Implementation: Month picker
+// Import Login UI screens
+// Import Sign-Up UI screens
+// Incoming list
+// Increment hosted count for the user
+// Info Section
+// Initial setup if already ready
+// Initialize App Check in the background to avoid blocking the main thread
+// Initialize Firebase & AppCheck
+// Interested & Settings Icons
+// Interested Button
+// Invalidate recommendedFriendsProvider when switching away from the profile tab
+// Keep only the last 10 searches
+// Label changes based on user's gender
+// Layer 0: Background Gradient
+// Layer 1: Foreground Content
+// Left Section: Invite
+// Left action (e.g. Cancel / Clear)
+// Left: Messages (inbox_line)
+// Let's use 'tiktok' as the key since I saw it in the goal description.
+// Limit search history list to 10 entries
+// Link Label
+// List of recent searches
+// Listen for tab changes to reset the calendar when returning
+// Listen to changes to handle animation transition toggles
+// Load the current filter state when sheet opens
+// Load the current user's gender
+// Loads and saves recent searches using shared_preferences
+// Local state while user is making selections
+// Location
+// Location Row
+// Location Section
+// Lock to portrait
+// MAIN APP SHELL
+// Main Card Body
+// Main horizontal road crossing center
+// Main vertical road crossing center
+// Map index to original screens list if we removed one
+// Matches inline bold (*bold*) and inline heading (!heading!)
+// Max is 1000km as per acceptance criteria
+// Missing lat/lng fallback gracefully handles incomplete locations
+// Mocked poster URLs
+// Month
+// Multi-day
+// Name Field
+// No longer using PlaceholderScreen
+// Normalize extent from initialSize to maxChildSize
+// OTP TIMER STATE & NOTIFIER
+// Only jump if the provided index differs from our current selection
+// Open sheet again if already active and clicked
+// Operation 1: Main Event
+// Optional text payload
+// Options logic
+// PM Text
+// Padding inside the modal shell
+// Past Events List
+// Past Events Section Divider
+// Pending requests link at the top
+// Plus Ones
+// Pointing to the Johannesburg 2nd Gen server
+// Poster 1 (Far Left)
+// Poster 2 (Mid Left)
+// Poster 3 (Center - Front)
+// Poster 4 (Mid Right)
+// Poster 5 (Far Right)
+// Poster Module
+// Preview Button (Right)
+// Preview Layout: Stacked full-width cards
+// Primary Action Button
+// Process the upload if a real local path exists
+// Profile Info
+// Pulse Circle: expanding out
+// RSVP Deadline
+// RSVP Options Section
+// RSVP Preview Pill
+// Read the file bytes
+// Real Name
+// Recheck before applying color/poster updates in case an event was loaded for editing during palette generation
+// Remaining events section header
+// Remaining events vertical list
+// Reminders Pills (Now below the button)
+// Reminders Section
+// Remove 'd' or 'n' from OWM icon code if present
+// Remove from main collection
+// Remove if already exists to avoid duplicates
+// Remove if exists to put it at the top
+// Removed BackdropFilter for performance.
+// Removed watchProfileUpcomingEvents as it is now handled directly by publicProfileUpcomingEventsProvider using publicJoinedEventsProvider and publicHostedEventsProvider.
+// Resolve all friend profiles reactively
+// Retrieve document to check status before deleting
+// Right Section: Reminders
+// Right action (e.g. Save)
+// Right: Notifications
+// SIGN-UP FORM STATE & NOTIFIER
+// Scrollers on Top
+// Search Bar
+// Search Bar Input (styled matching the guest list)
+// Search Input
+// Search Input Field
+// Search State Variables
+// Section header
+// Selected Date Display
+// Selected Location Card
+// Selector Boxes Behind
+// Separate into mutual and other
+// Set Reminder Button (Now at top of section)
+// Share Profile Button
+// Sheet's Aurora Background & Overlay (Reactive, Optimized)
+// Shell and Auth Providers
+// Show recent searches when search bar is empty
+// Show search results when query is not empty
+// Shows current distance value
+// Simplified color helper for UI use
+// Skip malformed extra rows instead of failing the whole event.
+// Sliding Pill
+// Slow path: find real mixed-case UID for CometChat integration
+// Social link with icon and handle
+// Social media link with icon and handle
+// Some diagonal roads
+// Sort by timestamp descending
+// Sort: Selected co-hosts at the top, then alphabetically
+// Sort: Upcoming (closest first), Past (most recent first)
+// Spotlight carousels (Only show when "All" is selected)
+// Square poster (250×250), flush below host bar
+// Stat
+// Stat Count
+// Stat Label
+// Stat Number
+// Stat item with label and count
+// State 1: Empty/Unlimited State
+// State 2: Input/Editing State
+// State 3: Confirmed/Saved State
+// Static Map Background / Shimmer / Fallback Custom Paint Grid
+// Static visibility options
+// Stats Row
+// Stores the current filter state so the rest of the app can access it
+// Stores the current user's gender loaded from Firestore
+// Tabs
+// Tag Selection Overlay
+// Tap overlay button / premium tooltip
+// Tapping a recent search runs it again
+// Target IDs (e.g., event ID)
+// Task 1: Grouping
+// Task 1: Sorting
+// Task 2: Date Header
+// Task 2: Event Cards
+// Task 3: Past Events Divider
+// The Full Background Stack
+// The router's AuthState listening should theoretically handle this,
+// The smooth RadialGradients in _AuroraBlob provide the soft look for free.
+// This button now pushes a full-screen route to hide the bottom nav
+// This holds all the filter values the user can select
+// This triggers your Firestore document creation!
+// Time - Dynamic logic preserved
+// Timing Row
+// Title Row
+// Title and basic info
+// Top Action Row
+// Top Left Blob (Static at middle-state)
+// Top Right Blob (Static at middle-state)
+// Top Spotlight Carousel (if not empty)
+// Translucent Close "X" Action (Top-Right)
+// Trigger focus if entering editing state
+// UI-only or transient state
+// Up Chevron
+// Upcoming Section
+// Update values if fetch is successful
+// Use a curve for smoother transition
+// Use a transaction or batch to ensure both happen or neither
+// Use the server-side deletion to ensure both Auth and Firestore are cleaned up
+// Used for grouped notifications (e.g., "+10 others")
+// User search list
+// Username
+// Username Field
+// Username and timestamp
+// Using "tiktok" mapping from "x" for consistency if they are the same in DB,
+// Vertical divider between stats
+// Vertical feed (loading / error / list / empty)
+// Visibility filter options
+// Watch dynamic affinity social context
+// Watch real-time connection state
+// Watch real-time host profile info
+// We intentionally do NOT use `state = const AsyncLoading()` here.
+// We still count them for the headers, but we DO NOT skip them for the feed
+// Whitelist paths an authenticated user may use while finishing login/sign-up.
+// Who triggered the notification (if applicable)
+// Wrap the UI in a FutureBuilder to await the database fetch
+// Write to Firestore so that the notification system picks it up
+// Year
+// but explicitly going to the new unified entry point prevents errors.
+// but let's be explicit based on type
+// but user specifically mentioned tiktok before.
+// connectionStateProvider stream reflects failure on next read
+// ignore: deprecated_member_use
+// ignore_for_file: type=lint
+// on screen and just marks it as `isRefreshing`, preventing UI flashes.
+// to avoid interrupting active scrolls or causing redundant jumps.
+///
+///   flutter run --dart-define=COMETCHAT_APP_ID=... --dart-define=COMETCHAT_REGION=us
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// // ...
+/// Accept an incoming connection request (both users updated on the server).
+/// Apply the filter to a list of events.
+/// Bottom edge of the username bar (safe area + toolbar).
+/// Cached `getDiscoverFeed` (`tab: All`) payload + fetch metadata.
+/// Campuses and interest tags from `institutions/{kDefaultInstitutionDocId}`.
+/// Client-safe CometChat identifiers for SDK init.
+/// Cloud Function and signing out.
+/// Compresses image bytes to WebP format with 80% quality.
+/// Content is fully clipped above this line (bar bottom + 10dp).
+/// Default [FirebaseOptions] for use with your Firebase apps.
+/// Deletes the current Firebase Auth user (ghost account) and clears the form state.
+/// Deletes the current authenticated user's account by calling the backend
+/// Details block: padding (24) + title (~22) + rows + Interested control.
+/// Discover (and other feeds) often embed host fields from the server; skip
+/// Event ids where the user is host or cohost (for joined-count filtering).
+/// Event staged for sharing in the active chat (cleared after send or dismiss).
+/// Events on the user's schedule marked as 'interested', excluding host/cohost, as full [Event] docs.
+/// Example:
+/// Fallback tags if `institutions/{id}` has no `interests` field.
+/// Fetch any user's profile by UID
+/// Firestore `institutions/{id}.allowed_domains` (lowercased) for client-side validation.
+/// Handles case-insensitive lookup (e.g. for CometChat's lowercase UIDs).
+/// How long a successful `tab: All` fetch is reused before refetching.
+/// Initializes the CometChat SDK once per app run (after config is resolved).
+/// Lightweight card from [getDiscoverFeed] Cloud Function.
+/// ListView viewport — must fit host + poster + details (no vertical overflow).
+/// Loads CometChat App ID + region from Cloud Functions when dart-define is unset.
+/// Local-part sanity check + domain must appear in [allowedDomainsLower].
+/// Manages the active tab index for the MainShell
+/// Matches the calendar list view "Past events" separator.
+/// Max events shown in a home horizontal carousel (For You + In your Area).
+/// Must match functions COMETCHAT_APP_ID / COMETCHAT_REGION (see functions/.env.example).
+/// Opens event detail only when [eventId] is a non-empty Firestore document id.
+/// Or rely on [CometChatConfigLoader] fetching getCometChatClientConfig from Cloud Functions.
+/// Override at build time:
+/// Passed to [AuthController.requestOtp] so the callable can enforce login vs sign-up rules.
+/// Path only, no query; trailing slash removed for stable whitelist matching.
+/// Picks from camera/gallery with initial compression, then opens a locked 1:1 cropper.
+/// RSVP'd events on the user's schedule, excluding host/cohost, as full [Event] docs.
+/// Re-evaluates [GoRouter.redirect] when auth changes **without** disposing
+/// Refetch when the user moves more than this many km from the cached coords.
+/// Refresh friendship-related UI after accept, decline, or unfriend.
+/// Remove a connection or cancel a pending request.
+/// Retry login (e.g. from chat screen banner).
+/// Returns a local file path, or `null` if the user cancels or an error occurs.
+/// Send a connection request to the target user.
+/// Signed-in user's Firestore `users/{uid}` document (null if signed out or no doc).
+/// Spinner using the same blue as [BloomButton] / [AppTheme.primaryButton].
+/// Spotlight carousel for a category chip (1+ events is enough to show).
+/// Stream any user's profile by UID (real-time updates)
+/// Stream provider for accepted friends (status == 'connected')
+/// Stream provider for incoming pending friend requests
+/// Stream provider for outgoing pending friend requests
+/// Stream provider for the count of incoming pending friend requests
+/// Stream provider for the count of outgoing pending friend requests
+/// Structured response when tab is `All`.
+/// Supports array fields on the doc and/or `campuses` / `interests` subcollections.
+/// Tracks taps on the active Discover tab to trigger page refresh
+/// Tracks taps on the active Home tab to trigger page refresh
+/// Union result from [getDiscoverFeed].
+/// Up to 10 carousel cards; UI shows the carousel when this list is non-empty (1+).
+/// Upcoming joining + hosting events for the public profile being viewed ([profileUserId]).
+/// Used when a user cancels the registration flow midway.
+/// User-facing copy for OTP request failures from Cloud Functions.
+/// User-facing copy for OTP verify failures from Cloud Functions.
+/// View of the cache for the active category chip (no extra network calls).
+/// [GoRouter]. Watching [authStateChangesProvider] on the router provider
+/// [flow] is sent as `authFlow` to the `requestOtp` callable (pre-flight lives there).
+/// ```
+/// ```dart
+/// await Firebase.initializeApp(
+/// import 'firebase_options.dart';
+/// per-card Firestore listeners to avoid dozens of streams on one screen.
+/// recreates [GoRouter] and resets to [initialLocation], which sent sign-up
+/// users to `/` right after OTP verification.
+//Leave as gradient please incase I change my mind and want to add a gradient later
+//Username

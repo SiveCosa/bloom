@@ -22,7 +22,7 @@ class GuestListRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = guest['uid'] as String? ?? '';
-    final name = guest['name'] as String? ?? guest['username'] as String? ?? 'Unknown';
+    final name = (guest['name'] as String? ?? guest['username'] as String? ?? 'Unknown').replaceAll('@', '');
     final avatarUrl = guest['profile_image_url'] as String? ?? '';
     final subtitle = guest['computedSubtitle'] as String? ?? '';
     final isCurrentUser = guest['isCurrentUser'] == true;

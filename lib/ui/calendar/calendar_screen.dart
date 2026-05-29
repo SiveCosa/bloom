@@ -368,8 +368,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          // Calendar rows
-          // Calendar rows
           Column(
             children: List.generate(rowCount, (rowIndex) {
               final rowDays = days.sublist(rowIndex * 7, (rowIndex + 1) * 7);
@@ -799,7 +797,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               slivers: [
                 const SliverToBoxAdapter(child: SizedBox(height: 10)),
                 
-                // Upcoming Section
                 ..._buildEventList(upcomingGrouped, currentUserId, "Upcoming"),
 
                 // Task 3: Past Events Divider
@@ -843,7 +840,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     for (var date in sortedDates) {
       final events = groupedEvents[date]!;
       
-      // Task 2: Date Header
       slivers.add(
         SliverToBoxAdapter(
           child: Padding(
@@ -853,7 +849,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
       );
 
-      // Task 2: Event Cards
       slivers.add(
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 10),

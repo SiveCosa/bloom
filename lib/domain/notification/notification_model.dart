@@ -35,7 +35,6 @@ class AppNotification {
   final String? targetName;
   final String? targetImageUrl;
   
-  // Optional text payload
   final String? message;
 
   AppNotification({

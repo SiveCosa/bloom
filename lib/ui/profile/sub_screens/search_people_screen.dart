@@ -401,7 +401,6 @@ class SearchUserRow extends ConsumerWidget {
     final username = user['username'] as String? ?? '';
     final imageUrl = user['profile_image_url']?.toString() ?? user['avatar_url']?.toString();
 
-    // Dynamically watch connection status
     final connectionStateAsync = ref.watch(connectionStateProvider(uid));
     final currentState = connectionStateAsync.value ?? FriendshipState.none;
 
@@ -432,7 +431,7 @@ class SearchUserRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    username.isNotEmpty ? '@$username' : 'bloom member',
+                    username.isNotEmpty ? username.replaceAll('@', '') : 'bloom member',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 12,

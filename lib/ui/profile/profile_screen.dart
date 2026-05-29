@@ -38,10 +38,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) return;
 
+    // Load the selected local image file into memory for processing
     final file = File(localPath);
     final bytes = await file.readAsBytes();
 
-    // Ensure all uploads are WebP 80%
+    // Ensure all uploads are WebP 80% to save storage space and bandwidth
     final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
 
     final storageRef = FirebaseStorage.instance
@@ -81,6 +82,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _showImagePreview(String? imageUrl) {
     if (imageUrl == null || imageUrl.isEmpty) return;
 
+    // Render a full-screen immersive image viewer with a blurred background overlay
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -123,7 +125,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        // Close Button
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(
                           Icons.close,
@@ -132,7 +133,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       TextButton.icon(
-                        // Edit Button
                         onPressed: () {
                           Navigator.pop(context);
                           _onChangePhoto();
@@ -161,6 +161,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _logout() async {
+    // Clear local auth session state and sign out from third-party services (e.g. CometChat)
     await ref.read(authControllerProvider.notifier).signOut();
     if (mounted) {
       // The router's AuthState listening should theoretically handle this,
@@ -243,10 +244,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
-          // Layer 0: Background Gradient
           const GradientTopBar(height: 100, showDarkOverlay: false),
 
-          // Layer 1: Foreground Content
           profileAsync.when(
             loading: () => const Center(
               child: CircularProgressIndicator(color: Color(0xFF0086D8)),
@@ -258,7 +257,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             data: (doc) {
-              final username = doc?['username']?.toString() ?? '—';
+              final username = (doc?['username']?.toString() ?? '—').replaceAll('@', '');
               final name = doc?['name']?.toString() ?? 'Anonymous';
               final bio = doc?['bio']?.toString() ?? 'No bio yet.';
               final imageUrl = doc?['profile_image_url']?.toString();
@@ -284,9 +283,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Column(
                     children: [
-                      // Top Action Row
                       Padding(
-                        // Interested & Settings Icons
                         padding: const EdgeInsets.symmetric(
                           horizontal: 15.0,
                           vertical: 8.0,
@@ -295,7 +292,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              //Username
                               username,
                               style: const TextStyle(
                                 fontSize: 24, // Username font size
@@ -333,7 +329,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 15.0),
                         child: Column(
                           children: [
-                            // Avatar
                             Stack(
                               children: [
                                 GestureDetector(
@@ -385,7 +380,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ],
                             ),
 
-                            // Real Name
                             const SizedBox(height: 15), // Spacing below avatar
                             Text(
                               name,
@@ -400,7 +394,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             const SizedBox(
                               height: 25,
                             ), // Spacing between name and stats
-                            // Stats Row
                             Row(
                               children: [
                                 Expanded(
@@ -481,7 +474,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const SizedBox(
                                 height: 10,
                               ), // Spacing between social links and bio
-                              // Bio Section
                               _buildBioText(bio),
                             ] else ...[
                               const SizedBox(height: 20),
@@ -491,7 +483,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             const SizedBox(
                               height: 25,
                             ), // Spacing before action buttons
-                            // Action Buttons
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 0.0,
@@ -502,7 +493,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   children: [
                                     Expanded(
                                       child: _buildActionButton(
-                                        // Edit Profile Button
                                         'Edit profile',
                                         () {
                                           ref.invalidate(
@@ -516,11 +506,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: _buildActionButton(
-                                        // Share Profile Button
                                         'Share profile',
                                         () {
-                                          final formattedUsername = username.startsWith('@') ? username : '@$username';
-                                          Share.share('Follow my profile on Bloom, $formattedUsername');
+                                          final cleanUsername = username.replaceAll('@', '');
+                                          Share.share('Follow my profile on Bloom, $cleanUsername');
                                         },
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -583,7 +572,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           border: Border.all(color: Colors.white24, width: 1),
         ),
         child: Center(
-          // Center the icon within the circular container
           child: assetPath != null
               ? assetPath.endsWith('.svg')
                     ? SvgPicture.asset(
@@ -613,7 +601,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildStatItem(String label, String count, VoidCallback onTap) {
-    // Stat item with label and count
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -621,10 +608,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            // Stat Count
             count,
             style: const TextStyle(
-              // Stat Number
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -632,10 +617,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            // Stat
             label,
             style: TextStyle(
-              // Stat Label
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 12,
               fontWeight: FontWeight.w400,
@@ -647,12 +630,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildDivider() {
-    // Vertical divider between stats
     return Container(width: 1, height: 50, color: Colors.white12);
   }
 
   Widget _buildSocialLink(String platform, String handle, bool hasPrevious) {
-    // Social media link with icon and handle
     String assetName = platform;
 
     return GestureDetector(
@@ -675,7 +656,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _launchUrl(url);
       },
       child: Row(
-        // Social link with icon and handle
         mainAxisSize: MainAxisSize.min,
         children: [
           if (assetName.isNotEmpty)
@@ -690,7 +670,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             )
           else
             const Icon(
-              // Fallback icon if platform is unknown
               Icons.link,
               size: 14,
               color: Colors.white10,

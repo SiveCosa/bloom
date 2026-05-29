@@ -118,7 +118,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final contentCutoff = _contentCutoff(context);
 
     final appBarUsername = profileAsync.when(
-      data: (doc) => doc?['username']?.toString() ?? '—',
+      data: (doc) => (doc?['username']?.toString() ?? '—').replaceAll('@', ''),
       loading: () => '',
       error: (error, stackTrace) => '',
     );
@@ -176,7 +176,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                         children: [
                           const SizedBox(height: 20),
                           
-                          // Avatar & Display Name
                           Center(
                             child: Column(
                               children: [
@@ -196,7 +195,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           ),
                           const SizedBox(height: 25),
                           
-                          // Stats Row
                           Row(
                             children: [
                               Expanded(child: _buildStatItem('Friends made', friendsCount, () {
@@ -225,7 +223,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           
                           const SizedBox(height: 25),
                           
-                          // Action Buttons
                           _buildConnectionActionBar(
                             context,
                             ref,
@@ -608,7 +605,6 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   .acceptRequest(widget.userId);
               invalidateFriendshipCaches(ref, widget.userId);
             } catch (_) {
-              // connectionStateProvider stream reflects failure on next read
             }
           },
         );

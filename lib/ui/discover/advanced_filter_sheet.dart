@@ -17,7 +17,6 @@ class AdvancedFilterSheet extends ConsumerStatefulWidget {
 }
 
 class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
-  // Local state while user is making selections
   late DiscoverFilter _localFilter;
 
   bool _isTagsExpanded = false;
@@ -104,7 +103,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                     ),
                   ),
                   const SizedBox(height: 20),
-            // --- Header ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Stack(
@@ -178,7 +176,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                   children: [
                     const SizedBox(height: 24),
 
-                    // --- Date Filter Section ---
                     const Text(
                       'Date',
                       style: TextStyle(
@@ -250,7 +247,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
 
                     const SizedBox(height: 32),
 
-                    // --- Distance Filter Section ---
                     const Text(
                       'Distance',
                       style: TextStyle(
@@ -312,7 +308,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
 
                     const SizedBox(height: 32),
 
-                    // --- Visibility Filter Section ---
                     const Text(
                       'Visibility',
                       style: TextStyle(
@@ -326,7 +321,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        // Static visibility options
                         ..._visibilityOptions.map((option) {
                           final isSelected = _localFilter.visibilityFilters
                               .contains(option);
@@ -463,7 +457,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
 
                     const SizedBox(height: 32),
 
-                                        // --- Tags Filter Section ---
                     const Text(
                       'Categories & Tags',
                       style: TextStyle(
@@ -479,7 +472,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                         bool isExpanded = _isTagsExpanded;
                         List<String> displayTags = _localFilter.tags;
                         bool hasMore = false;
-                        int moreCount = 0;
                         if (!isExpanded && displayTags.length > 5) {
                           hasMore = true;
                           displayTags = displayTags.sublist(0, 5);
@@ -489,7 +481,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            // Add tag button (always at front)
                             GestureDetector(
                               onTap: () {
                                 setState(() {
@@ -547,7 +538,6 @@ class _AdvancedFilterSheetState extends ConsumerState<AdvancedFilterSheet> {
                               ),
                             )),
                             
-                            // +X more button
                             if (hasMore)
                               GestureDetector(
                                 onTap: () {

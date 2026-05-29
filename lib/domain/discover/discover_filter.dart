@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'discover_feed.dart';
 
-// --- Filter State Model ---
 // This holds all the filter values the user can select
 class DiscoverFilter {
   final List<String> dateFilters;

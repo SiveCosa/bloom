@@ -41,7 +41,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
     if (dateTime == null) return '';
     final difference = DateTime.now().difference(dateTime);
     if (difference.inSeconds < 60) {
-      return 'Just now';
+      return 'now';
     } else if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m';
     } else if (difference.inHours < 24) {
@@ -141,7 +141,6 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          // Atmospheric Gradient Background (Stays at original height)
           const GradientTopBar(
             height: 100,
             showDarkOverlay: false,
@@ -167,12 +166,10 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
             ),
             body: Column(
               children: [
-                // Pending requests link at the top
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: _buildPendingRequestsTile(context),
                 ),
-                // Section header
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                   child: Align(
@@ -274,7 +271,6 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 12),
-                                  // Username and timestamp
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +306,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                                               children: [
                                                 if (username != null && username.isNotEmpty) ...[
                                                   Text(
-                                                    '@$username',
+                                                    username.replaceAll('@', ''),
                                                     style: TextStyle(
                                                       color: Colors.white.withValues(alpha: 0.5),
                                                       fontSize: 12,
@@ -360,7 +356,6 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                             ),
                           ),
                                 const SizedBox(width: 8),
-                                // Accept and Decline Buttons
                                 if (_acceptedUids.contains(requesterUid))
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

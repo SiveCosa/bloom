@@ -21,7 +21,6 @@ class CreateEventState {
   final List<EventExtra> extras;
   final List<String> rsvpReminders;
 
-  // UI-only or transient state
   final Uint8List? customPosterBytes;
   final bool isGeneratingPoster;
   final bool isEditingSpots;

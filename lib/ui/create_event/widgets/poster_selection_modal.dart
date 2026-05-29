@@ -50,7 +50,6 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
         // Aggressive performance compression to WebP (80% quality)
         final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
 
-        // Flawless background update via palette_generator
         final imageProvider = MemoryImage(compressedBytes);
         final paletteGenerator = await PaletteGenerator.fromImageProvider(
           imageProvider,
@@ -148,7 +147,6 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
             ),
           ),
           
-          // Header Search
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: RoundedTextField(
@@ -161,7 +159,6 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
             ),
           ),
 
-          // Filters
           SizedBox(
             height: 40,
             child: ListView.separated(
@@ -213,7 +210,6 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
             ],
           ),
 
-          // Grid
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -224,7 +220,6 @@ class _PosterSelectionModalState extends ConsumerState<PosterSelectionModal> wit
             ),
           ),
 
-          // Bottom Button
           Padding(
             padding: EdgeInsets.only(
               left: 20,

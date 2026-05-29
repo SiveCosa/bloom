@@ -85,7 +85,7 @@ class AddChatFriendTile extends ConsumerWidget {
                         final username = profile?['username']?.toString().trim();
                         return Text(
                           username != null && username.isNotEmpty
-                              ? '@$username'
+                              ? username.replaceAll('@', '')
                               : 'bloom member',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.5),

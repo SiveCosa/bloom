@@ -129,7 +129,6 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                   }
                 }
 
-                // Filter by search text
                 final filteredFriends = resolvedFriends.where((profile) {
                   final username = (profile['username'] as String? ?? '').toLowerCase();
                   final nickname = (profile['nickname'] as String? ?? '').toLowerCase();
@@ -198,8 +197,8 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                           radius: 25,
                         ),
                       ),
-                      title: nickname.isNotEmpty ? nickname : username,
-                      subtitle: nickname.isNotEmpty ? '@$username' : '',
+                      title: nickname.isNotEmpty ? nickname : username.replaceAll('@', ''),
+                      subtitle: nickname.isNotEmpty ? username.replaceAll('@', '') : '',
                       isSelected: isSelected,
                       useSolidCheck: true,
                       verticalPadding: 10,
