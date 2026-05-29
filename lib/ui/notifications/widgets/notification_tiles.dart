@@ -38,6 +38,8 @@ class NotificationTile extends ConsumerWidget {
         return _WaitlistApprovedTile(notification: notification);
       case NotificationType.coHostInvite:
         return _CoHostInviteTile(notification: notification);
+      case NotificationType.eventNudge:
+        return _EventNudgeTile(notification: notification);
       default:
         return const SizedBox.shrink();
     }
@@ -575,6 +577,41 @@ class _CoHostInviteTile extends StatelessWidget {
               text: '"${notification.targetName ?? 'event'}" ',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
+            TextSpan(
+              text: timeago.format(notification.createdAt, locale: 'en_short'),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+          ],
+        ),
+      ),
+      trailing: _EventImage(url: notification.targetImageUrl),
+    );
+  }
+}
+
+class _EventNudgeTile extends StatelessWidget {
+  final AppNotification notification;
+  const _EventNudgeTile({required this.notification});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BaseNotificationTile(
+      notification: notification,
+      onTap: () {
+        if (notification.targetId != null) {
+          context.push('/event/${notification.targetId}');
+        }
+      },
+      leading: _UserAvatar(url: notification.actorAvatarUrl),
+      content: RichText(
+        text: TextSpan(
+          style: const TextStyle(color: Colors.white, fontSize: 15),
+          children: [
+            TextSpan(
+              text: notification.message ?? 'Nudge nudge. Don\'t forget to RSVP!',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextSpan(text: ' '),
             TextSpan(
               text: timeago.format(notification.createdAt, locale: 'en_short'),
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),

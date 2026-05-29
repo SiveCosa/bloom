@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/routing/event_navigation.dart';
 import '../../core/routing/chat_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../domain/auth/auth_providers.dart';
 import '../../domain/friendship/friendship_models.dart';
 import '../../domain/friendship/friendship_providers.dart';
@@ -29,6 +30,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   static const Color _scaffoldColor = Color(0xFF0B0E12);
 
   static const double _cutoffBelowUsername = 10;
+  bool _isBioExpanded = false;
 
   /// Bottom edge of the username bar (safe area + toolbar).
   double _usernameBarBottom(BuildContext context) =>
@@ -172,10 +174,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 20),
                           
-                          // Avatar & Display Name (Centered per Design but with Start Alignment in prompt?)
-                          // Prompt says "Bio aligns to the start", "Avatar: Centered".
+                          // Avatar & Display Name
                           Center(
                             child: Column(
                               children: [
@@ -211,25 +212,18 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                               })),
                             ],
                           ),
-                          const SizedBox(height: 20),
 
-                          // Task 3: Social Links
-                          if (socialLinks != null && socialLinks.isNotEmpty)
+                          if (socialLinks != null && socialLinks.isNotEmpty) ...[
+                            const SizedBox(height: 28),
                             _buildSocialLinksRow(socialLinks),
+                            const SizedBox(height: 10),
+                            _buildBioText(bio),
+                          ] else ...[
+                            const SizedBox(height: 20),
+                            _buildBioText(bio),
+                          ],
                           
-                          const SizedBox(height: 15),
-                          
-                          // Bio (Left Justified)
-                          Text(
-                            bio,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                            textAlign: TextAlign.start,
-                          ),
-                          const SizedBox(height: 30),
+                          const SizedBox(height: 25),
                           
                           // Action Buttons
                           _buildConnectionActionBar(
@@ -325,38 +319,186 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
   }
 
   Widget _buildSocialLinksRow(Map<String, dynamic> links) {
-    final instagram = links['instagram']?.toString();
-    final x = links['x']?.toString();
-    final snapchat = links['snapchat']?.toString();
+    final instagram = links['instagram']?.toString() ?? '';
+    final x = links['x']?.toString() ?? '';
+    final snapchat = links['snapchat']?.toString() ?? '';
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
-      child: Row(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        spacing: 12,
+        runSpacing: 8,
         children: [
-          if (instagram != null && instagram.isNotEmpty)
-            _buildSocialItem('assets/icons/profile/instagram_icon.svg', instagram),
-          if (x != null && x.isNotEmpty)
-            _buildSocialItem('assets/icons/profile/x_icon.svg', x),
-          if (snapchat != null && snapchat.isNotEmpty)
-            _buildSocialItem('assets/icons/profile/snapchat_icon.svg', snapchat),
+          if (instagram.isNotEmpty)
+            _buildSocialLink('instagram', instagram, false),
+          if (x.isNotEmpty)
+            _buildSocialLink('x', x, instagram.isNotEmpty),
+          if (snapchat.isNotEmpty)
+            _buildSocialLink('snapchat', snapchat, instagram.isNotEmpty || x.isNotEmpty),
         ],
       ),
     );
   }
 
-  Widget _buildSocialItem(String iconPath, String handle) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 15.0),
+  Widget _buildSocialLink(String platform, String handle, bool hasPrevious) {
+    String assetName = platform;
+
+    return GestureDetector(
+      onTap: () {
+        if (handle.isEmpty) return;
+        String url;
+        switch (assetName) {
+          case 'instagram':
+            url = 'https://www.instagram.com/$handle/';
+            break;
+          case 'x':
+            url = 'https://x.com/$handle';
+            break;
+          case 'snapchat':
+            url = 'https://www.snapchat.com/add/$handle';
+            break;
+          default:
+            return;
+        }
+        _launchUrl(url);
+      },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.asset(iconPath, width: 14, height: 14, colorFilter: const ColorFilter.mode(Colors.white54, BlendMode.srcIn)),
-          const SizedBox(width: 5),
+          if (assetName.isNotEmpty)
+            SvgPicture.asset(
+              'assets/icons/profile/${assetName}_icon.svg',
+              width: 15,
+              height: 15,
+              colorFilter: const ColorFilter.mode(
+                Colors.white70,
+                BlendMode.srcIn,
+              ),
+            )
+          else
+            const Icon(
+              Icons.link,
+              size: 14,
+              color: Colors.white10,
+            ),
+          const SizedBox(width: 4),
           Text(
             handle,
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        debugPrint('Could not launch $urlString');
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+    }
+  }
+
+  Widget _buildBioText(String bio) {
+    if (bio.isEmpty) {
+      return const SizedBox(
+        width: double.infinity,
+        child: Text(
+          'No bio yet.',
+          textAlign: TextAlign.left,
+          style: TextStyle(
+            color: Colors.white24,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isBioExpanded = !_isBioExpanded;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: double.infinity,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const style = TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              height: 1.5,
+            );
+            const moreStyle = TextStyle(
+              color: Colors.blue,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            );
+
+            final textPainter = TextPainter(
+              text: TextSpan(text: bio, style: style),
+              maxLines: 3,
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: constraints.maxWidth);
+
+            if (!textPainter.didExceedMaxLines) {
+              return Text(bio, style: style);
+            }
+
+            if (_isBioExpanded) {
+              return Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: bio, style: style),
+                    const TextSpan(text: ' ...less', style: moreStyle),
+                  ],
+                ),
+              );
+            }
+
+            int start = 0;
+            int end = bio.length;
+            int cutOff = end;
+
+            while (start <= end) {
+              int mid = (start + end) ~/ 2;
+              final tp = TextPainter(
+                text: TextSpan(
+                  text: '${bio.substring(0, mid)} ...more',
+                  style: style,
+                ),
+                maxLines: 3,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
+
+              if (tp.didExceedMaxLines) {
+                end = mid - 1;
+              } else {
+                cutOff = mid;
+                start = mid + 1;
+              }
+            }
+
+            return Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: bio.substring(0, cutOff), style: style),
+                  const TextSpan(text: ' ...more', style: moreStyle),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

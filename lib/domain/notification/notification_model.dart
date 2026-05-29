@@ -12,6 +12,7 @@ enum NotificationType {
   eventReminder,
   waitlistApproved,
   coHostInvite,
+  eventNudge,
   unknown
 }
 
@@ -33,6 +34,9 @@ class AppNotification {
   final String? targetId;
   final String? targetName;
   final String? targetImageUrl;
+  
+  // Optional text payload
+  final String? message;
 
   AppNotification({
     required this.id,
@@ -46,6 +50,7 @@ class AppNotification {
     this.targetId,
     this.targetName,
     this.targetImageUrl,
+    this.message,
   });
 
   factory AppNotification.fromFirestore(DocumentSnapshot doc) {
@@ -87,6 +92,9 @@ class AppNotification {
       case 'co_host_invite':
         type = NotificationType.coHostInvite;
         break;
+      case 'event_nudge':
+        type = NotificationType.eventNudge;
+        break;
       default:
         type = NotificationType.unknown;
     }
@@ -108,6 +116,7 @@ class AppNotification {
       targetId: data['target_id'],
       targetName: data['target_name'],
       targetImageUrl: data['target_image_url'],
+      message: data['message'],
     );
   }
 
@@ -147,6 +156,9 @@ class AppNotification {
       case NotificationType.coHostInvite:
         typeStr = 'co_host_invite';
         break;
+      case NotificationType.eventNudge:
+        typeStr = 'event_nudge';
+        break;
       default:
         typeStr = 'unknown';
     }
@@ -162,6 +174,7 @@ class AppNotification {
       if (targetId != null) 'target_id': targetId,
       if (targetName != null) 'target_name': targetName,
       if (targetImageUrl != null) 'target_image_url': targetImageUrl,
+      if (message != null) 'message': message,
     };
   }
 }
