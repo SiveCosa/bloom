@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/routing/event_navigation.dart';
-import '../shared/widgets/event_medium_card.dart';
-import '../../domain/event/event.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import '../../domain/auth/auth_providers.dart';
+import '../../domain/discover/discover_feed.dart';
+import '../../domain/discover/discover_providers.dart';
+import '../../domain/calendar/scheduled_event.dart';
 import '../shared/widgets/gradient_top_bar.dart';
 import '../shared/widgets/custom_text_fields.dart';
+import '../widgets/scheduled_event_card.dart';
 
 // --- Recent Searches Provider ---
 // Loads and saves recent searches using shared_preferences
@@ -47,20 +49,6 @@ final recentSearchesProvider =
       () => RecentSearchesNotifier(),
     );
 
-// --- Search Results Provider ---
-// Holds the current search results
-class SearchResultsNotifier extends Notifier<List<Event>> {
-  @override
-  List<Event> build() => [];
-
-  void setResults(List<Event> results) => state = results;
-}
-
-final searchResultsProvider =
-    NotifierProvider<SearchResultsNotifier, List<Event>>(
-      () => SearchResultsNotifier(),
-    );
-
 // --- Discover Search Screen ---
 class DiscoverSearchScreen extends ConsumerStatefulWidget {
   const DiscoverSearchScreen({super.key});
@@ -73,7 +61,17 @@ class DiscoverSearchScreen extends ConsumerStatefulWidget {
 class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
-  bool _isLoading = false;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _query = _searchController.text.trim().toLowerCase();
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -82,43 +80,38 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
     super.dispose();
   }
 
-  // Calls the backend to search for events
-  Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Save to recent searches
-      await ref.read(recentSearchesProvider.notifier).addSearch(query);
-
-      // Call Firebase function to search events
-      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
-      final result = await functions.httpsCallable('searchEvents').call({
-        'query': query,
-      });
-
-      // Parse results into Event list
-      final data = result.data as List<dynamic>;
-      final events = data.map((item) {
-        final map = Map<String, dynamic>.from(item as Map);
-        final id = map['id'] as String? ?? '';
-        return Event.fromMap(map, id);
-      }).toList();
-
-      ref.read(searchResultsProvider.notifier).setResults(events);
-    } catch (e) {
-      debugPrint('Search error: $e');
-      ref.read(searchResultsProvider.notifier).setResults([]);
-    } finally {
-      setState(() => _isLoading = false);
+  void _submitSearch(String query) {
+    if (query.trim().isNotEmpty) {
+      ref.read(recentSearchesProvider.notifier).addSearch(query);
     }
+    _searchFocusNode.unfocus();
+  }
+
+  List<ScheduledEvent> _filterEvents(DiscoverFeedCache? cache) {
+    if (cache == null || _query.isEmpty) return [];
+
+    final allCards = <String, DiscoverFeedCard>{};
+    for (final card in cache.allResponse.feed) {
+      allCards[card.id] = card;
+    }
+    for (final list in cache.allResponse.carouselLists) {
+      for (final card in list) {
+        allCards[card.id] = card;
+      }
+    }
+
+    return allCards.values.where((card) {
+      final title = card.title.toLowerCase();
+      final hostName = card.hostUsername.toLowerCase();
+      return title.contains(_query) || hostName.contains(_query);
+    }).map((c) => c.toScheduledEvent()).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final recentSearchesAsync = ref.watch(recentSearchesProvider);
-    final searchResults = ref.watch(searchResultsProvider);
+    final cacheAsync = ref.watch(discoverFeedCacheProvider);
+    final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
     final query = _searchController.text;
 
     return Container(
@@ -162,8 +155,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                       focusNode: _searchFocusNode,
                       hintText: 'Find an event...',
                       prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
-                      onSubmitted: (value) => _performSearch(value),
-                      onChanged: (value) => setState(() {}),
+                      onSubmitted: _submitSearch,
                       suffixIcon: query.isNotEmpty
                           ? GestureDetector(
                               onTap: () {
@@ -178,17 +170,14 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                   ),
                   const SizedBox(height: 8),
 
-            // --- Body Content ---
-            Expanded(
-              child: _isLoading
-                  // Show loading spinner while searching
-                  ? const Center(child: CircularProgressIndicator())
-                  : query.isEmpty
-                  // Show recent searches when search bar is empty
-                  ? _buildRecentSearches(recentSearchesAsync)
-                  // Show search results when query is not empty
-                  : _buildSearchResults(searchResults),
-            ),
+                  // --- Body Content ---
+                  Expanded(
+                    child: query.isEmpty
+                        // Show recent searches when search bar is empty
+                        ? _buildRecentSearches(recentSearchesAsync)
+                        // Show search results when query is not empty
+                        : _buildSearchResults(cacheAsync, currentUserId),
+                  ),
                 ],
               ),
             ),
@@ -206,9 +195,36 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
       data: (searches) {
         if (searches.isEmpty) {
           return const Center(
-            child: Text(
-              'No recent searches',
-              style: TextStyle(color: Colors.white38),
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_rounded,
+                    color: Colors.white24,
+                    size: 48,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Search Bloom',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Find events, friends, and hosts in your area',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -256,7 +272,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                     // Tapping a recent search runs it again
                     onTap: () {
                       _searchController.text = search;
-                      _performSearch(search);
+                      _submitSearch(search);
                     },
                   );
                 },
@@ -268,24 +284,73 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
     );
   }
 
-  // Builds the search results list
-  Widget _buildSearchResults(List<Event> events) {
-    if (events.isEmpty) {
-      return const Center(
-        child: Text('No events found', style: TextStyle(color: Colors.white38)),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: EventMediumCard(
-            event: event,
-            onTap: () => pushEventDetail(context, event.id),
+  Widget _buildSearchResults(AsyncValue<DiscoverFeedCache?> cacheAsync, String? currentUserId) {
+    return cacheAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF0086D8))),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            error.toString(),
+            style: const TextStyle(color: Colors.white54),
+            textAlign: TextAlign.center,
           ),
+        ),
+      ),
+      data: (cache) {
+        final results = _filterEvents(cache);
+
+        if (results.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    color: Colors.white24,
+                    size: 48,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'No events found',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "We couldn't find any events matching your search",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final event = results[index];
+            final isHost = currentUserId != null &&
+                (currentUserId == event.hostId ||
+                    event.coHostIds.contains(currentUserId));
+
+            return ScheduledEventCard(
+              event: event,
+              isHost: isHost,
+              onTap: () => pushEventDetail(context, event.id),
+            );
+          },
         );
       },
     );

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/media/avatar_image_helper.dart';
 import '../../domain/auth/auth_providers.dart';
@@ -517,7 +518,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       child: _buildActionButton(
                                         // Share Profile Button
                                         'Share profile',
-                                        () {}, // Logic needed to share profile
+                                        () {
+                                          final formattedUsername = username.startsWith('@') ? username : '@$username';
+                                          Share.share('Follow my profile on Bloom, $formattedUsername');
+                                        },
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

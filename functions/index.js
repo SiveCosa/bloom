@@ -942,8 +942,24 @@ exports.deleteUserAccount = onCall(
       const scheduleSnap = await userRef.collection("schedule").get();
       const joinedEventIds = scheduleSnap.docs.map(doc => doc.id);
 
-      // b) Hosted Events
-      const hostedEventsSnap = await db.collection("events").where("hostId", "==", uid).get();
+      // b) Hosted Events (query multiple paths for robustness)
+      const hostedEventsQueries = await Promise.all([
+        db.collection("events").where("metadata.hostId", "==", uid).get(),
+        db.collection("events").where("metadata.host_id", "==", uid).get(),
+        db.collection("events").where("hostId", "==", uid).get(),
+        db.collection("events").where("host_id", "==", uid).get()
+      ]);
+      
+      const seenEventIds = new Set();
+      const hostedEventsSnap = { docs: [] };
+      for (const snap of hostedEventsQueries) {
+        for (const doc of snap.docs) {
+          if (!seenEventIds.has(doc.id)) {
+            seenEventIds.add(doc.id);
+            hostedEventsSnap.docs.push(doc);
+          }
+        }
+      }
       
       // c) Connections and Invites
       const connectionsSnap = await userRef.collection("connections").get();

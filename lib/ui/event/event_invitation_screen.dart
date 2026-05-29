@@ -82,16 +82,17 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     required String title, 
     String? subtitle,
     String buttonText = 'Return Home',
+    Color? buttonColor,
     VoidCallback? onButtonPressed,
   }) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
-      body: Center(
+      body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Spacer(),
               Icon(icon, color: iconColor, size: 80),
               const SizedBox(height: 24),
               Text(
@@ -107,15 +108,18 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16),
                 ),
               ],
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: onButtonPressed ?? () => context.go('/'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFAD83FE),
-                  minimumSize: const Size(200, 50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onButtonPressed ?? () => context.go('/'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: buttonColor ?? const Color(0xFFAD83FE),
+                    minimumSize: const Size(200, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                  ),
+                  child: Text(buttonText, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
-                child: Text(buttonText, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -165,7 +169,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         icon: Icons.delete_forever_rounded,
         iconColor: Colors.white70,
         title: 'Event Deleted',
-        buttonText: 'Finished',
+        buttonText: 'Back',
+        buttonColor: Colors.blue,
         onButtonPressed: () {
           if (context.canPop()) {
             context.pop();
@@ -186,7 +191,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
             icon: Icons.delete_forever_rounded,
             iconColor: Colors.white70,
             title: 'Event Deleted',
-            buttonText: 'Finished',
+            buttonText: 'Back',
+            buttonColor: Colors.blue,
             onButtonPressed: () {
               if (context.canPop()) {
                 context.pop();

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/routing/event_navigation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../domain/discover/discover_providers.dart';
+import '../../domain/discover/discover_filter.dart';
 import '../../domain/calendar/scheduled_event.dart';
 import '../../domain/event/event.dart';
 import '../../domain/navigation/navigation_providers.dart';
@@ -484,12 +485,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                               BloomIconButton(
                                 icon: Icons.tune,
                                 onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      fullscreenDialog: true,
-                                      builder: (context) =>
-                                          const AdvancedFilterSheet(),
-                                    ),
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) =>
+                                        const AdvancedFilterSheet(),
                                   );
                                 },
                               ),
@@ -501,76 +503,106 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   ),
                   const SizedBox(height: 20),
                   // Category Chips Row
-                  SizedBox(
-                    height: 35,
-                    child: ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      itemCount: discoverCategories.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8.0),
-                      itemBuilder: (context, index) {
-                        final category = discoverCategories[index];
-                        final isSelected = activeFilter == category;
+                  Builder(
+                    builder: (context) {
+                      final filterState = ref.watch(discoverFilterProvider);
+                      final List<String> displayCategories = List.from(discoverCategories);
+                      if (filterState.hasFilters) {
+                        displayCategories.insert(0, 'Filter');
+                      }
 
-                        final lowerCat = category.toLowerCase();
-                        final iconPath = const {
-                          'all': 'assets/icons/discover/all_icon.svg',
-                          'community': 'assets/icons/discover/community_icon.svg',
-                          'music': 'assets/icons/discover/music_icon.svg',
-                          'film': 'assets/icons/discover/movie_icon.svg',
-                          'arts': 'assets/icons/discover/art_icon.svg',
-                          'fitness': 'assets/icons/discover/fitness_icon.svg',
-                          'food': 'assets/icons/discover/food_icon.svg',
-                          'education': 'assets/icons/discover/education_icon.svg',
-                        }[lowerCat];
+                      return SizedBox(
+                        height: 35,
+                        child: ListView.separated(
+                          physics: const BouncingScrollPhysics(),
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          itemCount: displayCategories.length,
+                          separatorBuilder: (context, index) => const SizedBox(width: 8.0),
+                          itemBuilder: (context, index) {
+                            final category = displayCategories[index];
+                            final isSelected = activeFilter == category;
 
-                        return GestureDetector(
-                          onTap: () {
-                            ref.read(discoverCategoryFilterProvider.notifier).setCategory(category);
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: isSelected ? 0.30 : 0.08),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.07),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (iconPath != null) ...[
-                                  SvgPicture.asset(
-                                    iconPath,
-                                    width: lowerCat == 'community' ? 15 : 20,
-                                    height: lowerCat == 'community' ? 15 : 20,
-                                    colorFilter: const ColorFilter.mode(
-                                      Colors.white,
-                                      BlendMode.srcIn,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                Text(
-                                  category,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                    fontSize: 14,
+                            final lowerCat = category.toLowerCase();
+                            final iconPath = const {
+                              'all': 'assets/icons/discover/all_icon.svg',
+                              'community': 'assets/icons/discover/community_icon.svg',
+                              'music': 'assets/icons/discover/music_icon.svg',
+                              'film': 'assets/icons/discover/movie_icon.svg',
+                              'arts': 'assets/icons/discover/art_icon.svg',
+                              'fitness': 'assets/icons/discover/fitness_icon.svg',
+                              'food': 'assets/icons/discover/food_icon.svg',
+                              'education': 'assets/icons/discover/education_icon.svg',
+                            }[lowerCat];
+
+                            String displayText = category;
+                            if (category == 'Filter') {
+                              displayText = 'Filter ';
+                            }
+
+                            return GestureDetector(
+                              onTap: () {
+                                if (category == 'Filter' && activeFilter == 'Filter') {
+                                  // Open sheet again if already active and clicked
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => const AdvancedFilterSheet(),
+                                  );
+                                } else {
+                                  ref.read(discoverCategoryFilterProvider.notifier).setCategory(category);
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeInOut,
+                                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: isSelected ? 0.30 : 0.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.07),
+                                    width: 0.5,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (iconPath != null) ...[
+                                      SvgPicture.asset(
+                                        iconPath,
+                                        width: lowerCat == 'community' ? 15 : 20,
+                                        height: lowerCat == 'community' ? 15 : 20,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                    ],
+                                    if (category == 'Filter') ...[
+                                      const Icon(Icons.tune, color: Colors.white, size: 16),
+                                      const SizedBox(width: 6),
+                                    ],
+                                    Text(
+                                      displayText,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }
                   ),
                 ],
               ),

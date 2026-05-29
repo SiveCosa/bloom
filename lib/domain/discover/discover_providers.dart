@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'discover_feed.dart';
 import '../event/event.dart';
+import 'discover_filter.dart';
 
 const List<String> discoverCategories = [
   'All',
@@ -457,12 +458,29 @@ final categoryEventsProvider = Provider.family<List<Event>, String>((
 
 final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
   final activeFilter = ref.watch(discoverCategoryFilterProvider);
+  final advancedFilter = ref.watch(discoverFilterProvider);
   final cacheAsync = ref.watch(discoverFeedCacheProvider);
 
   return cacheAsync.when(
     data: (cache) {
       if (cache == null) return [];
       final all = cache.allResponse;
+
+      if (activeFilter == 'Filter') {
+        // Collect all unique cards from everywhere
+        final Map<String, DiscoverFeedCard> allCards = {};
+        for (final card in all.feed) {
+          allCards[card.id] = card;
+        }
+        for (final list in all.carouselLists) {
+          for (final card in list) {
+            allCards[card.id] = card;
+          }
+        }
+        
+        final filteredCards = advancedFilter.apply(allCards.values.toList());
+        return _cardsToEvents(filteredCards);
+      }
 
       if (activeFilter == 'All') {
         final shownIds = <String>{};

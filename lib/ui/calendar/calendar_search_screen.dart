@@ -126,11 +126,35 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
 
                       if (_query.isNotEmpty && results.isEmpty) {
                         return const Center(
-                          child: Text(
-                            'No events found',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 15,
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off_rounded,
+                                  color: Colors.white24,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No events found',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Try adjusting your search query',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -138,11 +162,35 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
 
                       if (results.isEmpty) {
                         return const Center(
-                          child: Text(
-                            'Search your calendar events',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 15,
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.calendar_month_rounded,
+                                  color: Colors.white24,
+                                  size: 48,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No events scheduled',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Search for events in discover or create your own',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
