@@ -66,183 +66,193 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  const SizedBox(height: 30),
-                  Center(
-                    child: Image.asset(
-                      'assets/bloom_logo.png',
-                      width: 65,
-                      height: 65,
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  const Text(
-                    '6-digit code',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  RichText(
-                    text: TextSpan(
-                      text:
-                          'To confirm your student email, please enter the OTP we sent to ',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 80.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextSpan(
-                          text: email,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        const SizedBox(height: 30),
+                        Center(
+                          child: Image.asset(
+                            'assets/bloom_logo.png',
+                            width: 65,
+                            height: 65,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (int i = 0; i < 6; i++) ...[
-                        SizedBox(
-                          width: 42,
-                          height: 55,
-                          child: TextField(
-                            controller: _controllers[i],
-                            focusNode: _focusNodes[i],
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            maxLength: 1,
+                        const SizedBox(height: 25),
+                        const Text(
+                          '6-digit code',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        RichText(
+                          text: TextSpan(
+                            text:
+                                'To confirm your student email, please enter the OTP we sent to ',
                             style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.white70,
                             ),
-                            onChanged: (val) => _onChanged(val, i),
-                            decoration: InputDecoration(
-                              counterText: "",
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 15,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white.withValues(alpha: 0.15),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(15),
-                                borderSide: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(15),
-                                borderSide: BorderSide(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(15),
-                                borderSide: const BorderSide(
+                            children: [
+                              TextSpan(
+                                text: email,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
-                        if (i == 2)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Text(
-                              '-',
-                              style: TextStyle(
-                                fontSize: 24,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(height: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (int i = 0; i < 6; i++) ...[
+                              SizedBox(
+                                width: 42,
+                                height: 55,
+                                child: TextField(
+                                  controller: _controllers[i],
+                                  focusNode: _focusNodes[i],
+                                  keyboardType: TextInputType.number,
+                                  textAlign: TextAlign.center,
+                                  maxLength: 1,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  onChanged: (val) => _onChanged(val, i),
+                                  decoration: InputDecoration(
+                                    counterText: "",
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white.withValues(alpha: 0.15),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: BorderSide(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                      borderSide: const BorderSide(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (i == 2)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text(
+                                    '-',
+                                    style: TextStyle(
+                                        fontSize: 24,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              if (i != 2 && i != 5) const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Center(
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                        if (i != 2 && i != 5) const SizedBox(width: 8),
-                      ],
-                    ],
-                  ),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Center(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
+                        const SizedBox(height: 24),
+                        Center(
+                          child: TextButton(
+                            onPressed: timerState.canResend
+                                ? () async {
+                                    try {
+                                      ref.read(otpTimerProvider.notifier).start();
+                                      await ref
+                                          .read(emailOtpControllerProvider.notifier)
+                                          .sendOtp(email, AuthOtpFlow.signup);
+                                    } catch (e) {
+                                      ref.read(otpTimerProvider.notifier).stop();
+                                      if (context.mounted) {
+                                        setState(() {
+                                          _errorMessage = otpRequestErrorMessage(e);
+                                        });
+                                      }
+                                    }
+                                  }
+                                : null,
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFFF007F),
+                              disabledForegroundColor: const Color(
+                                0xFFFF007F,
+                              ).withValues(alpha: 0.5),
+                            ),
+                            child: Text(
+                              timerState.canResend
+                                  ? 'Re-send code'
+                                  : '${timerState.formattedTime} Re-send code',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: timerState.canResend
+                                    ? const Color(0xFFFF007F)
+                                    : const Color(0xFFFF007F).withValues(alpha: 0.5),
+                              ),
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                      ),
+                      ],
                     ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: TextButton(
-                      onPressed: timerState.canResend
-                          ? () async {
-                              try {
-                                ref.read(otpTimerProvider.notifier).start();
-                                await ref
-                                    .read(emailOtpControllerProvider.notifier)
-                                    .sendOtp(email, AuthOtpFlow.signup);
-                              } catch (e) {
-                                ref.read(otpTimerProvider.notifier).stop();
-                                if (context.mounted) {
-                                  setState(() {
-                                    _errorMessage = otpRequestErrorMessage(e);
-                                  });
+                  ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 5.0),
+                      child: BloomButton(
+                        text: 'Verify',
+                        isLoading: isLoading,
+                        onPressed: _isOtpFilled
+                            ? () async {
+                                try {
+                                  await ref
+                                      .read(emailOtpControllerProvider.notifier)
+                                      .verifyOtpAndSignIn(email, _otpCode);
+                                  if (context.mounted) {
+                                    context.go('/auth/signup/details');
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setState(() {
+                                      _errorMessage = otpVerifyErrorMessage(e);
+                                    });
+                                  }
                                 }
                               }
-                            }
-                          : null,
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFFF007F),
-                        disabledForegroundColor: const Color(
-                          0xFFFF007F,
-                        ).withValues(alpha: 0.5),
-                      ),
-                      child: Text(
-                        timerState.canResend
-                            ? 'Re-send code'
-                            : '${timerState.formattedTime} Re-send code',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: timerState.canResend
-                              ? const Color(0xFFFF007F)
-                              : const Color(0xFFFF007F).withValues(alpha: 0.5),
-                        ),
+                            : null,
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  BloomButton(
-                    text: 'Verify',
-                    isLoading: isLoading,
-                    onPressed: _isOtpFilled
-                        ? () async {
-                            try {
-                              await ref
-                                  .read(emailOtpControllerProvider.notifier)
-                                  .verifyOtpAndSignIn(email, _otpCode);
-                              if (context.mounted) {
-                                context.go('/auth/signup/details');
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                setState(() {
-                                  _errorMessage = otpVerifyErrorMessage(e);
-                                });
-                              }
-                            }
-                          }
-                        : null,
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
