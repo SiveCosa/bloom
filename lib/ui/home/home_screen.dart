@@ -348,7 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Widget _buildTopRow(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -358,24 +358,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               final count = ref.watch(totalUnreadCountProvider);
               return GestureDetector(
                 onTap: () => context.push('/messages'),
-                child: Badge(
-                  isLabelVisible: count > 0,
-                  backgroundColor: const Color(0xFFF04A9F),
-                  label: Text(
-                    count > 99 ? '99+' : '$count',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Badge(
+                    isLabelVisible: count > 0,
+                    backgroundColor: const Color(0xFFF04A9F),
+                    label: Text(
+                      count > 99 ? '99+' : '$count',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icons/nav/inbox_line.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
+                    child: SvgPicture.asset(
+                      'assets/icons/nav/inbox_line.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
@@ -395,17 +399,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               );
               return GestureDetector(
                 onTap: () => context.push('/notifications'),
-                child: Badge(
-                  isLabelVisible: unreadCount > 0,
-                  backgroundColor: const Color(0xFF0086D8), // Blue circle for notifications
-                  smallSize: 10,
-                  child: SvgPicture.asset(
-                    'assets/icons/nav/bell_line.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Badge(
+                    isLabelVisible: unreadCount > 0,
+                    backgroundColor: const Color(0xFF0086D8), // Blue circle for notifications
+                    smallSize: 10,
+                    child: SvgPicture.asset(
+                      'assets/icons/nav/bell_line.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),

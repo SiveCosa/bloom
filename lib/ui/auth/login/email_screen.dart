@@ -66,7 +66,7 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     ref.listen(allowedEmailDomainsProvider, (prev, next) {
       _validateEmail();
     });
-    final authState = ref.watch(authControllerProvider);
+    final authState = ref.watch(emailOtpControllerProvider);
     final domainsAsync = ref.watch(allowedEmailDomainsProvider);
     final isLoading = authState is AsyncLoading || _isSubmitting;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -184,8 +184,8 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                       });
                       try {
                         await ref
-                            .read(authControllerProvider.notifier)
-                            .requestOtp(email, AuthOtpFlow.login);
+                            .read(emailOtpControllerProvider.notifier)
+                            .sendOtp(email, AuthOtpFlow.login);
                         if (!context.mounted) return;
                         ref
                             .read(signUpFormProvider.notifier)

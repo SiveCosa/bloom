@@ -645,6 +645,72 @@ final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
 });
 
 // ==========================================
+// EMAIL OTP CONTROLLER (Custom Token Flow)
+// ==========================================
+
+class EmailOtpController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<void> sendOtp(String email, AuthOtpFlow flow) async {
+    state = const AsyncLoading();
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final callable = functions.httpsCallable('requestEmailOtp');
+      await callable.call(<String, dynamic>{
+        'email': email.trim(),
+        'authFlow': flow == AuthOtpFlow.login ? 'login' : 'signup',
+      });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<bool> verifyOtpAndSignIn(String email, String otp) async {
+    state = const AsyncLoading();
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final callable = functions.httpsCallable('verifyEmailOtp');
+
+      final result = await callable.call(<String, dynamic>{
+        'email': email.trim(),
+        'otp': otp.trim(),
+      });
+
+      final data = Map<String, dynamic>.from(result.data as Map);
+      final token = data['token'] as String?;
+      final isNewUser = data['isNewUser'] == true;
+
+      if (token == null) {
+        throw Exception("Authentication failed: No token received from server");
+      }
+
+      await FirebaseAuth.instance.signInWithCustomToken(token);
+
+      if (!isNewUser) {
+        try {
+          await CometChatAuthService.loginWithFirebaseSession();
+        } catch (e, st) {
+          debugPrint('CometChat login after OTP skipped: $e\\n$st');
+        }
+      }
+
+      state = const AsyncData(null);
+      return isNewUser;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+}
+
+final emailOtpControllerProvider = AsyncNotifierProvider<EmailOtpController, void>(() {
+  return EmailOtpController();
+});
+
+// ==========================================
 // SIGN-UP FORM STATE & NOTIFIER
 // ==========================================
 

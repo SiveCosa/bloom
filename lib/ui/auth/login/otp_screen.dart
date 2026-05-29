@@ -48,7 +48,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final timerState = ref.watch(otpTimerProvider);
-    final authState = ref.watch(authControllerProvider);
+    final authState = ref.watch(emailOtpControllerProvider);
     final email = ref.watch(signUpFormProvider).email;
     final isLoading = authState is AsyncLoading;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -182,8 +182,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               try {
                                 ref.read(otpTimerProvider.notifier).start();
                                 await ref
-                                    .read(authControllerProvider.notifier)
-                                    .requestOtp(email, AuthOtpFlow.login);
+                                    .read(emailOtpControllerProvider.notifier)
+                                    .sendOtp(email, AuthOtpFlow.login);
                               } catch (e) {
                                 ref.read(otpTimerProvider.notifier).stop();
                                 if (context.mounted) {
@@ -222,8 +222,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                         ? () async {
                             try {
                               final isNewUser = await ref
-                                  .read(authControllerProvider.notifier)
-                                  .verifyOtp(email, _otpCode);
+                                  .read(emailOtpControllerProvider.notifier)
+                                  .verifyOtpAndSignIn(email, _otpCode);
                               if (context.mounted) {
                                 if (isNewUser) {
                                   context.go('/auth/signup/details');

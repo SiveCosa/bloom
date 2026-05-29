@@ -36,6 +36,7 @@ dependencies:
       url: https://dart.cloudsmith.io/cometchat/cometchat/
     version: ^5.0.0-beta.3
   timeago: ^3.7.1
+  pinput: ^6.0.2
 
 dev_dependencies:
   flutter_test:
