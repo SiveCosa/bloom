@@ -8,8 +8,10 @@ import '../../domain/auth/auth_providers.dart';
 import 'widgets/event_title_input.dart';
 import 'widgets/poster_module.dart';
 import 'widgets/date_time_row.dart';
-import 'widgets/poster_selection_modal.dart';
 import 'widgets/date_time_modal.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:palette_generator/palette_generator.dart';
+import '../../core/media/image_compression_helper.dart';
 import 'widgets/event_section_card.dart';
 import 'widgets/bloom_toggle.dart';
 import 'widgets/event_description_input.dart';
@@ -28,19 +30,73 @@ import 'widgets/co_host_selection_modal.dart';
 import '../../domain/event/event_location.dart';
 import '../../domain/navigation/navigation_providers.dart';
 
-
 class CreateEventScreen extends ConsumerWidget {
   const CreateEventScreen({super.key});
 
-  void _showPosterSelection(BuildContext context) {
+  Future<void> _pickAndUploadPoster(BuildContext context, WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const PosterSelectionModal(),
-    );
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final notifier = ref.read(createEventProvider.notifier);
+
+      try {
+        notifier.setGeneratingPoster(true);
+
+        final bytes = await pickedFile.readAsBytes();
+
+        // Aggressive performance compression to WebP (80% quality)
+        final compressedBytes = await ImageCompressionHelper.compressToWebP(
+          bytes,
+        );
+
+        final imageProvider = MemoryImage(compressedBytes);
+        final paletteGenerator = await PaletteGenerator.fromImageProvider(
+          imageProvider,
+        );
+
+        final colors = <Color>[];
+        if (paletteGenerator.vibrantColor != null) {
+          colors.add(paletteGenerator.vibrantColor!.color);
+        }
+        if (paletteGenerator.lightVibrantColor != null) {
+          colors.add(paletteGenerator.lightVibrantColor!.color);
+        }
+        if (paletteGenerator.darkVibrantColor != null) {
+          colors.add(paletteGenerator.darkVibrantColor!.color);
+        }
+        if (paletteGenerator.mutedColor != null) {
+          colors.add(paletteGenerator.mutedColor!.color);
+        }
+        if (paletteGenerator.dominantColor != null) {
+          colors.add(paletteGenerator.dominantColor!.color);
+        }
+
+        // Fill to 5 colors if necessary
+        if (colors.length < 5) {
+          for (var swatch in paletteGenerator.paletteColors) {
+            if (!colors.contains(swatch.color)) {
+              colors.add(swatch.color);
+              if (colors.length >= 5) break;
+            }
+          }
+        }
+
+        notifier.updateCustomPoster(compressedBytes, colors);
+      } catch (e) {
+        debugPrint('Error picking or processing poster: $e');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to process image. Please try again.'),
+            ),
+          );
+        }
+      } finally {
+        notifier.setGeneratingPoster(false);
+      }
+    }
   }
 
   void _showVisibilitySelection(BuildContext context) {
@@ -180,8 +236,12 @@ class CreateEventScreen extends ConsumerWidget {
                               child: GestureDetector(
                                 onTap: () {
                                   FocusManager.instance.primaryFocus?.unfocus();
-                                  ref.read(createEventProvider.notifier).reset();
-                                  ref.read(mainShellIndexProvider.notifier).setIndex(0);
+                                  ref
+                                      .read(createEventProvider.notifier)
+                                      .reset();
+                                  ref
+                                      .read(mainShellIndexProvider.notifier)
+                                      .setIndex(0);
                                   context.pop();
                                 },
                                 child: Container(
@@ -258,7 +318,9 @@ class CreateEventScreen extends ConsumerWidget {
                           // Event Title Input
                           Consumer(
                             builder: (context, ref, _) {
-                              final title = ref.watch(createEventProvider.select((s) => s.title));
+                              final title = ref.watch(
+                                createEventProvider.select((s) => s.title),
+                              );
                               return EventTitleInput(
                                 initialValue: title,
                                 onChanged: (val) => ref
@@ -268,12 +330,11 @@ class CreateEventScreen extends ConsumerWidget {
                             },
                           ),
 
-                          const SizedBox(
-                            height: 10,
-                          ), //leave as gap for spacing
+                          const SizedBox(height: 10), //leave as gap for spacing
                           // Poster Module
                           PosterModule(
-                            onEditPoster: () => _showPosterSelection(context),
+                            onEditPoster: () =>
+                                _pickAndUploadPoster(context, ref),
                           ),
 
                           const SizedBox(height: 10),
@@ -286,8 +347,14 @@ class CreateEventScreen extends ConsumerWidget {
 
                           Consumer(
                             builder: (context, ref, _) {
-                              final location = ref.watch(createEventProvider.select((s) => s.location));
-                              final isLocationSet = ref.watch(createEventProvider.select((s) => s.isLocationSet));
+                              final location = ref.watch(
+                                createEventProvider.select((s) => s.location),
+                              );
+                              final isLocationSet = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.isLocationSet,
+                                ),
+                              );
                               return GestureDetector(
                                 onTap: () async {
                                   FocusManager.instance.primaryFocus?.unfocus();
@@ -299,8 +366,8 @@ class CreateEventScreen extends ConsumerWidget {
                                         backgroundColor: Colors.transparent,
                                         builder: (context) =>
                                             LocationSelectionModal(
-                                          initialLocation: location,
-                                        ),
+                                              initialLocation: location,
+                                            ),
                                       );
                                   if (result != null) {
                                     ref
@@ -317,7 +384,9 @@ class CreateEventScreen extends ConsumerWidget {
                                     color: Colors.white.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(15),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.15),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.15,
+                                      ),
                                     ),
                                   ),
                                   child: Row(
@@ -367,9 +436,8 @@ class CreateEventScreen extends ConsumerWidget {
                                                 location?.formattedAddress ??
                                                     '',
                                                 style: TextStyle(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.8,
-                                                  ),
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.8),
                                                   fontSize: 14,
                                                 ),
                                                 maxLines: 1,
@@ -382,27 +450,14 @@ class CreateEventScreen extends ConsumerWidget {
                                       const SizedBox(width: 4),
                                       Icon(
                                         Icons.chevron_right,
-                                        color: Colors.white.withValues(alpha: 0.5),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.5,
+                                        ),
                                         size: 20,
                                       ),
                                     ],
                                   ),
                                 ),
-                              );
-                            }
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final coHosts = ref.watch(createEventProvider.select((s) => s.coHosts));
-                              return HostInviteSection(
-                                showInviteFriends: false,
-                                isFormMode: true,
-                                userProfile: userProfile,
-                                coHosts: coHosts,
-                                onAddCoHost: () => _showCoHostSelection(context),
                               );
                             },
                           ),
@@ -411,8 +466,34 @@ class CreateEventScreen extends ConsumerWidget {
 
                           Consumer(
                             builder: (context, ref, _) {
-                              final visibility = ref.watch(createEventProvider.select((s) => s.audience.visibility));
-                              final maxPlusOnes = ref.watch(createEventProvider.select((s) => s.audience.maxPlusOnes));
+                              final coHosts = ref.watch(
+                                createEventProvider.select((s) => s.coHosts),
+                              );
+                              return HostInviteSection(
+                                showInviteFriends: false,
+                                isFormMode: true,
+                                userProfile: userProfile,
+                                coHosts: coHosts,
+                                onAddCoHost: () =>
+                                    _showCoHostSelection(context),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final visibility = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.audience.visibility,
+                                ),
+                              );
+                              final maxPlusOnes = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.audience.maxPlusOnes,
+                                ),
+                              );
                               return EventSectionCard(
                                 headerIcon: Icons.people,
                                 title: 'Audience',
@@ -434,7 +515,8 @@ class CreateEventScreen extends ConsumerWidget {
                                           ? '+$maxPlusOnes allowed'
                                           : 'No plus ones',
                                       trailing: 'Plus ones',
-                                      onTap: () => _showPlusOnesSelection(context),
+                                      onTap: () =>
+                                          _showPlusOnesSelection(context),
                                     ),
                                   ],
                                 ),
@@ -446,8 +528,14 @@ class CreateEventScreen extends ConsumerWidget {
 
                           Consumer(
                             builder: (context, ref, _) {
-                              final extras = ref.watch(createEventProvider.select((s) => s.extras));
-                              final auroraColors = ref.watch(createEventProvider.select((s) => s.auroraColors));
+                              final extras = ref.watch(
+                                createEventProvider.select((s) => s.extras),
+                              );
+                              final auroraColors = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.auroraColors,
+                                ),
+                              );
                               return EventSectionCard(
                                 headerIcon: Icons.auto_awesome,
                                 title: 'Extras',
@@ -510,7 +598,8 @@ class CreateEventScreen extends ConsumerWidget {
                                             ExtraType.parking,
                                           ),
                                         if (!extras.any(
-                                          (e) => e.type == ExtraType.accommodation,
+                                          (e) =>
+                                              e.type == ExtraType.accommodation,
                                         ))
                                           _buildPillButton(
                                             context,
@@ -519,7 +608,8 @@ class CreateEventScreen extends ConsumerWidget {
                                             ExtraType.accommodation,
                                           ),
                                         if (!extras.any(
-                                          (e) => e.type == ExtraType.giftRegistry,
+                                          (e) =>
+                                              e.type == ExtraType.giftRegistry,
                                         ))
                                           _buildPillButton(
                                             context,
@@ -558,8 +648,14 @@ class CreateEventScreen extends ConsumerWidget {
                             title: 'Event Details',
                             body: Consumer(
                               builder: (context, ref, _) {
-                                final tags = ref.watch(createEventProvider.select((s) => s.tags));
-                                final description = ref.watch(createEventProvider.select((s) => s.description));
+                                final tags = ref.watch(
+                                  createEventProvider.select((s) => s.tags),
+                                );
+                                final description = ref.watch(
+                                  createEventProvider.select(
+                                    (s) => s.description,
+                                  ),
+                                );
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -570,20 +666,22 @@ class CreateEventScreen extends ConsumerWidget {
                                         ...tags.map(
                                           (tag) => GestureDetector(
                                             onTap: () => ref
-                                                .read(createEventProvider.notifier)
+                                                .read(
+                                                  createEventProvider.notifier,
+                                                )
                                                 .toggleTag(tag),
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 8,
-                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.10,
                                                 ),
-                                                borderRadius: BorderRadius.circular(
-                                                  100,
-                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(100),
                                                 border: Border.all(
                                                   color: Colors.white54,
                                                 ),
@@ -596,7 +694,8 @@ class CreateEventScreen extends ConsumerWidget {
                                                     style: const TextStyle(
                                                       color: Colors.white,
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
@@ -612,23 +711,23 @@ class CreateEventScreen extends ConsumerWidget {
                                         ),
                                         if (tags.length < 5)
                                           GestureDetector(
-                                            onTap: () => _showTagSelection(context),
+                                            onTap: () =>
+                                                _showTagSelection(context),
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 6,
-                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white.withValues(
                                                   alpha: 0.05,
                                                 ),
-                                                borderRadius: BorderRadius.circular(
-                                                  100,
-                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(100),
                                                 border: Border.all(
-                                                  color: Colors.white.withValues(
-                                                    alpha: 0.1,
-                                                  ),
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.1),
                                                   style: BorderStyle.solid,
                                                 ),
                                               ),
@@ -637,9 +736,8 @@ class CreateEventScreen extends ConsumerWidget {
                                                 children: [
                                                   Icon(
                                                     Icons.add,
-                                                    color: Colors.white.withValues(
-                                                      alpha: 0.6,
-                                                    ),
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.6),
                                                     size: 14,
                                                   ),
                                                   const SizedBox(width: 4),
@@ -647,7 +745,9 @@ class CreateEventScreen extends ConsumerWidget {
                                                     'Add Tag',
                                                     style: TextStyle(
                                                       color: Colors.white
-                                                          .withValues(alpha: 0.6),
+                                                          .withValues(
+                                                            alpha: 0.6,
+                                                          ),
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -686,9 +786,21 @@ class CreateEventScreen extends ConsumerWidget {
 
                           Consumer(
                             builder: (context, ref, _) {
-                              final requireApproval = ref.watch(createEventProvider.select((s) => s.audience.requireApproval));
-                              final allowMaybe = ref.watch(createEventProvider.select((s) => s.audience.allowMaybe));
-                              final rsvpDeadline = ref.watch(createEventProvider.select((s) => s.audience.rsvpDeadline));
+                              final requireApproval = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.audience.requireApproval,
+                                ),
+                              );
+                              final allowMaybe = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.audience.allowMaybe,
+                                ),
+                              );
+                              final rsvpDeadline = ref.watch(
+                                createEventProvider.select(
+                                  (s) => s.audience.rsvpDeadline,
+                                ),
+                              );
                               return EventSectionCard(
                                 headerIcon: Icons.tune,
                                 title: 'RSVP Options',
@@ -700,8 +812,12 @@ class CreateEventScreen extends ConsumerWidget {
                                         vertical: 12,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(100),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
                                         border: Border.all(
                                           color: Colors.white.withValues(
                                             alpha: 0.15,
@@ -709,13 +825,16 @@ class CreateEventScreen extends ConsumerWidget {
                                         ),
                                       ),
                                       child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                         child: requireApproval
                                             ? const Row(
                                                 key: ValueKey('approval'),
                                                 children: [
                                                   RsvpOptionPreview(
-                                                    icon: Icons.add_circle_outline,
+                                                    icon: Icons
+                                                        .add_circle_outline,
                                                     label: 'Get on the list',
                                                   ),
                                                 ],
@@ -724,7 +843,8 @@ class CreateEventScreen extends ConsumerWidget {
                                                 key: const ValueKey('standard'),
                                                 children: [
                                                   const RsvpOptionPreview(
-                                                    icon: Icons.check_circle_outline,
+                                                    icon: Icons
+                                                        .check_circle_outline,
                                                     label: 'Going',
                                                   ),
                                                   _buildVerticalDivider(),
@@ -759,7 +879,9 @@ class CreateEventScreen extends ConsumerWidget {
                                         allowMaybe,
                                         (val) {
                                           ref
-                                              .read(createEventProvider.notifier)
+                                              .read(
+                                                createEventProvider.notifier,
+                                              )
                                               .setAllowMaybe(val);
                                         },
                                       ),
@@ -768,9 +890,12 @@ class CreateEventScreen extends ConsumerWidget {
                                       icon: Icons.access_time,
                                       title: 'RSVP Deadline',
                                       trailing: rsvpDeadline != null
-                                          ? DateFormat('d MMM yyyy').format(rsvpDeadline)
+                                          ? DateFormat(
+                                              'd MMM yyyy',
+                                            ).format(rsvpDeadline)
                                           : 'Optional',
-                                      onTap: () => _showRSVPDeadlineSelection(context),
+                                      onTap: () =>
+                                          _showRSVPDeadlineSelection(context),
                                     ),
                                   ],
                                 ),
@@ -1004,9 +1129,15 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = ref.watch(createEventProvider.select((s) => s.isEditingSpots));
-    final availableSpots = ref.watch(createEventProvider.select((s) => s.audience.capacity));
-    final waitlistEnabled = ref.watch(createEventProvider.select((s) => s.audience.waitlistEnabled));
+    final isEditing = ref.watch(
+      createEventProvider.select((s) => s.isEditingSpots),
+    );
+    final availableSpots = ref.watch(
+      createEventProvider.select((s) => s.audience.capacity),
+    );
+    final waitlistEnabled = ref.watch(
+      createEventProvider.select((s) => s.audience.waitlistEnabled),
+    );
 
     if (isEditing && !_focusNode.hasFocus) {
       Future.microtask(() => _focusNode.requestFocus());
@@ -1135,7 +1266,6 @@ class _AvailableSpotsRowState extends ConsumerState<_AvailableSpotsRow> {
     );
   }
 }
-
 
 class _ExtraItemTile extends StatefulWidget {
   final EventExtra extra;

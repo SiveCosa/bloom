@@ -102,7 +102,8 @@ class EventExtra {
         (e) => e.name == map['type'],
         orElse: () => ExtraType.link,
       ),
-      displayText: map['displayText'] as String? ?? map['display_text'] as String? ?? '',
+      displayText:
+          map['displayText'] as String? ?? map['display_text'] as String? ?? '',
       url: map['url'] as String?,
     );
   }

@@ -50,9 +50,9 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
   void _onSave() {
     final errorMessage = _getErrorMessage();
     if (errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
       return;
     }
 
@@ -64,7 +64,7 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
       23,
       59,
     );
-    
+
     notifier.updateRSVPDeadline(finalDate);
     notifier.updateRSVPReminders(_selectedReminders);
     Navigator.pop(context);
@@ -132,7 +132,10 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                   // Day
                   CustomDateWheelScroller(
                     width: 75,
-                    items: List.generate(31, (i) => (i + 1).toString().padLeft(2, '0')),
+                    items: List.generate(
+                      31,
+                      (i) => (i + 1).toString().padLeft(2, '0'),
+                    ),
                     initialIndex: (_selectedDate.day - 1).clamp(0, 30),
                     onSelectedItemChanged: (i) {
                       setState(() {
@@ -149,8 +152,18 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                   CustomDateWheelScroller(
                     width: 75,
                     items: const [
-                      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+                      'JAN',
+                      'FEB',
+                      'MAR',
+                      'APR',
+                      'MAY',
+                      'JUN',
+                      'JUL',
+                      'AUG',
+                      'SEP',
+                      'OCT',
+                      'NOV',
+                      'DEC',
                     ],
                     initialIndex: (_selectedDate.month - 1).clamp(0, 11),
                     onSelectedItemChanged: (i) {
@@ -169,11 +182,17 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                     builder: (context) {
                       final currentYear = DateTime.now().year;
                       // Ensure we include at least the selected year and current year
-                      final startYear = _selectedDate.year < currentYear 
-                          ? _selectedDate.year 
+                      final startYear = _selectedDate.year < currentYear
+                          ? _selectedDate.year
                           : currentYear;
-                      final yearItems = List.generate(20, (i) => (startYear + i).toString());
-                      final yearIndex = (_selectedDate.year - startYear).clamp(0, yearItems.length - 1);
+                      final yearItems = List.generate(
+                        20,
+                        (i) => (startYear + i).toString(),
+                      );
+                      final yearIndex = (_selectedDate.year - startYear).clamp(
+                        0,
+                        yearItems.length - 1,
+                      );
 
                       return CustomDateWheelScroller(
                         width: 75,
@@ -231,14 +250,19 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                   },
                   offset: const Offset(0, 50), // Open below the pill
                   color: const Color(0xFF1E2128),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   itemBuilder: (context) => [
                     _buildPopupItem('Week before'),
                     _buildPopupItem('Day before'),
                     _buildPopupItem('The day of'),
                   ],
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(15),
@@ -246,21 +270,33 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 18),
+                        const Icon(
+                          Icons.notifications_active_outlined,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         const Text(
                           'Set Reminder',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
                         const SizedBox(width: 4),
-                        Icon(Icons.keyboard_arrow_down, color: Colors.white.withValues(alpha: 0.5), size: 16),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white.withValues(alpha: 0.5),
+                          size: 16,
+                        ),
                       ],
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
-                
+
                 if (_selectedReminders.isNotEmpty)
                   Wrap(
                     alignment: WrapAlignment.center,
@@ -268,18 +304,26 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                     runSpacing: 8,
                     children: _selectedReminders.map((reminder) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               reminder,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(width: 6),
                             GestureDetector(
@@ -288,7 +332,11 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
                                   _selectedReminders.remove(reminder);
                                 });
                               },
-                              child: const Icon(Icons.close, color: Colors.white70, size: 14),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white70,
+                                size: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -306,7 +354,10 @@ class _RSVPDeadlineModalState extends ConsumerState<RSVPDeadlineModal> {
   PopupMenuItem<String> _buildPopupItem(String value) {
     return PopupMenuItem<String>(
       value: value,
-      child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+      child: Text(
+        value,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
     );
   }
 

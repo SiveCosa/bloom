@@ -18,21 +18,23 @@ class OptimisticCount {
   OptimisticCount(this.count, this.expiresAt);
 }
 
-class OptimisticInterestedCountNotifier extends Notifier<Map<String, OptimisticCount>> {
+class OptimisticInterestedCountNotifier
+    extends Notifier<Map<String, OptimisticCount>> {
   @override
   Map<String, OptimisticCount> build() => {};
 
   void updateCount(String eventId, OptimisticCount count) {
-    state = {
-      ...state,
-      eventId: count,
-    };
+    state = {...state, eventId: count};
   }
 }
 
-final optimisticInterestedCountProvider = NotifierProvider<OptimisticInterestedCountNotifier, Map<String, OptimisticCount>>(() {
-  return OptimisticInterestedCountNotifier();
-});
+final optimisticInterestedCountProvider =
+    NotifierProvider<
+      OptimisticInterestedCountNotifier,
+      Map<String, OptimisticCount>
+    >(() {
+      return OptimisticInterestedCountNotifier();
+    });
 
 final hostedEventsProvider = StreamProvider<List<Event>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
@@ -357,12 +359,17 @@ final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
 });
 
 final forYouScheduledEventsProvider = Provider<List<ScheduledEvent>>((ref) {
-  final rawList = ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
-  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
+  final rawList =
+      ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToScheduledEvents(
+    rawList,
+    ref,
+  ).take(kHomeFeedCarouselLimit).toList();
 });
 
 final forYouEventsProvider = Provider<List<Event>>((ref) {
-  final rawList = ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  final rawList =
+      ref.watch(forYouRawFeedProvider).value ?? <Map<String, dynamic>>[];
   return _mapRawFeedToEvents(rawList, ref);
 });
 
@@ -429,43 +436,58 @@ final eventsInAreaRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
 final eventsInAreaScheduledEventsProvider = Provider<List<ScheduledEvent>>((
   ref,
 ) {
-  final rawList = ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
-  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
+  final rawList =
+      ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  return _mapRawFeedToScheduledEvents(
+    rawList,
+    ref,
+  ).take(kHomeFeedCarouselLimit).toList();
 });
 
 final eventsInAreaEventsProvider = Provider<List<Event>>((ref) {
-  final rawList = ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  final rawList =
+      ref.watch(eventsInAreaRawFeedProvider).value ?? <Map<String, dynamic>>[];
   return _mapRawFeedToEvents(rawList, ref);
 });
 
-final friendsAndMutualsRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
-  ref,
-) async {
-  try {
-    List<Map<String, dynamic>> feed = [];
-    final location = await _ensureUserGeoPoint(ref);
-    final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
-    final result = await functions.httpsCallable('getFriendsAndMutualsFeed').call({
-      if (location != null) 'latitude': location.latitude,
-      if (location != null) 'longitude': location.longitude,
+final friendsAndMutualsRawFeedProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      try {
+        List<Map<String, dynamic>> feed = [];
+        final location = await _ensureUserGeoPoint(ref);
+        final functions = FirebaseFunctions.instanceFor(
+          region: 'africa-south1',
+        );
+        final result = await functions
+            .httpsCallable('getFriendsAndMutualsFeed')
+            .call({
+              if (location != null) 'latitude': location.latitude,
+              if (location != null) 'longitude': location.longitude,
+            });
+        final data = result.data as List<dynamic>;
+        feed = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        return feed;
+      } catch (e) {
+        debugPrint('Error fetching friends and mutuals feed: $e');
+        return [];
+      }
     });
-    final data = result.data as List<dynamic>;
-    feed = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    return feed;
-  } catch (e) {
-    debugPrint('Error fetching friends and mutuals feed: $e');
-    return [];
-  }
-});
 
-final friendsAndMutualsScheduledEventsProvider = Provider<List<ScheduledEvent>>((
-  ref,
-) {
-  final rawList = ref.watch(friendsAndMutualsRawFeedProvider).value ?? <Map<String, dynamic>>[];
-  return _mapRawFeedToScheduledEvents(rawList, ref).take(kHomeFeedCarouselLimit).toList();
-});
+final friendsAndMutualsScheduledEventsProvider = Provider<List<ScheduledEvent>>(
+  (ref) {
+    final rawList =
+        ref.watch(friendsAndMutualsRawFeedProvider).value ??
+        <Map<String, dynamic>>[];
+    return _mapRawFeedToScheduledEvents(
+      rawList,
+      ref,
+    ).take(kHomeFeedCarouselLimit).toList();
+  },
+);
 
 final friendsAndMutualsEventsProvider = Provider<List<Event>>((ref) {
-  final rawList = ref.watch(friendsAndMutualsRawFeedProvider).value ?? <Map<String, dynamic>>[];
+  final rawList =
+      ref.watch(friendsAndMutualsRawFeedProvider).value ??
+      <Map<String, dynamic>>[];
   return _mapRawFeedToEvents(rawList, ref);
 });

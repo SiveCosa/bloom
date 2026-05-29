@@ -29,11 +29,7 @@ class BloomSelectionTile extends StatelessWidget {
         child: Row(
           children: [
             if (leading != null) ...[
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(child: leading),
-              ),
+              SizedBox(width: 44, height: 44, child: Center(child: leading)),
               const SizedBox(width: 16),
             ],
             Expanded(
@@ -78,17 +74,15 @@ class BloomSelectionTile extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.3),
             width: 2,
           ),
           color: isSelected ? Colors.white : Colors.transparent,
         ),
         child: isSelected
-            ? const Icon(
-                Icons.check,
-                color: Colors.black,
-                size: 16,
-              )
+            ? const Icon(Icons.check, color: Colors.black, size: 16)
             : null,
       );
     } else {
@@ -98,17 +92,10 @@ class BloomSelectionTile extends StatelessWidget {
           height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white,
-              width: 2,
-            ),
+            border: Border.all(color: Colors.white, width: 2),
           ),
           child: const Center(
-            child: Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 18,
-            ),
+            child: Icon(Icons.check, color: Colors.white, size: 18),
           ),
         );
       } else {

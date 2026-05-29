@@ -23,7 +23,7 @@ class LocationSelectionModal extends StatefulWidget {
 
 class _LocationSelectionModalState extends State<LocationSelectionModal> {
   LocationModalState _currentState = LocationModalState.search;
-  
+
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   List<dynamic> _searchResults = [];
@@ -68,13 +68,17 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
   Future<void> _saveRecentLocation(EventLocation location) async {
     final prefs = await SharedPreferences.getInstance();
     // Remove if exists to put it at the top
-    _recentLocations.removeWhere((loc) => loc.formattedAddress == location.formattedAddress);
+    _recentLocations.removeWhere(
+      (loc) => loc.formattedAddress == location.formattedAddress,
+    );
     _recentLocations.insert(0, location);
     if (_recentLocations.length > 10) {
       _recentLocations = _recentLocations.sublist(0, 10);
     }
     await prefs.setStringList(
-        'recent_locations', _recentLocations.map((loc) => jsonEncode(loc.toMap())).toList());
+      'recent_locations',
+      _recentLocations.map((loc) => jsonEncode(loc.toMap())).toList(),
+    );
   }
 
   void _onSearchChanged(String query) {
@@ -92,14 +96,15 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
 
   Future<void> _fetchPlacesAutocomplete(String query) async {
     setState(() => _isSearching = true);
-    
+
     try {
-      final result = await FirebaseFunctions.instanceFor(region: 'africa-south1')
-          .httpsCallable('googleMapsProxy')
-          .call({
-        'endpoint': 'autocomplete',
-        'params': {'input': query},
-      });
+      final result =
+          await FirebaseFunctions.instanceFor(
+            region: 'africa-south1',
+          ).httpsCallable('googleMapsProxy').call({
+            'endpoint': 'autocomplete',
+            'params': {'input': query},
+          });
 
       final data = result.data as Map<String, dynamic>;
       if (data['status'] == 'OK') {
@@ -107,10 +112,16 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           _searchResults = data['predictions'];
         });
       } else {
-        debugPrint('Google Maps Proxy Error: ${data['status']} - ${data['error_message']}');
+        debugPrint(
+          'Google Maps Proxy Error: ${data['status']} - ${data['error_message']}',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Maps Error: ${data['error_message'] ?? data['status']}')),
+            SnackBar(
+              content: Text(
+                'Maps Error: ${data['error_message'] ?? data['status']}',
+              ),
+            ),
           );
         }
       }
@@ -123,19 +134,20 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
 
   Future<void> _fetchPlaceDetails(String placeId) async {
     try {
-      final result = await FirebaseFunctions.instanceFor(region: 'africa-south1')
-          .httpsCallable('googleMapsProxy')
-          .call({
-        'endpoint': 'details',
-        'params': {'place_id': placeId},
-      });
+      final result =
+          await FirebaseFunctions.instanceFor(
+            region: 'africa-south1',
+          ).httpsCallable('googleMapsProxy').call({
+            'endpoint': 'details',
+            'params': {'place_id': placeId},
+          });
 
       final data = result.data as Map<String, dynamic>;
       if (data['status'] == 'OK') {
         final details = data['result'];
         final lat = details['geometry']['location']['lat'];
         final lng = details['geometry']['location']['lng'];
-        
+
         setState(() {
           _selectedLocation = EventLocation(
             latitude: lat,
@@ -148,10 +160,16 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           _currentState = LocationModalState.details;
         });
       } else {
-        debugPrint('Google Maps Proxy Error: ${data['status']} - ${data['error_message']}');
+        debugPrint(
+          'Google Maps Proxy Error: ${data['status']} - ${data['error_message']}',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Maps Error: ${data['error_message'] ?? data['status']}')),
+            SnackBar(
+              content: Text(
+                'Maps Error: ${data['error_message'] ?? data['status']}',
+              ),
+            ),
           );
         }
       }
@@ -172,19 +190,20 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return;
     }
-    
+
     if (permission == LocationPermission.deniedForever) return;
 
     setState(() => _isSearching = true);
     try {
       Position position = await Geolocator.getCurrentPosition();
-      
-      final result = await FirebaseFunctions.instanceFor(region: 'africa-south1')
-          .httpsCallable('googleMapsProxy')
-          .call({
-        'endpoint': 'geocode',
-        'params': {'latlng': '${position.latitude},${position.longitude}'},
-      });
+
+      final result =
+          await FirebaseFunctions.instanceFor(
+            region: 'africa-south1',
+          ).httpsCallable('googleMapsProxy').call({
+            'endpoint': 'geocode',
+            'params': {'latlng': '${position.latitude},${position.longitude}'},
+          });
 
       final data = result.data as Map<String, dynamic>;
       if (data['status'] == 'OK' && data['results'].isNotEmpty) {
@@ -201,10 +220,16 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           _currentState = LocationModalState.details;
         });
       } else {
-        debugPrint('Google Maps Proxy Error: ${data['status']} - ${data['error_message']}');
+        debugPrint(
+          'Google Maps Proxy Error: ${data['status']} - ${data['error_message']}',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Geocoding Error: ${data['error_message'] ?? data['status']}')),
+            SnackBar(
+              content: Text(
+                'Geocoding Error: ${data['error_message'] ?? data['status']}',
+              ),
+            ),
           );
         }
       }
@@ -217,16 +242,18 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
 
   void _handleSave() async {
     if (_selectedLocation == null) return;
-    
+
     final finalLocation = EventLocation(
       latitude: _selectedLocation!.latitude,
       longitude: _selectedLocation!.longitude,
       geohash: _selectedLocation!.geohash,
       formattedAddress: _selectedLocation!.formattedAddress,
-      displayName: _displayNameController.text.isNotEmpty 
-          ? _displayNameController.text 
+      displayName: _displayNameController.text.isNotEmpty
+          ? _displayNameController.text
           : _selectedLocation!.displayName,
-      apartmentInfo: _aptController.text.isNotEmpty ? _aptController.text : null,
+      apartmentInfo: _aptController.text.isNotEmpty
+          ? _aptController.text
+          : null,
     );
 
     await _saveRecentLocation(finalLocation);
@@ -242,8 +269,12 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
       useSafeArea: true,
       leftActionText: 'Cancel',
       onLeftActionPressed: () => Navigator.pop(context),
-      rightActionText: _currentState == LocationModalState.details ? 'Save' : null,
-      onRightActionPressed: _currentState == LocationModalState.details ? _handleSave : null,
+      rightActionText: _currentState == LocationModalState.details
+          ? 'Save'
+          : null,
+      onRightActionPressed: _currentState == LocationModalState.details
+          ? _handleSave
+          : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
       child: Expanded(
         child: _currentState == LocationModalState.search
@@ -263,7 +294,11 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
             controller: _searchController,
             hintText: 'Place name or address',
             onChanged: _onSearchChanged,
-            prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+            prefixIcon: const Icon(
+              Icons.search,
+              color: Colors.white54,
+              size: 20,
+            ),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(
@@ -280,7 +315,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           ),
         ),
         const SizedBox(height: 24),
-        
+
         if (_isSearching)
           const Padding(
             padding: EdgeInsets.all(20.0),
@@ -294,7 +329,9 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
                 final prediction = _searchResults[index];
                 return _buildSearchResultItem(
                   title: prediction['structured_formatting']['main_text'],
-                  subtitle: prediction['structured_formatting']['secondary_text'] ?? '',
+                  subtitle:
+                      prediction['structured_formatting']['secondary_text'] ??
+                      '',
                   onTap: () => _fetchPlaceDetails(prediction['place_id']),
                 );
               },
@@ -315,7 +352,11 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
                         color: Colors.white.withValues(alpha: 0.05),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.gps_fixed, color: Colors.white70, size: 22),
+                      child: const Icon(
+                        Icons.gps_fixed,
+                        color: Colors.white70,
+                        size: 22,
+                      ),
                     ),
                     title: const Text(
                       'Use current location',
@@ -340,19 +381,21 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
                       ),
                     ),
                   ),
-                  ..._recentLocations.map((loc) => _buildSearchResultItem(
-                    title: loc.displayName,
-                    subtitle: loc.formattedAddress,
-                    icon: Icons.history,
-                    onTap: () {
-                      setState(() {
-                        _selectedLocation = loc;
-                        _displayNameController.text = loc.displayName;
-                        _aptController.text = loc.apartmentInfo ?? '';
-                        _currentState = LocationModalState.details;
-                      });
-                    },
-                  )),
+                  ..._recentLocations.map(
+                    (loc) => _buildSearchResultItem(
+                      title: loc.displayName,
+                      subtitle: loc.formattedAddress,
+                      icon: Icons.history,
+                      onTap: () {
+                        setState(() {
+                          _selectedLocation = loc;
+                          _displayNameController.text = loc.displayName;
+                          _aptController.text = loc.apartmentInfo ?? '';
+                          _currentState = LocationModalState.details;
+                        });
+                      },
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -433,9 +476,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
             child: Row(
               children: [
@@ -476,7 +517,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           const SizedBox(height: 24),
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 24),
-  
+
           _buildTextField(
             controller: _displayNameController,
             hint: 'Location name',
@@ -509,10 +550,7 @@ class _LocationSelectionModalState extends State<LocationSelectionModal> {
           ),
         ),
         const SizedBox(height: 8),
-        SquareTextField(
-          controller: controller,
-          hintText: hint,
-        ),
+        SquareTextField(controller: controller, hintText: hint),
       ],
     );
   }

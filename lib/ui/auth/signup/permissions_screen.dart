@@ -23,9 +23,7 @@ class PermissionsScreen extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -120,9 +118,7 @@ class PermissionsScreen extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                "Profile creation failed: $e",
-                              ),
+                              content: Text("Profile creation failed: $e"),
                             ),
                           );
                         }

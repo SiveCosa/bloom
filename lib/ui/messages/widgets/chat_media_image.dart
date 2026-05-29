@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-
 bool chatMediaHasCaption(String? caption) {
   final text = caption?.trim() ?? '';
   if (text.isEmpty) return false;

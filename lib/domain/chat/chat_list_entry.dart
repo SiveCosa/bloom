@@ -13,10 +13,7 @@ class ChatListEntry {
   final BaseMessage message;
   final ChatSendStatus status;
 
-  ChatListEntry copyWith({
-    BaseMessage? message,
-    ChatSendStatus? status,
-  }) {
+  ChatListEntry copyWith({BaseMessage? message, ChatSendStatus? status}) {
     return ChatListEntry(
       clientId: clientId,
       message: message ?? this.message,

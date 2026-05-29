@@ -77,10 +77,7 @@ class StackedPosters extends StatelessWidget {
           height: height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: const Color(0xFF0B0E12),
-              width: 1.5,
-            ),
+            border: Border.all(color: const Color(0xFF0B0E12), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: isFront ? 0.4 : 0.2),

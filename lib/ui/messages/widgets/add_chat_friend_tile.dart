@@ -41,7 +41,8 @@ class AddChatFriendTile extends ConsumerWidget {
             children: [
               profileAsync.when(
                 data: (profile) {
-                  final avatarUrl = profile?['profile_image_url']?.toString() ??
+                  final avatarUrl =
+                      profile?['profile_image_url']?.toString() ??
                       profile?['avatarUrl']?.toString() ??
                       profile?['avatar_url']?.toString();
                   return buildAvatarImage(source: avatarUrl, radius: 25);
@@ -82,7 +83,9 @@ class AddChatFriendTile extends ConsumerWidget {
                     const SizedBox(height: 4),
                     profileAsync.when(
                       data: (profile) {
-                        final username = profile?['username']?.toString().trim();
+                        final username = profile?['username']
+                            ?.toString()
+                            .trim();
                         return Text(
                           username != null && username.isNotEmpty
                               ? username.replaceAll('@', '')

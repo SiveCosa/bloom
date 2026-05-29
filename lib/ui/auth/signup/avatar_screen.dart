@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -54,9 +52,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
       ),
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -123,9 +119,7 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                     text: 'Continue',
                     onPressed: () {
                       if (!_hasAvatar) {
-                        ref
-                            .read(signUpFormProvider.notifier)
-                            .updateAvatar('');
+                        ref.read(signUpFormProvider.notifier).updateAvatar('');
                       }
                       context.go('/auth/signup/interests');
                     },

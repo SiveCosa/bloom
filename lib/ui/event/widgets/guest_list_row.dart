@@ -22,7 +22,9 @@ class GuestListRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uid = guest['uid'] as String? ?? '';
-    final name = (guest['name'] as String? ?? guest['username'] as String? ?? 'Unknown').replaceAll('@', '');
+    final name =
+        (guest['name'] as String? ?? guest['username'] as String? ?? 'Unknown')
+            .replaceAll('@', '');
     final avatarUrl = guest['profile_image_url'] as String? ?? '';
     final subtitle = guest['computedSubtitle'] as String? ?? '';
     final isCurrentUser = guest['isCurrentUser'] == true;
@@ -54,11 +56,12 @@ class GuestListRow extends ConsumerWidget {
                           ? CachedNetworkImage(
                               imageUrl: avatarUrl,
                               fit: BoxFit.cover,
-                              errorWidget: (context, error, stackTrace) => const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                              errorWidget: (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
                             )
                           : const Icon(
                               Icons.person,
@@ -87,7 +90,8 @@ class GuestListRow extends ConsumerWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (guest['plusOnesCount'] != null && (guest['plusOnesCount'] as num) > 0)
+                            if (guest['plusOnesCount'] != null &&
+                                (guest['plusOnesCount'] as num) > 0)
                               Padding(
                                 padding: const EdgeInsets.only(left: 6.0),
                                 child: Text(
@@ -122,75 +126,88 @@ class GuestListRow extends ConsumerWidget {
             ),
           ),
           if (!isCurrentUser) ...[
-          const SizedBox(width: 16),
-          if (isHost && (guest['status'] == 'requested' || guest['rsvp_status'] == 'requested')) ...[
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  if (uid.isNotEmpty && eventId != null) {
-                    ref.read(eventRepositoryProvider).updateRSVP(eventId!, uid, isEventFull ? 'waitlisted' : 'going');
-                  }
-                },
-                borderRadius: BorderRadius.circular(18),
-                child: Ink(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.black,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  if (uid.isNotEmpty && eventId != null) {
-                    ref.read(eventRepositoryProvider).removeRSVP(eventId!, uid);
-                  }
-                },
-                borderRadius: BorderRadius.circular(18),
-                child: Ink(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    color: Colors.white70,
-                    size: 18,
+            const SizedBox(width: 16),
+            if (isHost &&
+                (guest['status'] == 'requested' ||
+                    guest['rsvp_status'] == 'requested')) ...[
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (uid.isNotEmpty && eventId != null) {
+                      ref
+                          .read(eventRepositoryProvider)
+                          .updateRSVP(
+                            eventId!,
+                            uid,
+                            isEventFull ? 'waitlisted' : 'going',
+                          );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(18),
+                  child: Ink(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.black,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ] else ...[
-            IconButton(
-              onPressed: () {
-                if (uid.isNotEmpty) {
-                  final rawName = Uri.encodeComponent(name);
-                  context.push('/messages/chat/$uid?name=$rawName');
-                }
-              },
-              icon: SvgPicture.asset(
-                'assets/icons/misc/message_fill.svg',
-                colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                width: 24,
-                height: 24,
+              const SizedBox(width: 8),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (uid.isNotEmpty && eventId != null) {
+                      ref
+                          .read(eventRepositoryProvider)
+                          .removeRSVP(eventId!, uid);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(18),
+                  child: Ink(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.all(12),
-              constraints: const BoxConstraints(),
-            ),
-          ],
+            ] else ...[
+              IconButton(
+                onPressed: () {
+                  if (uid.isNotEmpty) {
+                    final rawName = Uri.encodeComponent(name);
+                    context.push('/messages/chat/$uid?name=$rawName');
+                  }
+                },
+                icon: SvgPicture.asset(
+                  'assets/icons/misc/message_fill.svg',
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                  width: 24,
+                  height: 24,
+                ),
+                padding: const EdgeInsets.all(12),
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ],
         ],
       ),

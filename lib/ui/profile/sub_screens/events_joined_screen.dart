@@ -27,8 +27,9 @@ class EventsJoinedScreen extends ConsumerWidget {
         ? ref.watch(publicJoinedEventsProvider(fetchUserId))
         : ref.watch(joinedEventsProvider);
 
-    final titleText =
-        isPublic ? '${targetUsername ?? "User"} joined' : 'Events Joined';
+    final titleText = isPublic
+        ? '${targetUsername ?? "User"} joined'
+        : 'Events Joined';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -94,15 +95,23 @@ class EventsJoinedScreen extends ConsumerWidget {
                       }
 
                       final now = DateTime.now();
-                      final upcoming =
-                          events.where((e) => !e.timing.isPast).toList();
-                      final past =
-                          events.where((e) => e.timing.isPast).toList();
+                      final upcoming = events
+                          .where((e) => !e.timing.isPast)
+                          .toList();
+                      final past = events
+                          .where((e) => e.timing.isPast)
+                          .toList();
 
-                      upcoming.sort((a, b) => (a.timing.startDate ?? now)
-                          .compareTo(b.timing.startDate ?? now));
-                      past.sort((a, b) => (b.timing.startDate ?? now)
-                          .compareTo(a.timing.startDate ?? now));
+                      upcoming.sort(
+                        (a, b) => (a.timing.startDate ?? now).compareTo(
+                          b.timing.startDate ?? now,
+                        ),
+                      );
+                      past.sort(
+                        (a, b) => (b.timing.startDate ?? now).compareTo(
+                          a.timing.startDate ?? now,
+                        ),
+                      );
 
                       return CustomScrollView(
                         physics: const BouncingScrollPhysics(),
@@ -121,16 +130,16 @@ class EventsJoinedScreen extends ConsumerWidget {
                               ),
                             ),
                           if (past.isNotEmpty)
-                            const SliverToBoxAdapter(child: PastEventsDivider()),
+                            const SliverToBoxAdapter(
+                              child: PastEventsDivider(),
+                            ),
                           if (past.isNotEmpty)
                             SliverList(
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: past[index],
-                                  onTap: () => pushEventDetail(
-                                    context,
-                                    past[index].id,
-                                  ),
+                                  onTap: () =>
+                                      pushEventDetail(context, past[index].id),
                                 ),
                                 childCount: past.length,
                               ),

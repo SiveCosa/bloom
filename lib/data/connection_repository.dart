@@ -17,8 +17,8 @@ class ConnectionRepository {
   ConnectionRepository({
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
-  })  : _firestore = firestore,
-        _auth = auth;
+  }) : _firestore = firestore,
+       _auth = auth;
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -28,13 +28,13 @@ class ConnectionRepository {
     if (currentUserId == null) return;
 
     final batch = _firestore.batch();
-    
+
     final currentUserConnRef = _firestore
         .collection('users')
         .doc(currentUserId)
         .collection('connections')
         .doc(targetUserId);
-        
+
     final targetUserConnRef = _firestore
         .collection('users')
         .doc(targetUserId)
@@ -78,10 +78,11 @@ class ConnectionRepository {
         .doc(targetUserId);
 
     final snap = await currentUserConnRef.get();
-    final isAlreadyConnected = snap.exists && snap.data()?['status'] == 'connected';
+    final isAlreadyConnected =
+        snap.exists && snap.data()?['status'] == 'connected';
 
     final batch = _firestore.batch();
-    
+
     final targetUserConnRef = _firestore
         .collection('users')
         .doc(targetUserId)
@@ -95,12 +96,14 @@ class ConnectionRepository {
     if (isAlreadyConnected) {
       final currentUserRef = _firestore.collection('users').doc(currentUserId);
       final targetUserRef = _firestore.collection('users').doc(targetUserId);
-      
+
       final currentUserDoc = await currentUserRef.get();
       final targetUserDoc = await targetUserRef.get();
 
-      final currentFriendsCount = (currentUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
-      final targetFriendsCount = (targetUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
+      final currentFriendsCount =
+          (currentUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
+      final targetFriendsCount =
+          (targetUserDoc.data()?['counts'] as Map?)?['friends'] as num? ?? 0;
 
       if (currentFriendsCount > 0) {
         batch.update(currentUserRef, {

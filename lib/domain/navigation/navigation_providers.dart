@@ -8,9 +8,11 @@ class MainShellIndexNotifier extends Notifier<int> {
 }
 
 /// Manages the active tab index for the MainShell
-final mainShellIndexProvider = NotifierProvider<MainShellIndexNotifier, int>(() {
-  return MainShellIndexNotifier();
-});
+final mainShellIndexProvider = NotifierProvider<MainShellIndexNotifier, int>(
+  () {
+    return MainShellIndexNotifier();
+  },
+);
 
 class HomeTabTapNotifier extends Notifier<int> {
   @override
@@ -32,6 +34,8 @@ class DiscoverTabTapNotifier extends Notifier<int> {
 }
 
 /// Tracks taps on the active Discover tab to trigger page refresh
-final discoverTabTapProvider = NotifierProvider<DiscoverTabTapNotifier, int>(() {
-  return DiscoverTabTapNotifier();
-});
+final discoverTabTapProvider = NotifierProvider<DiscoverTabTapNotifier, int>(
+  () {
+    return DiscoverTabTapNotifier();
+  },
+);

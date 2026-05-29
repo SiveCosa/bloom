@@ -6,26 +6,26 @@ class EventMediumCard extends StatelessWidget {
   final Event event;
   final VoidCallback? onTap;
 
-  const EventMediumCard({
-    super.key,
-    required this.event,
-    this.onTap,
-  });
+  const EventMediumCard({super.key, required this.event, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('EEE, d MMM');
     final timeFormat = DateFormat('ha');
-    
+
     String timingText = 'Date TBD';
     if (event.timing.startDate != null) {
       timingText = dateFormat.format(event.timing.startDate!);
       if (!event.timing.startTimeTbd) {
-        timingText += '  ·  ${timeFormat.format(event.timing.startDate!).toLowerCase()}';
+        timingText +=
+            '  ·  ${timeFormat.format(event.timing.startDate!).toLowerCase()}';
       }
     }
 
-    final trimmedDescription = event.description.trim().replaceAll(RegExp(r'\n\s*\n'), '\n');
+    final trimmedDescription = event.description.trim().replaceAll(
+      RegExp(r'\n\s*\n'),
+      '\n',
+    );
 
     return GestureDetector(
       onTap: onTap,
@@ -55,10 +55,17 @@ class EventMediumCard extends StatelessWidget {
                         ? Image.network(
                             event.visuals.posterUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => 
-                              const Icon(Icons.image_not_supported, color: Colors.white24),
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.white24,
+                                ),
                           )
-                        : const Icon(Icons.image, color: Colors.white24, size: 30),
+                        : const Icon(
+                            Icons.image,
+                            color: Colors.white24,
+                            size: 30,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -81,7 +88,11 @@ class EventMediumCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
+                          const Icon(
+                            Icons.calendar_month_outlined,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             timingText,
@@ -96,11 +107,18 @@ class EventMediumCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined, color: Colors.white, size: 18),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              (event.location?.displayName == null || event.location!.displayName.trim().isEmpty)
+                              (event.location?.displayName == null ||
+                                      event.location!.displayName
+                                          .trim()
+                                          .isEmpty)
                                   ? 'Location TBD'
                                   : event.location!.displayName,
                               style: const TextStyle(
@@ -119,29 +137,39 @@ class EventMediumCard extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const Spacer(),
-            
+
             Text(
-              trimmedDescription.isEmpty ? 'No description.' : trimmedDescription,
+              trimmedDescription.isEmpty
+                  ? 'No description.'
+                  : trimmedDescription,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: trimmedDescription.isEmpty ? 0.6 : 0.9),
+                color: Colors.white.withValues(
+                  alpha: trimmedDescription.isEmpty ? 0.6 : 0.9,
+                ),
                 fontSize: 13,
-                fontStyle: trimmedDescription.isEmpty ? FontStyle.italic : FontStyle.normal,
+                fontStyle: trimmedDescription.isEmpty
+                    ? FontStyle.italic
+                    : FontStyle.normal,
                 height: 1.4,
               ),
             ),
-              
+
             const Spacer(),
-            
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.star_border, color: Colors.white, size: 22),
+                    const Icon(
+                      Icons.star_border,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Interested',
@@ -153,7 +181,7 @@ class EventMediumCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 _buildAttendeeAvatars(),
               ],
             ),
@@ -169,18 +197,9 @@ class EventMediumCard extends StatelessWidget {
       width: 70,
       child: Stack(
         children: [
-          Positioned(
-            right: 0,
-            child: _buildAvatarCircle(0),
-          ),
-          Positioned(
-            right: 18,
-            child: _buildAvatarCircle(1),
-          ),
-          Positioned(
-            right: 36,
-            child: _buildAvatarCircle(2),
-          ),
+          Positioned(right: 0, child: _buildAvatarCircle(0)),
+          Positioned(right: 18, child: _buildAvatarCircle(1)),
+          Positioned(right: 36, child: _buildAvatarCircle(2)),
         ],
       ),
     );

@@ -5,9 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
 import 'friendship_models.dart';
 
-final connectionStateProvider = StreamProvider.family<FriendshipState, String>((ref, targetUid) {
+final connectionStateProvider = StreamProvider.family<FriendshipState, String>((
+  ref,
+  targetUid,
+) {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
-  if (currentUid == null || currentUid.trim().isEmpty || targetUid.trim().isEmpty) {
+  if (currentUid == null ||
+      currentUid.trim().isEmpty ||
+      targetUid.trim().isEmpty) {
     return Stream.value(FriendshipState.none);
   }
 
@@ -35,26 +40,31 @@ final connectionStateProvider = StreamProvider.family<FriendshipState, String>((
       });
 });
 
-final userFriendsProvider = StreamProvider.family<List<Map<String, dynamic>>, String>((ref, targetUid) {
-  if (targetUid.trim().isEmpty) return Stream.value([]);
-  return FirebaseFirestore.instance
-      .collection('users')
-      .doc(targetUid)
-      .collection('connections')
-      .where('status', isEqualTo: 'connected')
-      .snapshots()
-      .map((snapshot) {
-        return snapshot.docs
-            .map((doc) => {'uid': doc.id, ...doc.data()})
-            .toList();
-      });
-});
+final userFriendsProvider =
+    StreamProvider.family<List<Map<String, dynamic>>, String>((ref, targetUid) {
+      if (targetUid.trim().isEmpty) return Stream.value([]);
+      return FirebaseFirestore.instance
+          .collection('users')
+          .doc(targetUid)
+          .collection('connections')
+          .where('status', isEqualTo: 'connected')
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => {'uid': doc.id, ...doc.data()})
+                .toList();
+          });
+    });
 
-final recommendedFriendsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final recommendedFriendsProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
-    final result = await functions.httpsCallable('getFriendRecommendations').call();
-    
+    final result = await functions
+        .httpsCallable('getFriendRecommendations')
+        .call();
+
     final data = result.data as List<dynamic>;
     return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   } catch (e) {
@@ -72,13 +82,20 @@ class DismissedRecommendationsNotifier extends Notifier<Set<String>> {
   }
 }
 
-final dismissedRecommendationsProvider = NotifierProvider<DismissedRecommendationsNotifier, Set<String>>(() {
-  return DismissedRecommendationsNotifier();
-});
+final dismissedRecommendationsProvider =
+    NotifierProvider<DismissedRecommendationsNotifier, Set<String>>(() {
+      return DismissedRecommendationsNotifier();
+    });
 
-final recommendedFriendAffinityProvider = FutureProvider.family<String, String>((ref, targetUid) async {
+final recommendedFriendAffinityProvider = FutureProvider.family<String, String>((
+  ref,
+  targetUid,
+) async {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
-  if (currentUid == null || currentUid.trim().isEmpty || targetUid.trim().isEmpty) return '';
+  if (currentUid == null ||
+      currentUid.trim().isEmpty ||
+      targetUid.trim().isEmpty)
+    return '';
 
   final firestore = FirebaseFirestore.instance;
 
@@ -87,14 +104,26 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
     final futures = await Future.wait([
       firestore.collection('users').doc(currentUid).get(),
       firestore.collection('users').doc(targetUid).get(),
-      firestore.collection('users').doc(currentUid).collection('connections').where('status', isEqualTo: 'connected').get(),
-      firestore.collection('users').doc(targetUid).collection('connections').where('status', isEqualTo: 'connected').get(),
+      firestore
+          .collection('users')
+          .doc(currentUid)
+          .collection('connections')
+          .where('status', isEqualTo: 'connected')
+          .get(),
+      firestore
+          .collection('users')
+          .doc(targetUid)
+          .collection('connections')
+          .where('status', isEqualTo: 'connected')
+          .get(),
     ]);
 
     final currentUserDoc = futures[0] as DocumentSnapshot<Map<String, dynamic>>;
     final targetUserDoc = futures[1] as DocumentSnapshot<Map<String, dynamic>>;
-    final currentConnectionsSnap = futures[2] as QuerySnapshot<Map<String, dynamic>>;
-    final targetConnectionsSnap = futures[3] as QuerySnapshot<Map<String, dynamic>>;
+    final currentConnectionsSnap =
+        futures[2] as QuerySnapshot<Map<String, dynamic>>;
+    final targetConnectionsSnap =
+        futures[3] as QuerySnapshot<Map<String, dynamic>>;
 
     if (!currentUserDoc.exists || !targetUserDoc.exists) {
       return '';
@@ -104,8 +133,12 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
     final targetUserData = targetUserDoc.data()!;
 
     // 1. Check Mutual Connections
-    final currentFriendUids = currentConnectionsSnap.docs.map((d) => d.id).toSet();
-    final targetFriendUids = targetConnectionsSnap.docs.map((d) => d.id).toSet();
+    final currentFriendUids = currentConnectionsSnap.docs
+        .map((d) => d.id)
+        .toSet();
+    final targetFriendUids = targetConnectionsSnap.docs
+        .map((d) => d.id)
+        .toSet();
     final mutualFriendUids = currentFriendUids.intersection(targetFriendUids);
 
     if (mutualFriendUids.isNotEmpty) {
@@ -116,9 +149,15 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
     }
 
     // 2. Check Shared Interests
-    final currentUserInterests = List<String>.from(currentUserData['interests'] ?? []);
-    final targetUserInterests = List<String>.from(targetUserData['interests'] ?? []);
-    final sharedInterests = currentUserInterests.toSet().intersection(targetUserInterests.toSet());
+    final currentUserInterests = List<String>.from(
+      currentUserData['interests'] ?? [],
+    );
+    final targetUserInterests = List<String>.from(
+      targetUserData['interests'] ?? [],
+    );
+    final sharedInterests = currentUserInterests.toSet().intersection(
+      targetUserInterests.toSet(),
+    );
 
     if (sharedInterests.isNotEmpty) {
       final first = sharedInterests.first;
@@ -161,7 +200,9 @@ final recommendedFriendAffinityProvider = FutureProvider.family<String, String>(
 });
 
 /// Stream provider for incoming pending friend requests
-final incomingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+final incomingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
   if (currentUid == null) return Stream.value([]);
 
@@ -199,7 +240,9 @@ final incomingRequestsCountProvider = StreamProvider<int>((ref) {
 });
 
 /// Stream provider for outgoing pending friend requests
-final outgoingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+final outgoingRequestsProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
   final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
   if (currentUid == null) return Stream.value([]);
 
@@ -263,4 +306,3 @@ void invalidateFriendshipCaches(WidgetRef ref, String otherUid) {
   ref.invalidate(incomingRequestsCountProvider);
   ref.invalidate(outgoingRequestsCountProvider);
 }
-

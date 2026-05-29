@@ -6,12 +6,11 @@ class BloomIconButton extends StatelessWidget {
   final String? iconPath;
   final VoidCallback? onTap;
 
-  const BloomIconButton({
-    super.key,
-    this.icon,
-    this.iconPath,
-    this.onTap,
-  }) : assert(icon != null || iconPath != null, 'Either icon or iconPath must be provided');
+  const BloomIconButton({super.key, this.icon, this.iconPath, this.onTap})
+    : assert(
+        icon != null || iconPath != null,
+        'Either icon or iconPath must be provided',
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +38,7 @@ class BloomIconButton extends StatelessWidget {
                     BlendMode.srcIn,
                   ),
                 )
-              : Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 20,
-                ),
+              : Icon(icon, color: Colors.white, size: 20),
         ),
       ),
     );

@@ -4,10 +4,10 @@ class AppTheme {
   // Colors
   static const Color darkBackground = Color(0xFF0B0E12);
   static const Color lightBackground = Color(0xFFFFFFFF);
-  
+
   static const Color primaryButton = Color(0xFF0086D8);
   static const Color buttonTextRes = Color(0xFFFFFFFF);
-  
+
   // Gradients
   static const List<Color> coreGradientColors = [
     Color(0xFF261D82),
@@ -40,7 +40,11 @@ class AppTheme {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -74,8 +78,12 @@ class AppTheme {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           ),
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
-          textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(vertical: 16),
+          ),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -103,7 +111,11 @@ class AppTheme {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: IconThemeData(color: Color(0xFF0B0E12)),
-        titleTextStyle: TextStyle(color: Color(0xFF0B0E12), fontSize: 20, fontWeight: FontWeight.bold),
+        titleTextStyle: TextStyle(
+          color: Color(0xFF0B0E12),
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -135,8 +147,12 @@ class AppTheme {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
           ),
-          padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 16)),
-          textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(vertical: 16),
+          ),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(

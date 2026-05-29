@@ -41,7 +41,9 @@ class BloomModalShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeBackground = const Color(0xFF191B1D);
-    final borderRadiusVal = const BorderRadius.vertical(top: Radius.circular(25));
+    final borderRadiusVal = const BorderRadius.vertical(
+      top: Radius.circular(25),
+    );
 
     Widget content = Container(
       width: double.infinity,
@@ -84,7 +86,9 @@ class BloomModalShell extends StatelessWidget {
                       child: Text(
                         leftActionText!,
                         style: TextStyle(
-                          color: leftActionColor ?? Colors.white.withValues(alpha: 0.7),
+                          color:
+                              leftActionColor ??
+                              Colors.white.withValues(alpha: 0.7),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -120,10 +124,7 @@ class BloomModalShell extends StatelessWidget {
           ),
           SizedBox(height: headerBottomSpacing),
 
-          if (height != null)
-            Expanded(child: child)
-          else
-            child,
+          if (height != null) Expanded(child: child) else child,
         ],
       ),
     );
@@ -132,10 +133,7 @@ class BloomModalShell extends StatelessWidget {
       content = SafeArea(
         top: true,
         bottom: false,
-        child: ClipRRect(
-          borderRadius: borderRadiusVal,
-          child: content,
-        ),
+        child: ClipRRect(borderRadius: borderRadiusVal, child: content),
       );
     }
 

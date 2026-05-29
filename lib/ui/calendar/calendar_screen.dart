@@ -83,16 +83,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     // Height of one week view (approx: AppBar 50 + Spacer 15 + Toggle 50 + Spacer 10 + Weekdays 25 + Spacer 16 + Week 46 + Margin 12)
     final double estimatedWeekViewHeight = safeAreaTop + 150 + 46 + 12;
     final double maxChildSize =
-        ((screenHeight - estimatedWeekViewHeight) / screenHeight).clamp(0.4, 0.95);
+        ((screenHeight - estimatedWeekViewHeight) / screenHeight).clamp(
+          0.4,
+          0.95,
+        );
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           SafeArea(
             child: Column(
               children: [
@@ -108,7 +108,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       builder: (context, extent, child) {
                         // Normalize extent from initialSize to maxChildSize
                         final collapseProgress =
-                            ((extent - initialSize) / (maxChildSize - initialSize))
+                            ((extent - initialSize) /
+                                    (maxChildSize - initialSize))
                                 .clamp(0.0, 1.0);
                         return PageView.builder(
                           controller: _pageController,
@@ -146,9 +147,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                 ] else
-                  Expanded(
-                    child: _buildListView(scheduleAsync),
-                  ),
+                  Expanded(child: _buildListView(scheduleAsync)),
               ],
             ),
           ),
@@ -174,13 +173,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         initialDate: _displayedMonth,
         onDateSelected: (selectedDate) {
           final now = DateTime.now();
-          
+
           // If it's today, also set it as the active/selected day
           if (_isSameDay(selectedDate, now)) {
             ref.read(selectedDateProvider.notifier).updateDate(now);
           }
 
-          final monthDiff = (selectedDate.year - now.year) * 12 +
+          final monthDiff =
+              (selectedDate.year - now.year) * 12 +
               (selectedDate.month - now.month);
           final targetPage = 10000 + monthDiff;
 
@@ -248,7 +248,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-
   Widget _buildNavigationToggle() {
     return SizedBox(
       height: 50,
@@ -304,7 +303,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         else
           Icon(
             icon,
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+            color: isActive
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.4),
             size: size,
           ),
         if (isActive) ...[
@@ -376,7 +377,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               final bool isSelectedRow = rowIndex == selectedRowIndex;
 
               // Use a curve for smoother transition
-              final curvedProgress = Curves.easeInOut.transform(collapseProgress);
+              final curvedProgress = Curves.easeInOut.transform(
+                collapseProgress,
+              );
 
               // Fade out faster than we shrink
               final double opacity = isSelectedRow
@@ -427,7 +430,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final scheduleAsync = ref.watch(filteredScheduleProvider);
     final events = scheduleAsync.when(
-      data: (data) => data.where((e) => e.startTime != null && _isSameDay(e.startTime!, day)).toList(),
+      data: (data) => data
+          .where((e) => e.startTime != null && _isSameDay(e.startTime!, day))
+          .toList(),
       loading: () => <ScheduledEvent>[],
       error: (err, stack) => <ScheduledEvent>[],
     );
@@ -458,7 +463,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               borderRadius: BorderRadius.circular(isSelected ? 10 : 12),
               child: Stack(
                 children: [
-                  _buildEventBackground(events, showQuestionMark: showQuestionMark),
+                  _buildEventBackground(
+                    events,
+                    showQuestionMark: showQuestionMark,
+                  ),
                   if (isToday)
                     Center(
                       child: Container(
@@ -491,17 +499,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           : Text(
                               DateFormat('dd').format(day),
                               style: TextStyle(
-                                color: isSelected || isToday || events.isNotEmpty
+                                color:
+                                    isSelected || isToday || events.isNotEmpty
                                     ? Colors.white
                                     : Colors.white.withValues(alpha: 0.8),
                                 fontSize: 16,
-                                fontWeight: isSelected || isToday || events.isNotEmpty
+                                fontWeight:
+                                    isSelected || isToday || events.isNotEmpty
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                                 shadows: events.isNotEmpty && !isToday
                                     ? [
                                         Shadow(
-                                          color: Colors.black.withValues(alpha: 0.8),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.8,
+                                          ),
                                           offset: const Offset(0, 1),
                                           blurRadius: 4,
                                         ),
@@ -520,9 +532,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-
-
-  Widget _buildEventBackground(List<ScheduledEvent> events, {bool showQuestionMark = false}) {
+  Widget _buildEventBackground(
+    List<ScheduledEvent> events, {
+    bool showQuestionMark = false,
+  }) {
     if (events.isEmpty) return Container();
 
     if (events.length == 1) {
@@ -701,7 +714,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     data: (events) {
                       final filteredEvents = events
                           .where(
-                            (e) => e.startTime != null && _isSameDay(e.startTime!, selectedDate),
+                            (e) =>
+                                e.startTime != null &&
+                                _isSameDay(e.startTime!, selectedDate),
                           )
                           .toList();
                       if (filteredEvents.isEmpty) {
@@ -715,26 +730,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           ),
                         );
                       }
-                      final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+                      final currentUserId = ref
+                          .watch(firebaseAuthProvider)
+                          .currentUser
+                          ?.uid;
                       return SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                                final event = filteredEvents[index];
-                                final isHost = currentUserId != null &&
-                    (currentUserId == event.hostId ||
-                        event.coHostIds.contains(currentUserId));
-                                return ScheduledEventCard(
-                                  event: event,
-                                  isHost: isHost,
-                                  onTap: () {
-                                    pushEventDetail(context, event.id);
-                                  },
-                                );
-                            },
-                            childCount: filteredEvents.length,
-                          ),
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final event = filteredEvents[index];
+                            final isHost =
+                                currentUserId != null &&
+                                (currentUserId == event.hostId ||
+                                    event.coHostIds.contains(currentUserId));
+                            return ScheduledEventCard(
+                              event: event,
+                              isHost: isHost,
+                              onTap: () {
+                                pushEventDetail(context, event.id);
+                              },
+                            );
+                          }, childCount: filteredEvents.length),
                         ),
                       );
                     },
@@ -747,9 +766,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       child: Center(child: Text('Error: $e')),
                     ),
                   ),
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 10),
-                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
                 ],
               ),
             ),
@@ -772,54 +789,74 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Widget _buildListView(AsyncValue<List<ScheduledEvent>> scheduleAsync) {
     return scheduleAsync.when(
-          data: (events) {
-            final now = DateTime.now();
-            final upcoming = events.where((e) => e.startTime == null || e.startTime!.isAfter(now) || _isSameDay(e.startTime!, now)).toList();
-            final past = events.where((e) => e.startTime != null && e.startTime!.isBefore(now) && !_isSameDay(e.startTime!, now)).toList();
+      data: (events) {
+        final now = DateTime.now();
+        final upcoming = events
+            .where(
+              (e) =>
+                  e.startTime == null ||
+                  e.startTime!.isAfter(now) ||
+                  _isSameDay(e.startTime!, now),
+            )
+            .toList();
+        final past = events
+            .where(
+              (e) =>
+                  e.startTime != null &&
+                  e.startTime!.isBefore(now) &&
+                  !_isSameDay(e.startTime!, now),
+            )
+            .toList();
 
-            // Task 1: Sorting
-            upcoming.sort((a, b) {
-              if (a.startTime == null && b.startTime == null) return 0;
-              if (a.startTime == null) return -1;
-              if (b.startTime == null) return 1;
-              return a.startTime!.compareTo(b.startTime!);
-            });
-            past.sort((a, b) => b.startTime!.compareTo(a.startTime!));
+        // Task 1: Sorting
+        upcoming.sort((a, b) {
+          if (a.startTime == null && b.startTime == null) return 0;
+          if (a.startTime == null) return -1;
+          if (b.startTime == null) return 1;
+          return a.startTime!.compareTo(b.startTime!);
+        });
+        past.sort((a, b) => b.startTime!.compareTo(a.startTime!));
 
-            // Task 1: Grouping
-            final upcomingGrouped = _groupEventsByDay(upcoming);
-            final pastGrouped = _groupEventsByDay(past);
+        // Task 1: Grouping
+        final upcomingGrouped = _groupEventsByDay(upcoming);
+        final pastGrouped = _groupEventsByDay(past);
 
-            final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
+        final currentUserId = ref.watch(firebaseAuthProvider).currentUser?.uid;
 
-            return CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 10)),
-                
-                ..._buildEventList(upcomingGrouped, currentUserId, "Upcoming"),
+        return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                // Task 3: Past Events Divider
-                if (past.isNotEmpty)
-                  const SliverToBoxAdapter(child: PastEventsDivider()),
+            ..._buildEventList(upcomingGrouped, currentUserId, "Upcoming"),
 
-                // Past Events List
-                ..._buildEventList(pastGrouped, currentUserId, "Past"),
-                
-                const SliverToBoxAdapter(child: SizedBox(height: 40)),
-              ],
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
+            // Task 3: Past Events Divider
+            if (past.isNotEmpty)
+              const SliverToBoxAdapter(child: PastEventsDivider()),
+
+            // Past Events List
+            ..._buildEventList(pastGrouped, currentUserId, "Past"),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
         );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Text('Error: $e', style: const TextStyle(color: Colors.white)),
+      ),
+    );
   }
 
-  List<Widget> _buildEventList(Map<DateTime?, List<ScheduledEvent>> groupedEvents, String? currentUserId, String type) {
+  List<Widget> _buildEventList(
+    Map<DateTime?, List<ScheduledEvent>> groupedEvents,
+    String? currentUserId,
+    String type,
+  ) {
     final List<Widget> slivers = [];
     final sortedDates = groupedEvents.keys.toList();
-    
-    // Dates are already sorted implicitly by the list sorting before grouping, 
+
+    // Dates are already sorted implicitly by the list sorting before grouping,
     // but let's be explicit based on type
     if (type == "Upcoming") {
       sortedDates.sort((a, b) {
@@ -839,11 +876,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     for (var date in sortedDates) {
       final events = groupedEvents[date]!;
-      
+
       slivers.add(
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 12),
+            padding: const EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: 12,
+            ),
             child: _buildGroupHeader(date),
           ),
         ),
@@ -853,22 +895,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final event = events[index];
-                final isHost = currentUserId != null &&
-                    (currentUserId == event.hostId ||
-                        event.coHostIds.contains(currentUserId));
-                return ScheduledEventCard(
-                  event: event,
-                  isHost: isHost,
-                  onTap: () {
-                    pushEventDetail(context, event.id);
-                  },
-                );
-              },
-              childCount: events.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final event = events[index];
+              final isHost =
+                  currentUserId != null &&
+                  (currentUserId == event.hostId ||
+                      event.coHostIds.contains(currentUserId));
+              return ScheduledEventCard(
+                event: event,
+                isHost: isHost,
+                onTap: () {
+                  pushEventDetail(context, event.id);
+                },
+              );
+            }, childCount: events.length),
           ),
         ),
       );
@@ -889,8 +929,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
-    final dayLabel = (date == today) ? "Today" : DateFormat('EEEE').format(date);
+
+    final dayLabel = (date == today)
+        ? "Today"
+        : DateFormat('EEEE').format(date);
     final dateLabel = " • ${DateFormat('d MMMM').format(date)}";
 
     return Text.rich(
@@ -917,18 +959,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Map<DateTime?, List<ScheduledEvent>> _groupEventsByDay(List<ScheduledEvent> events) {
+  Map<DateTime?, List<ScheduledEvent>> _groupEventsByDay(
+    List<ScheduledEvent> events,
+  ) {
     final Map<DateTime?, List<ScheduledEvent>> grouped = {};
     for (var event in events) {
-      final date = event.startTime != null 
-          ? DateTime(event.startTime!.year, event.startTime!.month, event.startTime!.day)
+      final date = event.startTime != null
+          ? DateTime(
+              event.startTime!.year,
+              event.startTime!.month,
+              event.startTime!.day,
+            )
           : null;
       if (grouped[date] == null) grouped[date] = [];
       grouped[date]!.add(event);
     }
     return grouped;
   }
-
 
   List<DateTime> _generateMonthDays(DateTime month) {
     final firstDayOfMonth = DateTime(month.year, month.month, 1);

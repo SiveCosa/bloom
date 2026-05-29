@@ -9,10 +9,12 @@ class EventInvitationsScreen extends ConsumerStatefulWidget {
   const EventInvitationsScreen({super.key});
 
   @override
-  ConsumerState<EventInvitationsScreen> createState() => _EventInvitationsScreenState();
+  ConsumerState<EventInvitationsScreen> createState() =>
+      _EventInvitationsScreenState();
 }
 
-class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen> {
+class _EventInvitationsScreenState
+    extends ConsumerState<EventInvitationsScreen> {
   @override
   void initState() {
     super.initState();
@@ -32,10 +34,7 @@ class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen>
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -51,16 +50,23 @@ class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen>
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
             body: notificationsAsync.when(
               data: (notifications) {
-                final invites = notifications.where((n) => 
-                  n.type == NotificationType.eventInvite || 
-                  n.type == NotificationType.coHostInvite
-                ).toList();
+                final invites = notifications
+                    .where(
+                      (n) =>
+                          n.type == NotificationType.eventInvite ||
+                          n.type == NotificationType.coHostInvite,
+                    )
+                    .toList();
 
                 if (invites.isEmpty) {
                   return const Center(
@@ -89,7 +95,8 @@ class _EventInvitationsScreenState extends ConsumerState<EventInvitationsScreen>
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   itemCount: invites.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final invite = invites[index];
                     return Container(

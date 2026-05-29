@@ -72,14 +72,17 @@ class CometChatAuthService {
 
   static Future<void> _loginWithAuthToken(String authToken) async {
     final completer = Completer<cc.User>();
-    
+
     await cc.CometChat.loginWithAuthToken(
       authToken,
       onSuccess: (cc.User user) {
         if (!completer.isCompleted) completer.complete(user);
       },
       onError: (cc.CometChatException e) {
-        if (!completer.isCompleted) completer.completeError(Exception('CometChat login failed: ${e.message}'));
+        if (!completer.isCompleted)
+          completer.completeError(
+            Exception('CometChat login failed: ${e.message}'),
+          );
       },
     );
 

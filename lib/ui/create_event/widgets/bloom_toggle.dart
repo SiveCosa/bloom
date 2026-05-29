@@ -4,11 +4,7 @@ class BloomToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const BloomToggle({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
+  const BloomToggle({super.key, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +15,10 @@ class BloomToggle extends StatelessWidget {
         width: 40,
         height: 21,
         decoration: BoxDecoration(
-          color: value 
-              ? Colors.white 
-              : Colors.white.withValues(alpha: 0.15),
+          color: value ? Colors.white : Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: value 
-                ? Colors.white 
-                : Colors.white.withValues(alpha: 0.15),
+            color: value ? Colors.white : Colors.white.withValues(alpha: 0.15),
           ),
         ),
         padding: const EdgeInsets.all(2),

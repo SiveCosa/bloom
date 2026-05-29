@@ -257,7 +257,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             data: (doc) {
-              final username = (doc?['username']?.toString() ?? '—').replaceAll('@', '');
+              final username = (doc?['username']?.toString() ?? '—').replaceAll(
+                '@',
+                '',
+              );
               final name = doc?['name']?.toString() ?? 'Anonymous';
               final bio = doc?['bio']?.toString() ?? 'No bio yet.';
               final imageUrl = doc?['profile_image_url']?.toString();
@@ -508,8 +511,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       child: _buildActionButton(
                                         'Share profile',
                                         () {
-                                          final cleanUsername = username.replaceAll('@', '');
-                                          Share.share('Follow my profile on Bloom, $cleanUsername');
+                                          final cleanUsername = username
+                                              .replaceAll('@', '');
+                                          Share.share(
+                                            'Follow my profile on Bloom, $cleanUsername',
+                                          );
                                         },
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -669,11 +675,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             )
           else
-            const Icon(
-              Icons.link,
-              size: 14,
-              color: Colors.white10,
-            ),
+            const Icon(Icons.link, size: 14, color: Colors.white10),
           const SizedBox(width: 4), // Spacing between icon and handle
           Text(
             handle,

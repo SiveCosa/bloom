@@ -11,12 +11,18 @@ class FirebaseProvider {
     await Firebase.initializeApp();
 
     // Initialize App Check in the background to avoid blocking the main thread
-    unawaited(FirebaseAppCheck.instance.activate(
-      // ignore: deprecated_member_use
-      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-      // ignore: deprecated_member_use
-      appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.deviceCheck,
-    ));
+    unawaited(
+      FirebaseAppCheck.instance.activate(
+        // ignore: deprecated_member_use
+        androidProvider: kDebugMode
+            ? AndroidProvider.debug
+            : AndroidProvider.playIntegrity,
+        // ignore: deprecated_member_use
+        appleProvider: kDebugMode
+            ? AppleProvider.debug
+            : AppleProvider.deviceCheck,
+      ),
+    );
   }
 }
 

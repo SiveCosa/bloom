@@ -76,19 +76,27 @@ class DiscoverFilter {
       if (dateFilters.isNotEmpty) {
         if (event.startTime == null) return false;
         final start = event.startTime!;
-        
+
         bool matchesDate = false;
         for (final dateFilter in dateFilters) {
-          if (dateFilter == 'Today' && start.isAfter(today) && start.isBefore(tomorrow)) {
+          if (dateFilter == 'Today' &&
+              start.isAfter(today) &&
+              start.isBefore(tomorrow)) {
             matchesDate = true;
             break;
-          } else if (dateFilter == 'Tomorrow' && start.isAfter(tomorrow) && start.isBefore(tomorrow.add(const Duration(days: 1)))) {
+          } else if (dateFilter == 'Tomorrow' &&
+              start.isAfter(tomorrow) &&
+              start.isBefore(tomorrow.add(const Duration(days: 1)))) {
             matchesDate = true;
             break;
-          } else if (dateFilter == 'Next 7 days' && start.isAfter(today) && start.isBefore(next7Days)) {
+          } else if (dateFilter == 'Next 7 days' &&
+              start.isAfter(today) &&
+              start.isBefore(next7Days)) {
             matchesDate = true;
             break;
-          } else if (dateFilter == 'Next 30 days' && start.isAfter(today) && start.isBefore(next30Days)) {
+          } else if (dateFilter == 'Next 30 days' &&
+              start.isAfter(today) &&
+              start.isBefore(next30Days)) {
             matchesDate = true;
             break;
           }
@@ -99,11 +107,11 @@ class DiscoverFilter {
       }
 
       // 4. Visibility filter
-      // (Assuming visibility filtering is either not fully supported by DiscoverFeedCard or requires specific logic. 
+      // (Assuming visibility filtering is either not fully supported by DiscoverFeedCard or requires specific logic.
       // If DiscoverFeedCard had a visibility property, we would filter here.
       // Currently DiscoverFeedCard does not have visibility info from backend.
       // For now, we'll just allow it if visibilityFilters is not completely overriding.)
-      
+
       return true;
     }).toList();
   }

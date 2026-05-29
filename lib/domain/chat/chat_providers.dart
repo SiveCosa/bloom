@@ -8,7 +8,9 @@ import 'cometchat_session_provider.dart';
 const _listenerId = 'bloom_global_message_listener';
 
 final totalUnreadCountProvider =
-    NotifierProvider<TotalUnreadCountNotifier, int>(TotalUnreadCountNotifier.new);
+    NotifierProvider<TotalUnreadCountNotifier, int>(
+      TotalUnreadCountNotifier.new,
+    );
 
 class TotalUnreadCountNotifier extends Notifier<int> {
   _BloomMessageListener? _listener;
@@ -97,8 +99,8 @@ class _BloomMessageListener with MessageListener {
 
 final conversationsListProvider =
     AsyncNotifierProvider<ConversationsListNotifier, List<Conversation>>(
-  ConversationsListNotifier.new,
-);
+      ConversationsListNotifier.new,
+    );
 
 class ConversationsListNotifier extends AsyncNotifier<List<Conversation>> {
   static const _pageLimit = 30;
@@ -118,12 +120,12 @@ class ConversationsListNotifier extends AsyncNotifier<List<Conversation>> {
     });
 
     ref.onDispose(_tearDownListener);
-    
+
     // Initial setup if already ready
     if (ref.read(cometChatSessionProvider).isReady) {
       _ensureListener();
     }
-    
+
     return _fetchConversations();
   }
 
@@ -146,7 +148,7 @@ class ConversationsListNotifier extends AsyncNotifier<List<Conversation>> {
 
   Future<void> reload() async {
     // We intentionally do NOT use `state = const AsyncLoading()` here.
-    // By directly setting the new state, Riverpod keeps the existing data 
+    // By directly setting the new state, Riverpod keeps the existing data
     // on screen and just marks it as `isRefreshing`, preventing UI flashes.
     final newData = await AsyncValue.guard(_fetchConversations);
     state = newData;
@@ -156,7 +158,8 @@ class ConversationsListNotifier extends AsyncNotifier<List<Conversation>> {
     final loggedIn = await CometChat.getLoggedInUser();
     if (loggedIn == null) return [];
 
-    final request = (ConversationsRequestBuilder()..setLimit(_pageLimit)).build();
+    final request = (ConversationsRequestBuilder()..setLimit(_pageLimit))
+        .build();
     final list = await request.fetchNext(onSuccess: null, onError: null);
 
     return list

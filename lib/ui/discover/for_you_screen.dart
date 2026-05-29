@@ -14,8 +14,7 @@ class ForYouScreen extends StatelessWidget {
       emptyState: const HomeFeedEmptyState(
         icon: Icons.auto_awesome_outlined,
         title: 'No recommendations yet.',
-        subtitle:
-            'Add more interests to your profile and check back later!',
+        subtitle: 'Add more interests to your profile and check back later!',
       ),
       loadErrorTitle: 'Failed to load your feed',
     );

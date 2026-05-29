@@ -12,10 +12,10 @@ class CometChatConfigLoader {
     }
 
     try {
-      final functions =
-          FirebaseFunctions.instanceFor(region: 'africa-south1');
-      final result =
-          await functions.httpsCallable('getCometChatClientConfig').call();
+      final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
+      final result = await functions
+          .httpsCallable('getCometChatClientConfig')
+          .call();
       final data = Map<String, dynamic>.from(result.data as Map);
       final appId = data['appId'] as String?;
       final region = data['region'] as String?;

@@ -22,7 +22,7 @@ class HostInviteSection extends StatelessWidget {
     if (isFormMode) {
       // Form Mode: Just show the hosted by card with form styling
       return _HostedByCardPreview(
-        userProfile: userProfile, 
+        userProfile: userProfile,
         coHosts: coHosts,
         onAddCoHost: onAddCoHost,
         isFormMode: true,
@@ -31,7 +31,7 @@ class HostInviteSection extends StatelessWidget {
 
     if (!showInviteFriends) {
       return _HostedByCardPreview(
-        userProfile: userProfile, 
+        userProfile: userProfile,
         coHosts: coHosts,
         onAddCoHost: onAddCoHost,
         isFormMode: false,
@@ -43,7 +43,7 @@ class HostInviteSection extends StatelessWidget {
         _InviteFriendsCardPreview(),
         const SizedBox(height: 16),
         _HostedByCardPreview(
-          userProfile: userProfile, 
+          userProfile: userProfile,
           coHosts: coHosts,
           onAddCoHost: onAddCoHost,
           isFormMode: false,
@@ -103,7 +103,7 @@ class _HostedByCardPreview extends StatelessWidget {
   final bool isFormMode;
 
   const _HostedByCardPreview({
-    this.userProfile, 
+    this.userProfile,
     this.coHosts = const [],
     required this.onAddCoHost,
     this.isFormMode = false,
@@ -148,10 +148,16 @@ class _HostedByCardPreview extends StatelessWidget {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                           color: Colors.white.withValues(alpha: 0.05),
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -240,7 +246,7 @@ class _PreviewBaseCard extends StatelessWidget {
   final IconData? headerIcon;
 
   const _PreviewBaseCard({
-    required this.title, 
+    required this.title,
     required this.child,
     this.isFormMode = false,
     this.headerIcon,
@@ -254,11 +260,15 @@ class _PreviewBaseCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.05),
         borderRadius: BorderRadius.circular(isFormMode ? 15 : 20),
-        border: Border.all(color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: isFormMode ? 0.15 : 0.1),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: isFormMode ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: isFormMode
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           if (isFormMode)
             Row(
@@ -339,10 +349,7 @@ Widget _buildAvatar({String? imageUrl, required bool isHost}) {
             width: 1,
           ),
         ),
-        child: buildAvatarImage(
-          source: imageUrl,
-          radius: 30,
-        ),
+        child: buildAvatarImage(source: imageUrl, radius: 30),
       ),
       Positioned(
         right: -2,

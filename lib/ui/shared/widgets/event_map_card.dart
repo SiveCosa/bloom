@@ -19,7 +19,8 @@ class EventMapCard extends StatefulWidget {
   State<EventMapCard> createState() => _EventMapCardState();
 }
 
-class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderStateMixin {
+class _EventMapCardState extends State<EventMapCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   Uint8List? _mapImageBytes;
   bool _isLoadingMap = true;
@@ -38,7 +39,8 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
   void didUpdateWidget(covariant EventMapCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.event.location?.latitude != widget.event.location?.latitude ||
-        oldWidget.event.location?.longitude != widget.event.location?.longitude ||
+        oldWidget.event.location?.longitude !=
+            widget.event.location?.longitude ||
         oldWidget.themeColor != widget.themeColor) {
       _fetchStaticMap();
     }
@@ -60,20 +62,26 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
     });
 
     try {
-      final hexColor = widget.themeColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase();
+      final hexColor = widget.themeColor
+          .toARGB32()
+          .toRadixString(16)
+          .padLeft(8, '0')
+          .substring(2)
+          .toUpperCase();
 
-      final result = await FirebaseFunctions.instanceFor(region: 'africa-south1')
-          .httpsCallable('googleMapsProxy')
-          .call({
-        'endpoint': 'staticmap',
-        'params': {
-          'center': '${location.latitude},${location.longitude}',
-          'zoom': 15,
-          'size': '600x300',
-          'scale': 2,
-          'color': hexColor,
-        },
-      });
+      final result =
+          await FirebaseFunctions.instanceFor(
+            region: 'africa-south1',
+          ).httpsCallable('googleMapsProxy').call({
+            'endpoint': 'staticmap',
+            'params': {
+              'center': '${location.latitude},${location.longitude}',
+              'zoom': 15,
+              'size': '600x300',
+              'scale': 2,
+              'color': hexColor,
+            },
+          });
 
       if (!mounted) return;
 
@@ -102,16 +110,23 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
 
   Future<void> _launchMap(double lat, double lng, String label) async {
     final String appleUri = 'maps://?q=$lat,$lng';
-    final String fallbackUri = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    final String fallbackUri =
+        'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
 
     try {
       final bool launched = await launchUrl(Uri.parse(appleUri));
       if (!launched) {
-        await launchUrl(Uri.parse(fallbackUri), mode: LaunchMode.externalApplication);
+        await launchUrl(
+          Uri.parse(fallbackUri),
+          mode: LaunchMode.externalApplication,
+        );
       }
     } catch (e) {
       debugPrint('Error launching map: $e');
-      await launchUrl(Uri.parse(fallbackUri), mode: LaunchMode.externalApplication);
+      await launchUrl(
+        Uri.parse(fallbackUri),
+        mode: LaunchMode.externalApplication,
+      );
     }
   }
 
@@ -196,16 +211,17 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
                   child: Stack(
                     children: [
                       // Static Map Background / Shimmer / Fallback Custom Paint Grid
-                      Positioned.fill(
-                        child: _buildMapBackground(),
-                      ),
+                      Positioned.fill(child: _buildMapBackground()),
 
                       if (widget.event.location != null)
                         Positioned(
                           right: 12,
                           bottom: 12,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(20),
@@ -216,7 +232,11 @@ class _EventMapCardState extends State<EventMapCard> with SingleTickerProviderSt
                             ),
                             child: const Row(
                               children: [
-                                Icon(Icons.navigation_outlined, color: Colors.white, size: 12),
+                                Icon(
+                                  Icons.navigation_outlined,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Navigate',
@@ -292,12 +312,16 @@ class _MapGridPainter extends CustomPainter {
     // Draw some stylized neon roads/streets
     paint.strokeWidth = 2.0;
     paint.color = themeColor.withValues(alpha: 0.12);
-    
+
     // Main horizontal road crossing center
     canvas.drawLine(Offset(0, center.dy), Offset(size.width, center.dy), paint);
     // Main vertical road crossing center
-    canvas.drawLine(Offset(center.dx, 0), Offset(center.dx, size.height), paint);
-    
+    canvas.drawLine(
+      Offset(center.dx, 0),
+      Offset(center.dx, size.height),
+      paint,
+    );
+
     // Some diagonal roads
     paint.strokeWidth = 1.0;
     paint.color = themeColor.withValues(alpha: 0.06);
@@ -336,7 +360,8 @@ class _MapShimmer extends StatefulWidget {
   State<_MapShimmer> createState() => _MapShimmerState();
 }
 
-class _MapShimmerState extends State<_MapShimmer> with SingleTickerProviderStateMixin {
+class _MapShimmerState extends State<_MapShimmer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _shimmerController;
 
   @override
@@ -366,7 +391,11 @@ class _MapShimmerState extends State<_MapShimmer> with SingleTickerProviderState
               end: Alignment.bottomRight,
               colors: [
                 const Color(0xFF15181B),
-                Color.lerp(const Color(0xFF15181B), const Color(0xFF25292E), _shimmerController.value)!,
+                Color.lerp(
+                  const Color(0xFF15181B),
+                  const Color(0xFF25292E),
+                  _shimmerController.value,
+                )!,
                 const Color(0xFF15181B),
               ],
               stops: const [0.0, 0.5, 1.0],
@@ -380,7 +409,9 @@ class _MapShimmerState extends State<_MapShimmer> with SingleTickerProviderState
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.3)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white.withValues(alpha: 0.3),
+                  ),
                 ),
               ),
             ),

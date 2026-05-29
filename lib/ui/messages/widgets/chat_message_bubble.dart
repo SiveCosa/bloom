@@ -75,18 +75,19 @@ class _EventInviteBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = message.customData ?? {};
-    final attached =
-        data['attachedMessage']?.toString().trim() ?? '';
+    final attached = data['attachedMessage']?.toString().trim() ?? '';
     final eventId = data['eventId']?.toString();
 
-    final bubbleColor =
-        isMine ? const Color(0xFF0086D8) : Colors.white.withValues(alpha: 0.1);
+    final bubbleColor = isMine
+        ? const Color(0xFF0086D8)
+        : Colors.white.withValues(alpha: 0.1);
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment:
-            isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
@@ -193,18 +194,15 @@ class _MediaBubble extends StatelessWidget {
     final imageMaxWidth = maxWidth - (hasCaption ? 28 : 8);
 
     void openViewer() {
-      showChatPhotoViewer(
-        context,
-        networkUrl: url,
-        filePath: localPath,
-      );
+      showChatPhotoViewer(context, networkUrl: url, filePath: localPath);
     }
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment:
-            isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
@@ -307,8 +305,9 @@ class _TextBubble extends StatelessWidget {
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment:
-            isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 4),

@@ -26,11 +26,12 @@ class CometChatProvider {
     final completer = Completer<void>();
     _initFuture = completer.future;
 
-    final appSettings = (cc.AppSettingsBuilder()
-          ..subscriptionType = cc.CometChatSubscriptionType.allUsers
-          ..region = CometChatConfig.effectiveRegion
-          ..autoEstablishSocketConnection = true)
-        .build();
+    final appSettings =
+        (cc.AppSettingsBuilder()
+              ..subscriptionType = cc.CometChatSubscriptionType.allUsers
+              ..region = CometChatConfig.effectiveRegion
+              ..autoEstablishSocketConnection = true)
+            .build();
 
     await cc.CometChat.init(
       CometChatConfig.effectiveAppId,

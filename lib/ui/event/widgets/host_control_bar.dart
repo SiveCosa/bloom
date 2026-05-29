@@ -7,14 +7,14 @@ class HostControlBar extends ConsumerWidget {
   final Event event;
   final Function(String?) onGoingPressed;
   final VoidCallback onInvitePressed;
-  final VoidCallback onRemindersPressed;
+  final VoidCallback onNudgePressed;
 
   const HostControlBar({
     super.key,
     required this.event,
     required this.onGoingPressed,
     required this.onInvitePressed,
-    required this.onRemindersPressed,
+    required this.onNudgePressed,
   });
 
   Color _parseHexColor(String hex) {
@@ -29,8 +29,10 @@ class HostControlBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-    
+    final colors = event.visuals.auroraColors
+        .map((c) => _parseHexColor(c))
+        .toList();
+
     List<Color> gradientColors;
     if (colors.length >= 2) {
       gradientColors = [colors[0], colors[1]];
@@ -42,12 +44,20 @@ class HostControlBar extends ConsumerWidget {
 
     final guestsAsync = ref.watch(eventGuestsProvider(event.id));
     final guests = guestsAsync.value ?? [];
-    
-    final goingCount = guests.isEmpty 
-        ? event.liveCounts.going 
-        : guests.where((g) => g['status'] == 'going' || g['rsvp_status'] == 'going').length;
-        
-    final requestedCount = guests.where((g) => g['status'] == 'requested' || g['rsvp_status'] == 'requested').length;
+
+    final goingCount = guests.isEmpty
+        ? event.liveCounts.going
+        : guests
+              .where(
+                (g) => g['status'] == 'going' || g['rsvp_status'] == 'going',
+              )
+              .length;
+
+    final requestedCount = guests
+        .where(
+          (g) => g['status'] == 'requested' || g['rsvp_status'] == 'requested',
+        )
+        .length;
 
     return Container(
       height: 75,
@@ -82,7 +92,8 @@ class HostControlBar extends ConsumerWidget {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                final isRequestsActive = event.audience.requireApproval && requestedCount > 0;
+                final isRequestsActive =
+                    event.audience.requireApproval && requestedCount > 0;
                 onGoingPressed(isRequestsActive ? 'Requests' : 'Going');
               },
               child: Container(
@@ -146,8 +157,8 @@ class HostControlBar extends ConsumerWidget {
             child: Center(
               child: _buildActionItem(
                 icon: Icons.notifications_none_outlined,
-                label: 'Reminders',
-                onTap: onRemindersPressed,
+                label: 'Nudge',
+                onTap: onNudgePressed,
                 isCircleIcon: false,
               ),
             ),
@@ -212,21 +223,19 @@ class AnimatedCounterText extends StatelessWidget {
       transitionBuilder: (Widget child, Animation<double> animation) {
         final isEntering = (child.key as ValueKey<int>?)?.value == value;
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: isEntering ? const Offset(0.0, 0.6) : const Offset(0.0, -0.6),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
+          position:
+              Tween<Offset>(
+                begin: isEntering
+                    ? const Offset(0.0, 0.6)
+                    : const Offset(0.0, -0.6),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+          child: FadeTransition(opacity: animation, child: child),
         );
       },
-      child: Text(
-        '$value',
-        key: ValueKey<int>(value),
-        style: style,
-      ),
+      child: Text('$value', key: ValueKey<int>(value), style: style),
     );
   }
 }

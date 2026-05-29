@@ -17,7 +17,8 @@ class FriendRequestsScreen extends ConsumerStatefulWidget {
   const FriendRequestsScreen({super.key});
 
   @override
-  ConsumerState<FriendRequestsScreen> createState() => _FriendRequestsScreenState();
+  ConsumerState<FriendRequestsScreen> createState() =>
+      _FriendRequestsScreenState();
 }
 
 class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
@@ -59,7 +60,9 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
     return NavigationTile(
       onTap: () => context.push('/notifications/pending-requests'),
       icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22),
-      iconBackgroundColor: const Color(0xFFFFB965), // Custom amber/orange circle
+      iconBackgroundColor: const Color(
+        0xFFFFB965,
+      ), // Custom amber/orange circle
       title: 'Pending requests',
       subtitle: outgoingCountAsync.when(
         data: (outgoingCount) {
@@ -72,9 +75,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
               color: hasRequests
                   ? Colors.white
                   : Colors.white.withValues(alpha: 0.38),
-              fontWeight: hasRequests
-                  ? FontWeight.bold
-                  : FontWeight.normal,
+              fontWeight: hasRequests ? FontWeight.bold : FontWeight.normal,
               fontSize: 14,
             ),
           );
@@ -111,7 +112,9 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
             }
             for (var localReq in _localRequests) {
               final uid = localReq['uid'] as String;
-              if ((_acceptedUids.contains(uid) || _declinedUids.contains(uid)) && !mergedMap.containsKey(uid)) {
+              if ((_acceptedUids.contains(uid) ||
+                      _declinedUids.contains(uid)) &&
+                  !mergedMap.containsKey(uid)) {
                 mergedMap[uid] = localReq;
               }
             }
@@ -121,8 +124,12 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
               final tsA = a['timestamp'];
               final tsB = b['timestamp'];
               if (tsA == null || tsB == null) return 0;
-              final timeA = (tsA is Timestamp) ? tsA.toDate() : DateTime.fromMillisecondsSinceEpoch(tsA);
-              final timeB = (tsB is Timestamp) ? tsB.toDate() : DateTime.fromMillisecondsSinceEpoch(tsB);
+              final timeA = (tsA is Timestamp)
+                  ? tsA.toDate()
+                  : DateTime.fromMillisecondsSinceEpoch(tsA);
+              final timeB = (tsB is Timestamp)
+                  ? tsB.toDate()
+                  : DateTime.fromMillisecondsSinceEpoch(tsB);
               return timeB.compareTo(timeA);
             });
             _isInitialized = true;
@@ -141,10 +148,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -160,7 +164,11 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -171,7 +179,10 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                   child: _buildPendingRequestsTile(context),
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -190,263 +201,392 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
                   child: !_isInitialized && requestsAsync.isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2D8CF0)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF2D8CF0),
+                            ),
                           ),
                         )
                       : _localRequests.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.people_outline_rounded,
-                                    color: Colors.white24,
-                                    size: 64,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No pending friend requests',
-                                    style: TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.people_outline_rounded,
+                                color: Colors.white24,
+                                size: 64,
                               ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              itemCount: _localRequests.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final request = _localRequests[index];
-                                final requesterUid = request['uid'] as String;
-                                final timestamp = request['timestamp'];
-                          DateTime? requestedAt;
-                          if (timestamp is Timestamp) {
-                            requestedAt = timestamp.toDate();
-                          } else if (timestamp is int) {
-                            requestedAt = DateTime.fromMillisecondsSinceEpoch(timestamp);
-                          }
+                              SizedBox(height: 16),
+                              Text(
+                                'No pending friend requests',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          itemCount: _localRequests.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final request = _localRequests[index];
+                            final requesterUid = request['uid'] as String;
+                            final timestamp = request['timestamp'];
+                            DateTime? requestedAt;
+                            if (timestamp is Timestamp) {
+                              requestedAt = timestamp.toDate();
+                            } else if (timestamp is int) {
+                              requestedAt = DateTime.fromMillisecondsSinceEpoch(
+                                timestamp,
+                              );
+                            }
 
-                          final profileAsync = ref.watch(userProfileStreamProvider(requesterUid));
+                            final profileAsync = ref.watch(
+                              userProfileStreamProvider(requesterUid),
+                            );
 
-                          return Container(
-                            height: 80,
-                            decoration: const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                          Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => context.push('/profile/$requesterUid'),
+                            return Container(
+                              height: 80,
+                              decoration: const BoxDecoration(
+                                color: Colors.transparent,
+                              ),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Avatar image loading or error states handled cleanly
-                                  profileAsync.when(
-                                    data: (profile) {
-                                      final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
-                                      return buildAvatarImage(source: avatarUrl, radius: 25);
-                                    },
-                                    loading: () => const CircleAvatar(
-                                      radius: 25,
-                                      backgroundColor: Color(0xFF1A1D24),
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
-                                        ),
-                                      ),
-                                    ),
-                                    error: (err, stack) => const CircleAvatar(
-                                      radius: 25,
-                                      backgroundColor: Color(0xFF1A1D24),
-                                      child: Icon(Icons.person, color: Colors.white24, size: 25),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        profileAsync.when(
-                                          data: (profile) => Text(
-                                            profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
+                                    child: GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTap: () => context.push(
+                                        '/profile/$requesterUid',
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Avatar image loading or error states handled cleanly
+                                          profileAsync.when(
+                                            data: (profile) {
+                                              final avatarUrl =
+                                                  profile?['profile_image_url'] ??
+                                                  profile?['avatarUrl'] ??
+                                                  profile?['avatar_url']
+                                                      as String?;
+                                              return buildAvatarImage(
+                                                source: avatarUrl,
+                                                radius: 25,
+                                              );
+                                            },
+                                            loading: () => const CircleAvatar(
+                                              radius: 25,
+                                              backgroundColor: Color(
+                                                0xFF1A1D24,
+                                              ),
+                                              child: SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(Colors.white24),
+                                                ),
+                                              ),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          loading: () => const ContainerPlaceholder(width: 80, height: 14),
-                                          error: (err, stack) => const Text(
-                                            'User',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        profileAsync.when(
-                                          data: (profile) {
-                                            final username = profile?['username'] as String?;
-                                            final elapsed = _getElapsedTime(requestedAt);
-                                            return Row(
-                                              children: [
-                                                if (username != null && username.isNotEmpty) ...[
-                                                  Text(
-                                                    username.replaceAll('@', ''),
-                                                    style: TextStyle(
-                                                      color: Colors.white.withValues(alpha: 0.5),
-                                                      fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
+                                            error: (err, stack) =>
+                                                const CircleAvatar(
+                                                  radius: 25,
+                                                  backgroundColor: Color(
+                                                    0xFF1A1D24,
                                                   ),
-                                                  if (elapsed.isNotEmpty) ...[
-                                                    const SizedBox(width: 6),
-                                                    Text(
-                                                      '•',
+                                                  child: Icon(
+                                                    Icons.person,
+                                                    color: Colors.white24,
+                                                    size: 25,
+                                                  ),
+                                                ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                profileAsync.when(
+                                                  data: (profile) => Text(
+                                                    profile?['name']
+                                                            as String? ??
+                                                        profile?['username']
+                                                            as String? ??
+                                                        'Bloom User',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 15,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  loading: () =>
+                                                      const ContainerPlaceholder(
+                                                        width: 80,
+                                                        height: 14,
+                                                      ),
+                                                  error: (err, stack) =>
+                                                      const Text(
+                                                        'User',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 15,
+                                                        ),
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                profileAsync.when(
+                                                  data: (profile) {
+                                                    final username =
+                                                        profile?['username']
+                                                            as String?;
+                                                    final elapsed =
+                                                        _getElapsedTime(
+                                                          requestedAt,
+                                                        );
+                                                    return Row(
+                                                      children: [
+                                                        if (username != null &&
+                                                            username
+                                                                .isNotEmpty) ...[
+                                                          Text(
+                                                            username.replaceAll(
+                                                              '@',
+                                                              '',
+                                                            ),
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withValues(
+                                                                    alpha: 0.5,
+                                                                  ),
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
+                                                          if (elapsed
+                                                              .isNotEmpty) ...[
+                                                            const SizedBox(
+                                                              width: 6,
+                                                            ),
+                                                            Text(
+                                                              '•',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.3,
+                                                                    ),
+                                                                fontSize: 12,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 6,
+                                                            ),
+                                                          ],
+                                                        ],
+                                                        if (elapsed.isNotEmpty)
+                                                          Text(
+                                                            elapsed,
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .white
+                                                                  .withValues(
+                                                                    alpha: 0.35,
+                                                                  ),
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    );
+                                                  },
+                                                  loading: () =>
+                                                      const ContainerPlaceholder(
+                                                        width: 120,
+                                                        height: 12,
+                                                      ),
+                                                  error: (err, stack) {
+                                                    final elapsed =
+                                                        _getElapsedTime(
+                                                          requestedAt,
+                                                        );
+                                                    return Text(
+                                                      elapsed,
                                                       style: TextStyle(
-                                                        color: Colors.white.withValues(alpha: 0.3),
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.35,
+                                                            ),
                                                         fontSize: 12,
                                                       ),
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                  ],
-                                                ],
-                                                if (elapsed.isNotEmpty)
-                                                  Text(
-                                                    elapsed,
-                                                    style: TextStyle(
-                                                      color: Colors.white.withValues(alpha: 0.35),
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
+                                                    );
+                                                  },
+                                                ),
                                               ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (_acceptedUids.contains(requesterUid))
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      child: const Text(
+                                        'Accepted',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    )
+                                  else if (_declinedUids.contains(requesterUid))
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      child: const Text(
+                                        'Declined',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ActionButtons(
+                                      primaryText: 'Accept',
+                                      isLoading: _processingUids.contains(
+                                        requesterUid,
+                                      ),
+                                      onPrimaryPressed: () async {
+                                        setState(() {
+                                          _processingUids.add(requesterUid);
+                                        });
+                                        try {
+                                          await ref
+                                              .read(
+                                                connectionRepositoryProvider,
+                                              )
+                                              .acceptRequest(requesterUid);
+                                          setState(() {
+                                            _acceptedUids.add(requesterUid);
+                                            _processingUids.remove(
+                                              requesterUid,
                                             );
-                                          },
-                                          loading: () => const ContainerPlaceholder(width: 120, height: 12),
-                                          error: (err, stack) {
-                                            final elapsed = _getElapsedTime(requestedAt);
-                                            return Text(
-                                              elapsed,
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.35),
-                                                fontSize: 12,
+                                          });
+                                          invalidateFriendshipCaches(
+                                            ref,
+                                            requesterUid,
+                                          );
+                                        } catch (e) {
+                                          setState(() {
+                                            _processingUids.remove(
+                                              requesterUid,
+                                            );
+                                          });
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to accept request: $e',
+                                                ),
+                                                backgroundColor:
+                                                    Colors.redAccent,
                                               ),
                                             );
-                                          },
-                                        ),
-                                      ],
+                                          }
+                                        }
+                                      },
+                                      onSecondaryPressed: () async {
+                                        setState(() {
+                                          _processingUids.add(requesterUid);
+                                        });
+                                        try {
+                                          await ref
+                                              .read(
+                                                connectionRepositoryProvider,
+                                              )
+                                              .removeConnection(requesterUid);
+                                          setState(() {
+                                            _declinedUids.add(requesterUid);
+                                            _processingUids.remove(
+                                              requesterUid,
+                                            );
+                                          });
+                                          ref.invalidate(
+                                            recommendedFriendsProvider,
+                                          );
+                                        } catch (e) {
+                                          setState(() {
+                                            _processingUids.remove(
+                                              requesterUid,
+                                            );
+                                          });
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Failed to decline request: $e',
+                                                ),
+                                                backgroundColor:
+                                                    Colors.redAccent,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
                                     ),
-                                  ),
                                 ],
                               ),
-                            ),
-                          ),
-                                const SizedBox(width: 8),
-                                if (_acceptedUids.contains(requesterUid))
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: const Text(
-                                      'Accepted',
-                                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                                  )
-                                else if (_declinedUids.contains(requesterUid))
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: const Text(
-                                      'Declined',
-                                      style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                                  )
-                                else
-                                  ActionButtons(
-                                    primaryText: 'Accept',
-                                    isLoading: _processingUids.contains(requesterUid),
-                                    onPrimaryPressed: () async {
-                                      setState(() {
-                                        _processingUids.add(requesterUid);
-                                      });
-                                      try {
-                                        await ref
-                                            .read(connectionRepositoryProvider)
-                                            .acceptRequest(requesterUid);
-                                        setState(() {
-                                          _acceptedUids.add(requesterUid);
-                                          _processingUids.remove(requesterUid);
-                                        });
-                                        invalidateFriendshipCaches(
-                                          ref,
-                                          requesterUid,
-                                        );
-                                      } catch (e) {
-                                        setState(() {
-                                          _processingUids.remove(requesterUid);
-                                        });
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Failed to accept request: $e'),
-                                              backgroundColor: Colors.redAccent,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                    onSecondaryPressed: () async {
-                                      setState(() {
-                                        _processingUids.add(requesterUid);
-                                      });
-                                      try {
-                                        await ref
-                                            .read(connectionRepositoryProvider)
-                                            .removeConnection(requesterUid);
-                                        setState(() {
-                                          _declinedUids.add(requesterUid);
-                                          _processingUids.remove(requesterUid);
-                                        });
-                                        ref.invalidate(recommendedFriendsProvider);
-                                      } catch (e) {
-                                        setState(() {
-                                          _processingUids.remove(requesterUid);
-                                        });
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Failed to decline request: $e'),
-                                              backgroundColor: Colors.redAccent,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -456,4 +596,3 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen> {
     );
   }
 }
-

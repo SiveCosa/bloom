@@ -25,7 +25,8 @@ class EventPreviewScreen extends ConsumerStatefulWidget {
 class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
   bool _isPublishing = false;
   bool _isDescriptionExpanded = false;
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
   final ValueNotifier<double> _sheetSize = ValueNotifier(0.55);
 
   @override
@@ -57,9 +58,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _isPublishing = false);
@@ -80,26 +81,45 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             valueListenable: _sheetSize,
             builder: (context, size, child) {
               final double screenHeight = MediaQuery.of(context).size.height;
-              final double topBarHeight = MediaQuery.of(context).padding.top + 56;
-              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+              final double topBarHeight =
+                  MediaQuery.of(context).padding.top + 56;
+              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28))
+                  .clamp(0.0, 1.0);
               final double maxSheetSize = 0.88 - (10 / screenHeight);
-              final double expandedProgress = ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
-              final double posterOpacity = (1.0 - expandedProgress).clamp(0.0, 1.0);
-              
-              final double actualPosterHeight = MediaQuery.of(context).size.width / (state.visuals.aspectRatio > 0 ? state.visuals.aspectRatio : 1.0);
-              final bool isSquare = (state.visuals.aspectRatio - 1.0).abs() < 0.1;
+              final double expandedProgress =
+                  ((size - 0.55) / (maxSheetSize - 0.55)).clamp(0.0, 1.0);
+              final double posterOpacity = (1.0 - expandedProgress).clamp(
+                0.0,
+                1.0,
+              );
+
+              final double actualPosterHeight =
+                  MediaQuery.of(context).size.width /
+                  (state.visuals.aspectRatio > 0
+                      ? state.visuals.aspectRatio
+                      : 1.0);
+              final bool isSquare =
+                  (state.visuals.aspectRatio - 1.0).abs() < 0.1;
               final double sheetTopMinimized = screenHeight * (1.0 - 0.28);
-              final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
-              
-                  final double statusBarHeight = MediaQuery.of(context).padding.top;
-                  final double targetTop = isSquare 
-                    ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
-                    : topBarHeight;
+              final double availableSpaceMinimized =
+                  sheetTopMinimized - topBarHeight;
 
-                  final double posterTop = ui.lerpDouble(statusBarHeight, targetTop, minimizedProgress) ?? statusBarHeight;
+              final double statusBarHeight = MediaQuery.of(context).padding.top;
+              final double targetTop = isSquare
+                  ? topBarHeight +
+                        (availableSpaceMinimized - actualPosterHeight) / 2
+                  : topBarHeight;
 
-                  return Positioned(
-                    top: posterTop,
+              final double posterTop =
+                  ui.lerpDouble(
+                    statusBarHeight,
+                    targetTop,
+                    minimizedProgress,
+                  ) ??
+                  statusBarHeight;
+
+              return Positioned(
+                top: posterTop,
                 left: 0,
                 right: 0,
                 child: GestureDetector(
@@ -121,8 +141,16 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           boxShadow: [
                             if (minimizedProgress > 0)
                               BoxShadow(
-                                color: (state.auroraColors.isNotEmpty ? state.auroraColors[0] : const Color(0xFFAD83FE))
-                                    .withValues(alpha: 0.45 * minimizedProgress * (1.0 - expandedProgress)),
+                                color:
+                                    (state.auroraColors.isNotEmpty
+                                            ? state.auroraColors[0]
+                                            : const Color(0xFFAD83FE))
+                                        .withValues(
+                                          alpha:
+                                              0.45 *
+                                              minimizedProgress *
+                                              (1.0 - expandedProgress),
+                                        ),
                                 blurRadius: 120,
                                 spreadRadius: 40,
                               ),
@@ -138,13 +166,18 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     key: ValueKey(state.customPosterBytes),
                                     fit: BoxFit.cover,
                                   )
-                                : (state.visuals.posterUrl != null || state.defaultPosterUrl != null)
-                                    ? Image.network(
-                                        state.visuals.posterUrl ?? state.defaultPosterUrl!,
-                                        key: ValueKey(state.visuals.posterUrl ?? state.defaultPosterUrl),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Container(color: Colors.grey[900]),
+                                : (state.visuals.posterUrl != null ||
+                                      state.defaultPosterUrl != null)
+                                ? Image.network(
+                                    state.visuals.posterUrl ??
+                                        state.defaultPosterUrl!,
+                                    key: ValueKey(
+                                      state.visuals.posterUrl ??
+                                          state.defaultPosterUrl,
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(color: Colors.grey[900]),
                           ),
                         ),
                       ),
@@ -162,10 +195,14 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             minChildSize: 0.28,
             maxChildSize: 0.88 - (10 / MediaQuery.of(context).size.height),
             snap: true,
-            snapSizes: [0.28, 0.55, 0.88 - (10 / MediaQuery.of(context).size.height)],
+            snapSizes: [
+              0.28,
+              0.55,
+              0.88 - (10 / MediaQuery.of(context).size.height),
+            ],
             builder: (context, scrollController) {
               final mockEvent = _getMockEvent(state, userProfile);
-              
+
               return GestureDetector(
                 onTap: () {
                   if (_sheetSize.value < 0.45) {
@@ -178,11 +215,15 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                 },
                 child: Container(
                   decoration: const BoxDecoration(
-                    color: Colors.transparent, 
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
                   ),
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
                     child: Stack(
                       children: [
                         // Sheet's Aurora Background & Overlay (Reactive, Optimized)
@@ -190,12 +231,16 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           valueListenable: _sheetSize,
                           child: AuroraBackground(colors: state.auroraColors),
                           builder: (context, size, childWidget) {
-                            final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                            final double opacity = (1.0 - minimizedProgress).clamp(0.0, 1.0);
+                            final double minimizedProgress =
+                                ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                            final double opacity = (1.0 - minimizedProgress)
+                                .clamp(0.0, 1.0);
                             return Stack(
                               children: [
                                 Positioned(
-                                  top: -(MediaQuery.of(context).size.height * (1.0 - size)),
+                                  top:
+                                      -(MediaQuery.of(context).size.height *
+                                          (1.0 - size)),
                                   left: 0,
                                   right: 0,
                                   height: MediaQuery.of(context).size.height,
@@ -208,7 +253,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                   child: Opacity(
                                     opacity: opacity,
                                     child: Container(
-                                      color: Colors.white.withValues(alpha: 0.08),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -216,7 +263,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                             );
                           },
                         ),
-                        
+
                         Column(
                           children: [
                             SizedBox(
@@ -240,22 +287,35 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                 slivers: [
                                   SliverToBoxAdapter(
                                     child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
+                                      padding: const EdgeInsets.fromLTRB(
+                                        15,
+                                        0,
+                                        15,
+                                        0,
+                                      ),
                                       child: Column(
                                         children: [
                                           const SizedBox(height: 12),
-                                          
+
                                           _buildVisibilityPill(mockEvent),
                                           const SizedBox(height: 16),
-                                          
+
                                           ShaderMask(
-                                            shaderCallback: (bounds) => ui.Gradient.linear(
-                                              Offset.zero,
-                                              Offset(bounds.width, 0),
-                                              [Colors.white, Colors.white.withValues(alpha: 0.7)],
-                                            ),
+                                            shaderCallback: (bounds) =>
+                                                ui.Gradient.linear(
+                                                  Offset.zero,
+                                                  Offset(bounds.width, 0),
+                                                  [
+                                                    Colors.white,
+                                                    Colors.white.withValues(
+                                                      alpha: 0.7,
+                                                    ),
+                                                  ],
+                                                ),
                                             child: Text(
-                                              state.title.isEmpty ? 'Untitled Event' : state.title,
+                                              state.title.isEmpty
+                                                  ? 'Untitled Event'
+                                                  : state.title,
                                               textAlign: TextAlign.center,
                                               style: const TextStyle(
                                                 color: Colors.white,
@@ -267,19 +327,27 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                             ),
                                           ),
                                           const SizedBox(height: 25),
-                                          
+
                                           ValueListenableBuilder<double>(
                                             valueListenable: _sheetSize,
                                             builder: (context, size, child) {
-                                              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                                              final double minimizedProgress =
+                                                  ((0.55 - size) /
+                                                          (0.55 - 0.28))
+                                                      .clamp(0.0, 1.0);
                                               return Column(
                                                 children: [
                                                   _buildDateRow(state),
-                                                  if (state.location != null) ...[
+                                                  if (state.location !=
+                                                      null) ...[
                                                     const SizedBox(height: 10),
                                                     Opacity(
-                                                      opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                                      child: _buildLocationRow(state),
+                                                      opacity:
+                                                          (1.0 - minimizedProgress)
+                                                              .clamp(0.0, 1.0),
+                                                      child: _buildLocationRow(
+                                                        state,
+                                                      ),
                                                     ),
                                                   ],
                                                   const SizedBox(height: 25),
@@ -295,26 +363,43 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                     child: ValueListenableBuilder<double>(
                                       valueListenable: _sheetSize,
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 15,
+                                        ),
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            if (state.description.isNotEmpty || state.tags.isNotEmpty || state.extras.isNotEmpty) ...[
+                                            if (state.description.isNotEmpty ||
+                                                state.tags.isNotEmpty ||
+                                                state.extras.isNotEmpty) ...[
                                               _buildDescriptionCard(state),
                                               const SizedBox(height: 16),
                                             ],
                                             GestureDetector(
                                               behavior: HitTestBehavior.opaque,
                                               onTap: () {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text('This is a preview. Guest list is disabled.')),
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'This is a preview. Guest list is disabled.',
+                                                    ),
+                                                  ),
                                                 );
                                               },
                                               child: GuestListCard(
                                                 event: mockEvent,
                                                 onInvitePressed: () {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(content: Text('This is a preview. Share action is disabled.')),
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'This is a preview. Share action is disabled.',
+                                                      ),
+                                                    ),
                                                   );
                                                 },
                                               ),
@@ -328,7 +413,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                               const SizedBox(height: 16),
                                               EventWeatherCard(
                                                 location: state.location,
-                                                startDate: state.timing.startDate,
+                                                startDate:
+                                                    state.timing.startDate,
                                               ),
                                               const SizedBox(height: 16),
                                               _buildMapCard(mockEvent),
@@ -338,7 +424,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                                         ),
                                       ),
                                       builder: (context, size, childWidget) {
-                                        if (size < 0.4) return const SizedBox.shrink();
+                                        if (size < 0.4)
+                                          return const SizedBox.shrink();
                                         return childWidget!;
                                       },
                                     ),
@@ -407,7 +494,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           ValueListenableBuilder<double>(
             valueListenable: _sheetSize,
             builder: (context, size, child) {
-              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+              final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28))
+                  .clamp(0.0, 1.0);
               return Positioned(
                 bottom: 0,
                 left: 0,
@@ -442,7 +530,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             child: ValueListenableBuilder<double>(
               valueListenable: _sheetSize,
               builder: (context, size, child) {
-                final double opacity = ((size - 0.28) / (0.45 - 0.28)).clamp(0.0, 1.0);
+                final double opacity = ((size - 0.28) / (0.45 - 0.28)).clamp(
+                  0.0,
+                  1.0,
+                );
 
                 if (opacity <= 0) return const SizedBox.shrink();
 
@@ -459,7 +550,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
         ],
       ),
     );
-
   }
 
   Widget _buildDateRow(CreateEventState state) {
@@ -479,7 +569,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     if (end != null) {
       String endStr = '';
       // If same day, only show time
-      if (start.year == end.year && start.month == end.month && start.day == end.day) {
+      if (start.year == end.year &&
+          start.month == end.month &&
+          start.day == end.day) {
         if (!endTbd) {
           endStr = DateFormat('ha').format(end).toLowerCase();
         }
@@ -542,7 +634,6 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       ],
     );
   }
-
 
   Widget _buildTagsSection(CreateEventState state) {
     final tags = state.tags;
@@ -609,99 +700,116 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasTags) ...[
-                  _buildTagsSection(state),
-                  const SizedBox(height: 25),
-                  _buildSeparator(),
-                  const SizedBox(height: 25),
-                ],
-                
-                _buildLogisticsSection(state),
-                
-                if (hasExtras) ...[
-                  const SizedBox(height: 25),
-                  ...(() {
-                    final sortedExtras = [...state.extras]..sort((a, b) {
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasTags) ...[
+                _buildTagsSection(state),
+                const SizedBox(height: 25),
+                _buildSeparator(),
+                const SizedBox(height: 25),
+              ],
+
+              _buildLogisticsSection(state),
+
+              if (hasExtras) ...[
+                const SizedBox(height: 25),
+                ...(() {
+                  final sortedExtras = [...state.extras]
+                    ..sort((a, b) {
                       final aIsLink = a.url != null && a.url!.isNotEmpty;
                       final bIsLink = b.url != null && b.url!.isNotEmpty;
                       if (aIsLink && !bIsLink) return -1;
                       if (!aIsLink && bIsLink) return 1;
                       return 0;
                     });
-                    
-                    return List.generate(sortedExtras.length, (index) {
-                      final extra = sortedExtras[index];
-                      final bool isLink = extra.url != null && extra.url!.isNotEmpty;
-                      final Color textColor = isLink ? _getBestExtraColor(state.auroraColors) : Colors.white;
-                      final bool isLast = index == sortedExtras.length - 1;
 
-                      return Column(
-                        children: [
-                          GestureDetector(
-                            onTap: isLink ? () async {
-                              final url = extra.url!.trim();
-                              final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
-                              try {
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri, mode: LaunchMode.platformDefault);
+                  return List.generate(sortedExtras.length, (index) {
+                    final extra = sortedExtras[index];
+                    final bool isLink =
+                        extra.url != null && extra.url!.isNotEmpty;
+                    final Color textColor = isLink
+                        ? _getBestExtraColor(state.auroraColors)
+                        : Colors.white;
+                    final bool isLast = index == sortedExtras.length - 1;
+
+                    return Column(
+                      children: [
+                        GestureDetector(
+                          onTap: isLink
+                              ? () async {
+                                  final url = extra.url!.trim();
+                                  final uri = Uri.parse(
+                                    url.startsWith('http')
+                                        ? url
+                                        : 'https://$url',
+                                  );
+                                  try {
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(
+                                        uri,
+                                        mode: LaunchMode.platformDefault,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    debugPrint('Error launching $uri: $e');
+                                  }
                                 }
-                              } catch (e) {
-                                debugPrint('Error launching $uri: $e');
-                              }
-                            } : null,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  isLink ? Icons.link : extra.type.icon,
-                                  color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    extra.displayText,
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 14,
-                                      fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
-                                    ),
+                              : null,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Icon(
+                                isLink ? Icons.link : extra.type.icon,
+                                color: isLink
+                                    ? textColor
+                                    : Colors.white.withValues(alpha: 0.6),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  extra.displayText,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14,
+                                    fontWeight: isLink
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
                                   ),
                                 ),
-                                if (isLink) ...[
-                                  const SizedBox(width: 4),
-                                  Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
-                                ],
+                              ),
+                              if (isLink) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: textColor.withValues(alpha: 0.4),
+                                  size: 16,
+                                ),
                               ],
-                            ),
+                            ],
                           ),
-                          if (!isLast) const SizedBox(height: 25),
-                        ],
-                      );
-                    });
-                  })(),
-                ],
-
-                if (hasDesc) ...[
-                  const SizedBox(height: 25),
-                  _buildSeparator(),
-                  const SizedBox(height: 25),
-                  _buildExpandableDescription(state),
-                ],
+                        ),
+                        if (!isLast) const SizedBox(height: 25),
+                      ],
+                    );
+                  });
+                })(),
               ],
-            ),
+
+              if (hasDesc) ...[
+                const SizedBox(height: 25),
+                _buildSeparator(),
+                const SizedBox(height: 25),
+                _buildExpandableDescription(state),
+              ],
+            ],
           ),
         ),
+      ),
     );
   }
-
-
-
-
 
   Widget _buildExpandableDescription(CreateEventState state) {
     final String text = state.description;
@@ -722,7 +830,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
             return GestureDetector(
               onTap: needsExpansion
-                  ? () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded)
+                  ? () => setState(
+                      () => _isDescriptionExpanded = !_isDescriptionExpanded,
+                    )
                   : null,
               behavior: HitTestBehavior.opaque,
               child: Column(
@@ -736,12 +846,17 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                         ? ShaderMask(
                             shaderCallback: (bounds) {
                               if (isExpanded) {
-                                return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
+                                return const LinearGradient(
+                                  colors: [Colors.white, Colors.white],
+                                ).createShader(bounds);
                               }
                               return LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                                colors: [
+                                  Colors.white,
+                                  Colors.white.withValues(alpha: 0),
+                                ],
                                 stops: const [0.7, 1.0],
                               ).createShader(bounds);
                             },
@@ -794,7 +909,8 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
         if (state.audience.rsvpDeadline != null) ...[
           _buildLogisticsRow(
             icon: Icons.hourglass_bottom_rounded,
-            text: 'RSVP by ${DateFormat('d MMMM yyyy').format(state.audience.rsvpDeadline!)}',
+            text:
+                'RSVP by ${DateFormat('d MMMM yyyy').format(state.audience.rsvpDeadline!)}',
           ),
           const SizedBox(height: 25),
         ],
@@ -811,24 +927,28 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
         // Plus Ones
         _buildLogisticsRow(
           icon: Icons.person_add_rounded,
-          text: state.audience.maxPlusOnes > 0 ? '+${state.audience.maxPlusOnes} guests allowed' : 'No plus ones allowed',
+          text: state.audience.maxPlusOnes > 0
+              ? '+${state.audience.maxPlusOnes} guests allowed'
+              : 'No plus ones allowed',
         ),
       ],
     );
   }
 
-  Widget _buildLogisticsRow({IconData? icon, Widget? customIcon, required String text}) {
+  Widget _buildLogisticsRow({
+    IconData? icon,
+    Widget? customIcon,
+    required String text,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         SizedBox(
           width: 18,
           height: 18,
-          child: customIcon ?? Icon(
-            icon,
-            color: Colors.white.withValues(alpha: 0.6),
-            size: 18,
-          ),
+          child:
+              customIcon ??
+              Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 18),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -853,11 +973,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     final List<String> lines = displayStr.split('\n');
     final List<InlineSpan> lineSpans = [];
 
-    const baseStyle = TextStyle(
-      color: Colors.white,
-      fontSize: 14,
-      height: 1.5,
-    );
+    const baseStyle = TextStyle(color: Colors.white, fontSize: 14, height: 1.5);
 
     // Matches inline bold (*bold*) and inline heading (!heading!)
     final pattern = RegExp(
@@ -884,39 +1000,42 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
       for (final match in pattern.allMatches(lineText)) {
         if (match.start > lastMatchEnd) {
-          lineChildren.add(TextSpan(
-            text: lineText.substring(lastMatchEnd, match.start),
-            style: baseStyle,
-          ));
+          lineChildren.add(
+            TextSpan(
+              text: lineText.substring(lastMatchEnd, match.start),
+              style: baseStyle,
+            ),
+          );
         }
 
         final matchText = match.group(0)!;
 
         if (matchText.startsWith('*')) {
-          lineChildren.add(TextSpan(
-            text: matchText.substring(1, matchText.length - 1),
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.bold,
+          lineChildren.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: baseStyle.copyWith(fontWeight: FontWeight.bold),
             ),
-          ));
+          );
         } else if (matchText.startsWith('!')) {
-          lineChildren.add(TextSpan(
-            text: matchText.substring(1, matchText.length - 1),
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.w900,
-              fontSize: 16.0,
+          lineChildren.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: baseStyle.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 16.0,
+              ),
             ),
-          ));
+          );
         }
 
         lastMatchEnd = match.end;
       }
 
       if (lastMatchEnd < lineText.length) {
-        lineChildren.add(TextSpan(
-          text: lineText.substring(lastMatchEnd),
-          style: baseStyle,
-        ));
+        lineChildren.add(
+          TextSpan(text: lineText.substring(lastMatchEnd), style: baseStyle),
+        );
       }
 
       lineSpans.add(TextSpan(children: lineChildren));
@@ -929,25 +1048,21 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     return TextSpan(children: lineSpans);
   }
 
-
-
-
   Widget _buildMapCard(Event event) {
     if (event.location == null) return const SizedBox.shrink();
     final themeColor = event.visuals.auroraColors.isNotEmpty
         ? _parseHexColor(event.visuals.auroraColors[0])
         : const Color(0xFFAD83FE);
 
-    return EventMapCard(
-      event: event,
-      themeColor: themeColor,
-    );
+    return EventMapCard(event: event, themeColor: themeColor);
   }
 
   Widget _buildRSVPActionBar(CreateEventState state) {
     final allowMaybe = state.audience.allowMaybe;
-    final colors = state.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-    
+    final colors = state.visuals.auroraColors
+        .map((c) => _parseHexColor(c))
+        .toList();
+
     List<Color> gradientColors;
     if (colors.length >= 2) {
       gradientColors = [colors[0], colors[1]];
@@ -959,7 +1074,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
 
     final double barHeight = 75;
     final double borderRadiusVal = 37.5;
-    
+
     return Container(
       height: barHeight,
       decoration: BoxDecoration(
@@ -981,7 +1096,11 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
           ? GestureDetector(
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('This is a preview. RSVP actions are disabled.')),
+                  const SnackBar(
+                    content: Text(
+                      'This is a preview. RSVP actions are disabled.',
+                    ),
+                  ),
                 );
               },
               behavior: HitTestBehavior.opaque,
@@ -1035,7 +1154,9 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       child: GestureDetector(
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('This is a preview. RSVP actions are disabled.')),
+            const SnackBar(
+              content: Text('This is a preview. RSVP actions are disabled.'),
+            ),
           );
         },
         behavior: HitTestBehavior.opaque,
@@ -1046,11 +1167,7 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 24,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
+              Icon(icon, size: 24, color: Colors.white.withValues(alpha: 0.9)),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -1071,10 +1188,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
   String _getTimeStatusText(Event event) {
     if (event.metadata.status == EventStatus.cancelled) return 'Cancelled';
     if (event.timing.isPast) return 'Ended';
-    
+
     final now = DateTime.now();
     if (event.timing.isOngoing) return 'Live now';
-    
+
     final start = event.timing.startDate;
     if (start != null && event.timing.isUpcoming) {
       final diff = start.difference(now);
@@ -1096,12 +1213,13 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     final timeStatus = _getTimeStatusText(event);
     final status = event.computedStatus;
     final isLive = status == EventStatus.active && event.timing.isOngoing;
-    
+
     String text = visibility.title;
-    if (visibility == EventVisibility.public || visibility == EventVisibility.private) {
+    if (visibility == EventVisibility.public ||
+        visibility == EventVisibility.private) {
       text += ' event';
     }
-    
+
     if (timeStatus.isNotEmpty) {
       text += ' • $timeStatus';
     }
@@ -1116,10 +1234,14 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
+            color: isSpecial
+                ? accentColor.withValues(alpha: 0.1)
+                : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
+              color: isSpecial
+                  ? accentColor.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.08),
               width: 0.5,
             ),
           ),
@@ -1130,14 +1252,20 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                 width: 16,
                 height: 16,
                 child: FittedBox(
-                  child: Icon(visibility.filledIconData, color: isSpecial ? accentColor : Colors.white, size: 28),
+                  child: Icon(
+                    visibility.filledIconData,
+                    color: isSpecial ? accentColor : Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
-                  color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
+                  color: isSpecial
+                      ? accentColor
+                      : Colors.white.withValues(alpha: 0.9),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
@@ -1212,7 +1340,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
     }
   }
 
-  Event _getMockEvent(CreateEventState state, Map<String, dynamic>? userProfile) {
+  Event _getMockEvent(
+    CreateEventState state,
+    Map<String, dynamic>? userProfile,
+  ) {
     return Event(
       id: 'preview',
       title: state.title.isEmpty ? 'Untitled Event' : state.title,
@@ -1220,7 +1351,12 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
       tags: state.tags,
       visuals: EventVisuals(
         aspectRatio: state.visuals.aspectRatio,
-        auroraColors: state.auroraColors.map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}').toList(),
+        auroraColors: state.auroraColors
+            .map(
+              (c) =>
+                  '#${c.toARGB32().toRadixString(16).padLeft(8, '0').substring(2)}',
+            )
+            .toList(),
         posterUrl: state.visuals.posterUrl ?? state.defaultPosterUrl,
       ),
       timing: state.timing,
@@ -1236,9 +1372,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
         updatedAt: DateTime.now(),
         status: EventStatus.active,
       ),
-      coHostIds: state.coHosts.map((e) => e['uid'] as String? ?? '').where((id) => id.isNotEmpty).toList(),
+      coHostIds: state.coHosts
+          .map((e) => e['uid'] as String? ?? '')
+          .where((id) => id.isNotEmpty)
+          .toList(),
     );
   }
-
 }
-

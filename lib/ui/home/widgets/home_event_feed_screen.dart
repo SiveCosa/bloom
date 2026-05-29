@@ -42,10 +42,7 @@ class HomeEventFeedScreen extends ConsumerWidget {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -124,9 +121,7 @@ class HomeEventFeedScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFF04A9F),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFFF04A9F)),
               ),
               error: (err, stack) => Center(
                 child: Padding(

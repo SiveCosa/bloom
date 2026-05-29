@@ -25,9 +25,7 @@ class NavigationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: const BoxDecoration(
-            color: Colors.transparent,
-          ),
+          decoration: const BoxDecoration(color: Colors.transparent),
           child: Row(
             children: [
               CircleAvatar(

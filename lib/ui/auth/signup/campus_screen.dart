@@ -15,7 +15,6 @@ class CampusScreen extends ConsumerStatefulWidget {
 }
 
 class _CampusScreenState extends ConsumerState<CampusScreen> {
-
   static final Color _kBorderColor = Colors.white.withValues(alpha: 0.50);
 
   bool _hasError = false;
@@ -33,9 +32,7 @@ class _CampusScreenState extends ConsumerState<CampusScreen> {
       ),
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),

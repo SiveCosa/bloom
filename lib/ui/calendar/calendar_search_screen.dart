@@ -14,7 +14,8 @@ class CalendarSearchScreen extends ConsumerStatefulWidget {
   const CalendarSearchScreen({super.key});
 
   @override
-  ConsumerState<CalendarSearchScreen> createState() => _CalendarSearchScreenState();
+  ConsumerState<CalendarSearchScreen> createState() =>
+      _CalendarSearchScreenState();
 }
 
 class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
@@ -56,10 +57,7 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -69,7 +67,11 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
               centerTitle: true,
               leadingWidth: 48,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => context.pop(),
               ),
               title: const Text(
@@ -109,7 +111,9 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
                 Expanded(
                   child: scheduleAsync.when(
                     loading: () => const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF0086D8)),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF0086D8),
+                      ),
                     ),
                     error: (error, _) => Center(
                       child: Padding(
@@ -204,7 +208,8 @@ class _CalendarSearchScreenState extends ConsumerState<CalendarSearchScreen> {
                         itemCount: results.length,
                         itemBuilder: (context, index) {
                           final event = results[index];
-                          final isHost = currentUserId != null &&
+                          final isHost =
+                              currentUserId != null &&
                               (currentUserId == event.hostId ||
                                   event.coHostIds.contains(currentUserId));
 

@@ -54,7 +54,9 @@ class GradientTopBar extends StatelessWidget {
       children: [
         Align(
           alignment: Alignment.topCenter,
-          child: showDarkGradient ? _buildBlurredGradient() : _buildColorGradient(),
+          child: showDarkGradient
+              ? _buildBlurredGradient()
+              : _buildColorGradient(),
         ),
         if (showDarkOverlay)
           Align(

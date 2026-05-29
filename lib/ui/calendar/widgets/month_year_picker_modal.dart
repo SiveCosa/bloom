@@ -20,8 +20,18 @@ class _MonthYearPickerModalState extends State<MonthYearPickerModal> {
   late int _selectedYear;
 
   final List<String> _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ];
 
   late List<String> _years;
@@ -31,7 +41,7 @@ class _MonthYearPickerModalState extends State<MonthYearPickerModal> {
     super.initState();
     _selectedMonth = widget.initialDate.month;
     _selectedYear = widget.initialDate.year;
-    
+
     // Generate years from 5 years ago to 10 years in the future
     final currentYear = DateTime.now().year;
     _years = List.generate(20, (i) => (currentYear - 5 + i).toString());

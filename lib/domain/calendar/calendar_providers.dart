@@ -13,9 +13,11 @@ class SelectedDateNotifier extends Notifier<DateTime> {
   void updateDate(DateTime date) => state = date;
 }
 
-final selectedDateProvider = NotifierProvider<SelectedDateNotifier, DateTime>(() {
-  return SelectedDateNotifier();
-});
+final selectedDateProvider = NotifierProvider<SelectedDateNotifier, DateTime>(
+  () {
+    return SelectedDateNotifier();
+  },
+);
 
 class CalendarFormatNotifier extends Notifier<CalendarFormat> {
   @override
@@ -24,9 +26,10 @@ class CalendarFormatNotifier extends Notifier<CalendarFormat> {
   void updateFormat(CalendarFormat format) => state = format;
 }
 
-final calendarFormatProvider = NotifierProvider<CalendarFormatNotifier, CalendarFormat>(() {
-  return CalendarFormatNotifier();
-});
+final calendarFormatProvider =
+    NotifierProvider<CalendarFormatNotifier, CalendarFormat>(() {
+      return CalendarFormatNotifier();
+    });
 
 class CalendarFilterNotifier extends Notifier<Set<CalendarFilterCategory>> {
   @override
@@ -44,8 +47,8 @@ class CalendarFilterNotifier extends Notifier<Set<CalendarFilterCategory>> {
 
 final calendarFilterProvider =
     NotifierProvider<CalendarFilterNotifier, Set<CalendarFilterCategory>>(
-  CalendarFilterNotifier.new,
-);
+      CalendarFilterNotifier.new,
+    );
 
 final scheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
@@ -53,11 +56,15 @@ final scheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
 
   final repository = ref.watch(eventRepositoryProvider);
   return repository.getScheduleStream(user.uid).map((list) {
-    return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
+    return list
+        .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+        .toList();
   });
 });
 
-final filteredScheduleProvider = Provider<AsyncValue<List<ScheduledEvent>>>((ref) {
+final filteredScheduleProvider = Provider<AsyncValue<List<ScheduledEvent>>>((
+  ref,
+) {
   final scheduleAsync = ref.watch(scheduleStreamProvider);
   final selectedFilters = ref.watch(calendarFilterProvider);
   final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
@@ -75,21 +82,27 @@ final filteredScheduleProvider = Provider<AsyncValue<List<ScheduledEvent>>>((ref
   );
 });
 
-final publicScheduleStreamProvider =
-    StreamProvider.autoDispose.family<List<ScheduledEvent>, String>((ref, profileUserId) {
-  if (profileUserId.trim().isEmpty) return Stream.value([]);
-  final repository = ref.watch(eventRepositoryProvider);
-  return repository.getScheduleStream(profileUserId).map((list) {
-    return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
-  });
-});
+final publicScheduleStreamProvider = StreamProvider.autoDispose
+    .family<List<ScheduledEvent>, String>((ref, profileUserId) {
+      if (profileUserId.trim().isEmpty) return Stream.value([]);
+      final repository = ref.watch(eventRepositoryProvider);
+      return repository.getScheduleStream(profileUserId).map((list) {
+        return list
+            .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+            .toList();
+      });
+    });
 
-final upcomingScheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((ref) {
+final upcomingScheduleStreamProvider = StreamProvider<List<ScheduledEvent>>((
+  ref,
+) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
   if (user == null) return Stream.value([]);
 
   final repository = ref.watch(eventRepositoryProvider);
   return repository.getUpcomingScheduleStream(user.uid).map((list) {
-    return list.map((data) => ScheduledEvent.fromMap(data, data['id'] as String)).toList();
+    return list
+        .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+        .toList();
   });
 });

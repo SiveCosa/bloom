@@ -135,22 +135,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       if (_scrollController.offset > 0) {
         _scrollController
             .animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-        )
+              0.0,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+            )
             .then((_) {
-          _triggerRefresh();
-        });
+              _triggerRefresh();
+            });
       } else {
         _triggerRefresh();
       }
     }
   }
 
-  double _getIndicatorTop(double topPadding, double maskHeight, double dragOffset, bool isRefreshing) {
+  double _getIndicatorTop(
+    double topPadding,
+    double maskHeight,
+    double dragOffset,
+    bool isRefreshing,
+  ) {
     const double indicatorHeight = 42.0;
-    final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
+    final double hiddenPosition =
+        topPadding + maskHeight - indicatorHeight - 10.0;
 
     if (isRefreshing) {
       return topPadding + maskHeight + 16.0;
@@ -174,14 +180,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
         final double pullProgress = (dragOffset / 90.0).clamp(0.0, 1.0);
 
-        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, dragOffset, isRefreshing);
+        final double indicatorTop = _getIndicatorTop(
+          topPadding,
+          maskHeight,
+          dragOffset,
+          isRefreshing,
+        );
         final double opacity = isRefreshing ? 1.0 : pullProgress;
         final double scale = isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
 
         const Color iconColor = Colors.white;
 
         return AnimatedPositioned(
-          duration: isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
+          duration: isRefreshing
+              ? const Duration(milliseconds: 200)
+              : Duration.zero,
           curve: Curves.easeOutCubic,
           top: indicatorTop,
           left: 0,
@@ -268,7 +281,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.only(
                 top: topPadding + maskHeight + 20,
-                bottom: 56 + bottomPadding + 32, // Nav bar height (56) + bottom safe area + premium breathing room
+                bottom:
+                    56 +
+                    bottomPadding +
+                    32, // Nav bar height (56) + bottom safe area + premium breathing room
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,7 +310,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     iconAsset: 'assets/icons/home/area_icon.svg',
                     detailRoute: '/home/in-your-area',
                     rawFeedProvider: eventsInAreaRawFeedProvider,
-                    scheduledEventsProvider: eventsInAreaScheduledEventsProvider,
+                    scheduledEventsProvider:
+                        eventsInAreaScheduledEventsProvider,
                     errorPrefix: 'Error loading In your Area feed',
                   ),
                   const SizedBox(height: 24),
@@ -305,7 +322,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     iconAsset: 'assets/icons/home/FriAndMut_icon.svg',
                     detailRoute: '/home/friends-and-mutuals',
                     rawFeedProvider: friendsAndMutualsRawFeedProvider,
-                    scheduledEventsProvider: friendsAndMutualsScheduledEventsProvider,
+                    scheduledEventsProvider:
+                        friendsAndMutualsScheduledEventsProvider,
                     errorPrefix: 'Error loading Friends & Mutuals feed',
                   ),
                   const SizedBox(height: 24),
@@ -393,10 +411,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           // Right: Notifications
           Consumer(
             builder: (context, ref, _) {
-              final unreadCount = ref.watch(unreadNotificationsCountProvider).maybeWhen(
-                data: (v) => v,
-                orElse: () => 0,
-              );
+              final unreadCount = ref
+                  .watch(unreadNotificationsCountProvider)
+                  .maybeWhen(data: (v) => v, orElse: () => 0);
               return GestureDetector(
                 onTap: () => context.push('/notifications'),
                 behavior: HitTestBehavior.opaque,
@@ -404,7 +421,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   padding: const EdgeInsets.all(12.0),
                   child: Badge(
                     isLabelVisible: unreadCount > 0,
-                    backgroundColor: const Color(0xFF0086D8), // Blue circle for notifications
+                    backgroundColor: const Color(
+                      0xFF0086D8,
+                    ), // Blue circle for notifications
                     smallSize: 10,
                     child: SvgPicture.asset(
                       'assets/icons/nav/bell_line.svg',
@@ -447,7 +466,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             onTap: () {
               ref.read(homeScheduleFilterProvider.notifier).setFilter(filter);
             },
-             child: Container(
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: isActive ? 0.30 : 0.08),
@@ -481,7 +500,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
     );
   }
-
 }
 
 class HomeFeedCarouselSection extends ConsumerWidget {
@@ -537,10 +555,7 @@ class HomeFeedCarouselSection extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white60, fontSize: 14),
                   ),
                 ],
               ),
@@ -607,7 +622,8 @@ class HomeFeedCarouselSection extends ConsumerWidget {
                   physics: const BouncingScrollPhysics(),
                   addRepaintBoundaries: false,
                   itemCount: events.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     return EventCardLarge(
                       event: events[index],

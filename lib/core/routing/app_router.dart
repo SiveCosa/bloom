@@ -47,8 +47,6 @@ import '../../ui/discover/category_events_screen.dart';
 import '../../ui/discover/friends_and_mutuals_screen.dart';
 import '../../ui/calendar/calendar_search_screen.dart';
 
-
-
 // No longer using PlaceholderScreen
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -228,7 +226,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final username = state.extra as String?;
               return NoTransitionPage(
                 key: state.pageKey,
-                child: EventsHostedScreen(targetUserId: userId, targetUsername: username),
+                child: EventsHostedScreen(
+                  targetUserId: userId,
+                  targetUsername: username,
+                ),
               );
             },
           ),
@@ -239,7 +240,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final username = state.extra as String?;
               return NoTransitionPage(
                 key: state.pageKey,
-                child: EventsJoinedScreen(targetUserId: userId, targetUsername: username),
+                child: EventsJoinedScreen(
+                  targetUserId: userId,
+                  targetUsername: username,
+                ),
               );
             },
           ),
@@ -250,7 +254,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               final username = state.extra as String?;
               return NoTransitionPage(
                 key: state.pageKey,
-                child: FriendsMadeScreen(targetUserId: userId, targetUsername: username),
+                child: FriendsMadeScreen(
+                  targetUserId: userId,
+                  targetUsername: username,
+                ),
               );
             },
           ),
@@ -279,9 +286,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: EventInvitationScreen(eventId: eventId),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return child;
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return child;
+                },
           );
         },
         routes: [
@@ -292,12 +300,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               final initialTab = state.uri.queryParameters['tab'];
               return CustomTransitionPage(
                 key: state.pageKey,
-                child: EventGuestListScreen(eventId: eventId, initialTab: initialTab),
+                child: EventGuestListScreen(
+                  eventId: eventId,
+                  initialTab: initialTab,
+                ),
                 transitionDuration: Duration.zero,
                 reverseTransitionDuration: Duration.zero,
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return child;
-                },
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return child;
+                    },
               );
             },
           ),
@@ -310,7 +322,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const ForYouScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
         ),
       ),
       GoRoute(
@@ -320,7 +333,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const InYourAreaScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
         ),
       ),
       GoRoute(
@@ -330,7 +344,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const FriendsAndMutualsScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
         ),
       ),
 
@@ -359,7 +374,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const MessagesListScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
         ),
         routes: [
           GoRoute(
@@ -398,7 +414,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const NotificationsScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              child,
         ),
         routes: [
           GoRoute(

@@ -20,10 +20,7 @@ class MessagesListScreen extends ConsumerWidget {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(

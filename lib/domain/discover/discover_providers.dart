@@ -363,43 +363,23 @@ final discoverWeekendForecastEventsProvider = Provider<List<Event>>((ref) {
 });
 
 final discoverMusicEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(
-    ref,
-    (r) => r.music,
-    fallbackCategory: 'Music',
-  );
+  return _carouselFromCache(ref, (r) => r.music, fallbackCategory: 'Music');
 });
 
 final discoverFilmEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(
-    ref,
-    (r) => r.film,
-    fallbackCategory: 'Film',
-  );
+  return _carouselFromCache(ref, (r) => r.film, fallbackCategory: 'Film');
 });
 
 final discoverArtsEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(
-    ref,
-    (r) => r.arts,
-    fallbackCategory: 'Arts',
-  );
+  return _carouselFromCache(ref, (r) => r.arts, fallbackCategory: 'Arts');
 });
 
 final discoverFitnessEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(
-    ref,
-    (r) => r.fitness,
-    fallbackCategory: 'Fitness',
-  );
+  return _carouselFromCache(ref, (r) => r.fitness, fallbackCategory: 'Fitness');
 });
 
 final discoverFoodEventsProvider = Provider<List<Event>>((ref) {
-  return _carouselFromCache(
-    ref,
-    (r) => r.food,
-    fallbackCategory: 'Food',
-  );
+  return _carouselFromCache(ref, (r) => r.food, fallbackCategory: 'Food');
 });
 
 final discoverCommunityEventsProvider = Provider<List<Event>>((ref) {
@@ -476,7 +456,7 @@ final discoverVerticalFeedProvider = Provider<List<Event>>((ref) {
             allCards[card.id] = card;
           }
         }
-        
+
         final filteredCards = advancedFilter.apply(allCards.values.toList());
         return _cardsToEvents(filteredCards);
       }

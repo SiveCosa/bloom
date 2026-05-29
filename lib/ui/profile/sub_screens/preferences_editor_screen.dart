@@ -148,15 +148,23 @@ class _PreferencesEditorScreenState
                             ...categories.map((category) {
                               final filteredTags = query.isEmpty
                                   ? category.tags
-                                  : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
-                                  
-                              if (filteredTags.isEmpty) return const SizedBox.shrink();
+                                  : category.tags
+                                        .where(
+                                          (i) =>
+                                              i.toLowerCase().contains(query),
+                                        )
+                                        .toList();
+
+                              if (filteredTags.isEmpty)
+                                return const SizedBox.shrink();
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
                                     child: Text(
                                       category.name,
                                       style: const TextStyle(
@@ -170,11 +178,14 @@ class _PreferencesEditorScreenState
                                     spacing: 8.0,
                                     runSpacing: 12.0,
                                     children: filteredTags.map((interest) {
-                                      final isActive = _selectedInterests.contains(interest);
+                                      final isActive = _selectedInterests
+                                          .contains(interest);
                                       return GestureDetector(
                                         onTap: () => _toggleInterest(interest),
                                         child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 8,
                                             horizontal: 12,
@@ -182,10 +193,16 @@ class _PreferencesEditorScreenState
                                           decoration: BoxDecoration(
                                             color: isActive
                                                 ? Colors.white
-                                                : Colors.white.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(_kRadius),
+                                                : Colors.white.withValues(
+                                                    alpha: 0.15,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                              _kRadius,
+                                            ),
                                             border: Border.all(
-                                              color: isActive ? Colors.white : _kBorderColor,
+                                              color: isActive
+                                                  ? Colors.white
+                                                  : _kBorderColor,
                                             ),
                                           ),
                                           child: Row(
@@ -194,7 +211,9 @@ class _PreferencesEditorScreenState
                                               Text(
                                                 interest,
                                                 style: TextStyle(
-                                                  color: isActive ? Colors.black : Colors.white,
+                                                  color: isActive
+                                                      ? Colors.black
+                                                      : Colors.white,
                                                   fontWeight: isActive
                                                       ? FontWeight.bold
                                                       : FontWeight.normal,
@@ -251,7 +270,11 @@ class _PreferencesEditorScreenState
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 8),
           const Text(

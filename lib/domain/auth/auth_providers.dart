@@ -83,7 +83,7 @@ final userProfileStreamProvider =
         yield null;
         return;
       }
-      
+
       final db = FirebaseFirestore.instance;
       // Fast path: try exact match first
       final snap = await db.collection('users').doc(uid).get();
@@ -103,7 +103,11 @@ final userProfileStreamProvider =
       }
 
       if (realUid != null) {
-        yield* db.collection('users').doc(realUid).snapshots().map((s) => s.data());
+        yield* db
+            .collection('users')
+            .doc(realUid)
+            .snapshots()
+            .map((s) => s.data());
       } else {
         yield null;
       }
@@ -730,9 +734,10 @@ class EmailOtpController extends AsyncNotifier<void> {
   }
 }
 
-final emailOtpControllerProvider = AsyncNotifierProvider<EmailOtpController, void>(() {
-  return EmailOtpController();
-});
+final emailOtpControllerProvider =
+    AsyncNotifierProvider<EmailOtpController, void>(() {
+      return EmailOtpController();
+    });
 
 // ==========================================
 // ==========================================

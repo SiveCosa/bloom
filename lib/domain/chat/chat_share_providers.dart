@@ -19,8 +19,8 @@ class SelectedEventForChatNotifier extends Notifier<Event?> {
 /// Event staged for sharing in the active chat (cleared after send or dismiss).
 final selectedEventForChatProvider =
     NotifierProvider<SelectedEventForChatNotifier, Event?>(() {
-  return SelectedEventForChatNotifier();
-});
+      return SelectedEventForChatNotifier();
+    });
 
 bool canShareEventInChat(Event event, String uid) {
   if (event.audience.visibility != EventVisibility.private) return true;

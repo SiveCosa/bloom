@@ -29,10 +29,7 @@ void showChatPhotoViewer(
 }
 
 class _ChatPhotoViewerPage extends StatelessWidget {
-  const _ChatPhotoViewerPage({
-    this.networkUrl,
-    this.filePath,
-  });
+  const _ChatPhotoViewerPage({this.networkUrl, this.filePath});
 
   final String? networkUrl;
   final String? filePath;

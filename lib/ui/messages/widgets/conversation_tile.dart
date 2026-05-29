@@ -76,23 +76,28 @@ class ConversationTile extends ConsumerWidget {
     final uid = conversationPeerUid(conversation);
     final profileAsync = ref.watch(userProfileStreamProvider(uid));
 
-    final avatarUrl = profileAsync.maybeWhen(
-      data: (profile) => profile?['profile_image_url']?.toString(),
-      orElse: () => null,
-    ) ?? conversationPeerAvatarUrl(conversation);
+    final avatarUrl =
+        profileAsync.maybeWhen(
+          data: (profile) => profile?['profile_image_url']?.toString(),
+          orElse: () => null,
+        ) ??
+        conversationPeerAvatarUrl(conversation);
 
-    final name = profileAsync.maybeWhen(
-      data: (profile) {
-        final n = profile?['name']?.toString().trim();
-        return (n != null && n.isNotEmpty) ? n : null;
-      },
-      orElse: () => null,
-    ) ?? conversationPeerName(conversation);
+    final name =
+        profileAsync.maybeWhen(
+          data: (profile) {
+            final n = profile?['name']?.toString().trim();
+            return (n != null && n.isNotEmpty) ? n : null;
+          },
+          orElse: () => null,
+        ) ??
+        conversationPeerName(conversation);
 
     final unread = conversation.unreadMessageCount;
     final timestamp = conversationTimestamp(conversation);
-    final timeLabel =
-        timestamp != null ? formatConversationTimestamp(timestamp) : '';
+    final timeLabel = timestamp != null
+        ? formatConversationTimestamp(timestamp)
+        : '';
     final timestampColor = unread > 0 ? _unreadAccent : _previewColor;
 
     return InkWell(

@@ -13,7 +13,7 @@ enum NotificationType {
   waitlistApproved,
   coHostInvite,
   eventNudge,
-  unknown
+  unknown,
 }
 
 class AppNotification {
@@ -21,20 +21,20 @@ class AppNotification {
   final NotificationType type;
   final DateTime createdAt;
   final bool isRead;
-  
+
   // Who triggered the notification (if applicable)
   final String? actorId;
   final String? actorUsername;
   final String? actorAvatarUrl;
-  
+
   // Used for grouped notifications (e.g., "+10 others")
   final int groupedCount;
-  
+
   // Target IDs (e.g., event ID)
   final String? targetId;
   final String? targetName;
   final String? targetImageUrl;
-  
+
   final String? message;
 
   AppNotification({
@@ -54,7 +54,7 @@ class AppNotification {
 
   factory AppNotification.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
-    
+
     NotificationType type;
     final typeStr = data['type'] as String?;
     switch (typeStr) {

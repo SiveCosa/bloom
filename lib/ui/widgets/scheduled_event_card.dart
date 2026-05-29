@@ -17,14 +17,14 @@ class ScheduledEventCard extends ConsumerWidget {
     this.onTap,
   });
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch real-time host profile info
     final hostProfileAsync = ref.watch(userProfileStreamProvider(event.hostId));
 
     final hostImageUrl = hostProfileAsync.when(
-      data: (profile) => profile?['profile_image_url']?.toString() ??
+      data: (profile) =>
+          profile?['profile_image_url']?.toString() ??
           profile?['avatar_url']?.toString() ??
           event.hostImageUrl,
       loading: () => event.hostImageUrl,
@@ -47,112 +47,117 @@ class ScheduledEventCard extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                image: event.posterUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(event.posterUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-                color: Colors.white.withValues(alpha: 0.1),
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  image: event.posterUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(event.posterUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
               ),
-            ),
-            const SizedBox(width: 10), // Preserved 10dp gap
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            height: 1.1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-                      // Host Profile Picture with ripple
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            context.push('/profile/${event.hostId}');
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundImage: hostImageUrl != null
-                                ? NetworkImage(hostImageUrl)
-                                : null,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            child: hostImageUrl == null
-                                ? const Icon(Icons.person,
-                                    size: 14, color: Colors.white70)
-                                : null,
+              const SizedBox(width: 10), // Preserved 10dp gap
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            event.title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10), // Preserved 10dp gap
-                  // Time - Dynamic logic preserved
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month,
-                        size: 14,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 6),
-                      _buildDynamicDateTime(event),
-                    ],
-                  ),
-                  const SizedBox(height: 5), // Preserved 5dp gap
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Colors.white70,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          event.locationName.trim().isEmpty
-                              ? 'Location TBD'
-                              : event.locationName,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
+                        const SizedBox(width: 18),
+                        // Host Profile Picture with ripple
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              context.push('/profile/${event.hostId}');
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: CircleAvatar(
+                              radius: 12,
+                              backgroundImage: hostImageUrl != null
+                                  ? NetworkImage(hostImageUrl)
+                                  : null,
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.1,
+                              ),
+                              child: hostImageUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 14,
+                                      color: Colors.white70,
+                                    )
+                                  : null,
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 10), // Preserved 10dp gap
+                    // Time - Dynamic logic preserved
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_month,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 6),
+                        _buildDynamicDateTime(event),
+                      ],
+                    ),
+                    const SizedBox(height: 5), // Preserved 5dp gap
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            event.locationName.trim().isEmpty
+                                ? 'Location TBD'
+                                : event.locationName,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDynamicDateTime(ScheduledEvent event) {
     if (event.isOngoing) {
@@ -171,10 +176,7 @@ class ScheduledEventCard extends ConsumerWidget {
     if (startTime == null) {
       return const Text(
         'Date TBD',
-        style: TextStyle(
-          color: Colors.white70,
-          fontSize: 13,
-        ),
+        style: TextStyle(color: Colors.white70, fontSize: 13),
       );
     }
 
@@ -195,10 +197,7 @@ class ScheduledEventCard extends ConsumerWidget {
 
     return Text(
       '$datePart • $timePart',
-      style: const TextStyle(
-        color: Colors.white70,
-        fontSize: 13,
-      ),
+      style: const TextStyle(color: Colors.white70, fontSize: 13),
     );
   }
 }

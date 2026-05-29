@@ -223,10 +223,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                         : null,
                   ),
                   child: Center(
-                    child: buildAvatarImage(
-                      source: profileUrl,
-                      radius: 12.5,
-                    ),
+                    child: buildAvatarImage(source: profileUrl, radius: 12.5),
                   ),
                 ),
               ),

@@ -23,7 +23,9 @@ Future<File?> showCameraPickerSheet(BuildContext context) {
               ),
               onTap: () async {
                 final picker = ImagePicker();
-                final picked = await picker.pickImage(source: ImageSource.camera);
+                final picked = await picker.pickImage(
+                  source: ImageSource.camera,
+                );
                 if (!context.mounted) return;
                 Navigator.pop(
                   context,
@@ -39,7 +41,9 @@ Future<File?> showCameraPickerSheet(BuildContext context) {
               ),
               onTap: () async {
                 final picker = ImagePicker();
-                final picked = await picker.pickImage(source: ImageSource.gallery);
+                final picked = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
                 if (!context.mounted) return;
                 Navigator.pop(
                   context,

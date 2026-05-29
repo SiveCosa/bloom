@@ -34,8 +34,12 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
   void initState() {
     super.initState();
     _currentType = widget.initialExtra?.type ?? widget.initialType;
-    _displayController = TextEditingController(text: widget.initialExtra?.displayText ?? '');
-    _linkController = TextEditingController(text: widget.initialExtra?.url ?? '');
+    _displayController = TextEditingController(
+      text: widget.initialExtra?.displayText ?? '',
+    );
+    _linkController = TextEditingController(
+      text: widget.initialExtra?.url ?? '',
+    );
     _displayFocus = FocusNode()..addListener(_onFocusChange);
     _linkFocus = FocusNode()..addListener(_onFocusChange);
   }
@@ -66,12 +70,18 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
       return;
     }
 
-    widget.onSave(EventExtra(
-      id: widget.initialExtra?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      type: _currentType,
-      displayText: displayText.isEmpty ? _currentType.displayHint : displayText,
-      url: linkText.isEmpty ? null : linkText,
-    ));
+    widget.onSave(
+      EventExtra(
+        id:
+            widget.initialExtra?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
+        type: _currentType,
+        displayText: displayText.isEmpty
+            ? _currentType.displayHint
+            : displayText,
+        url: linkText.isEmpty ? null : linkText,
+      ),
+    );
     Navigator.pop(context);
   }
 
@@ -135,16 +145,22 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
-                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.15),
                           width: 1,
                         ),
                       ),
                       child: Icon(
                         type.icon,
-                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.4),
                         size: 20,
                       ),
                     ),
@@ -159,7 +175,9 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              _currentType.isLinkRequired ? 'Link (REQUIRED)' : 'Link (Optional)',
+              _currentType.isLinkRequired
+                  ? 'Link (REQUIRED)'
+                  : 'Link (Optional)',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 14,
@@ -172,9 +190,7 @@ class _ExtraFieldModalState extends State<ExtraFieldModal> {
             controller: _linkController,
             focusNode: _linkFocus,
             hintText: 'https://',
-            inputFormatters: [
-              FilteringTextInputFormatter.deny(RegExp(r'\s')),
-            ],
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
             errorMessage: _errorText,
           ),
           const SizedBox(height: 20),

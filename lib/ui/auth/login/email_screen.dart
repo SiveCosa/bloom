@@ -74,9 +74,7 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15.0),
@@ -168,13 +166,9 @@ class _EmailScreenState extends ConsumerState<EmailScreen> {
                         return;
                       }
                       final domains = domainsAsync.requireValue;
-                      if (!isEmailAllowedForInstitution(
-                        email,
-                        domains,
-                      )) {
+                      if (!isEmailAllowedForInstitution(email, domains)) {
                         setState(() {
-                          _errorMessage =
-                              "Please use your Student Email";
+                          _errorMessage = "Please use your Student Email";
                         });
                         return;
                       }

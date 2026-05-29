@@ -65,5 +65,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'bloom-e98c2.firebasestorage.app',
     iosBundleId: 'com.bloom.bloom',
   );
-
 }

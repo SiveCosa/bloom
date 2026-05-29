@@ -38,22 +38,37 @@ class ScheduledEvent {
   });
 
   factory ScheduledEvent.fromMap(Map<String, dynamic> map, String id) {
-    final start = (map['startTime'] as Timestamp? ?? map['start_time'] as Timestamp?)?.toDate();
-    final location = map['locationName'] as String? ?? map['location_name'] as String? ?? map['subtitle_info'] as String? ?? '';
-    
+    final start =
+        (map['startTime'] as Timestamp? ?? map['start_time'] as Timestamp?)
+            ?.toDate();
+    final location =
+        map['locationName'] as String? ??
+        map['location_name'] as String? ??
+        map['subtitle_info'] as String? ??
+        '';
+
     return ScheduledEvent(
       id: id,
       title: map['title'] as String? ?? '',
       posterUrl: map['posterUrl'] as String? ?? map['poster_url'] as String?,
       startTime: start,
-      endTime: (map['endTime'] as Timestamp? ?? map['end_time'] as Timestamp?)?.toDate() ?? 
-               (start != null ? DateTime(start.year, start.month, start.day, 23, 59, 59) : DateTime.now()),
+      endTime:
+          (map['endTime'] as Timestamp? ?? map['end_time'] as Timestamp?)
+              ?.toDate() ??
+          (start != null
+              ? DateTime(start.year, start.month, start.day, 23, 59, 59)
+              : DateTime.now()),
       hostName: map['hostName'] as String? ?? map['host_name'] as String? ?? '',
       hostId: map['hostId'] as String? ?? map['host_id'] as String? ?? '',
-      hostImageUrl: map['hostImageUrl'] as String? ?? map['host_image_url'] as String?,
-      auroraColors: List<String>.from(map['auroraColors'] ?? map['aurora_colors'] ?? []),
+      hostImageUrl:
+          map['hostImageUrl'] as String? ?? map['host_image_url'] as String?,
+      auroraColors: List<String>.from(
+        map['auroraColors'] ?? map['aurora_colors'] ?? [],
+      ),
       locationName: location,
-      coHostIds: List<String>.from(map['coHostIds'] ?? map['co_host_ids'] ?? []),
+      coHostIds: List<String>.from(
+        map['coHostIds'] ?? map['co_host_ids'] ?? [],
+      ),
       rsvpStatus: map['rsvpStatus'] as String? ?? map['rsvp_status'] as String?,
     );
   }

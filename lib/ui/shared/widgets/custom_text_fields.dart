@@ -36,7 +36,10 @@ class RoundedTextField extends StatelessWidget {
     this.onSubmitted,
     this.height = 48,
     this.borderRadius = 100, // Default to pill shape
-    this.contentPadding = const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+    this.contentPadding = const EdgeInsets.symmetric(
+      horizontal: 16,
+      vertical: 0,
+    ),
     this.showCounter = false,
     this.maxLength,
     this.maxLines = 1,
@@ -89,10 +92,7 @@ class RoundedTextField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
-                borderSide: const BorderSide(
-                  color: Colors.white,
-                  width: 1.5,
-                ),
+                borderSide: const BorderSide(color: Colors.white, width: 1.5),
               ),
             ),
           ),

@@ -100,11 +100,14 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
       }
     }
 
-    return allCards.values.where((card) {
-      final title = card.title.toLowerCase();
-      final hostName = card.hostUsername.toLowerCase();
-      return title.contains(_query) || hostName.contains(_query);
-    }).map((c) => c.toScheduledEvent()).toList();
+    return allCards.values
+        .where((card) {
+          final title = card.title.toLowerCase();
+          final hostName = card.hostUsername.toLowerCase();
+          return title.contains(_query) || hostName.contains(_query);
+        })
+        .map((c) => c.toScheduledEvent())
+        .toList();
   }
 
   @override
@@ -118,10 +121,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -131,7 +131,11 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
               centerTitle: true,
               leadingWidth: 48,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
               title: const Text(
@@ -149,12 +153,19 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 4.0,
+                    ),
                     child: RoundedTextField(
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       hintText: 'Find an event...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
                       onSubmitted: _submitSearch,
                       suffixIcon: query.isNotEmpty
                           ? GestureDetector(
@@ -163,7 +174,11 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                                 _searchFocusNode.unfocus();
                                 setState(() {});
                               },
-                              child: const Icon(Icons.clear, color: Colors.white54, size: 20),
+                              child: const Icon(
+                                Icons.clear,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
                             )
                           : null,
                     ),
@@ -199,11 +214,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.search_rounded,
-                    color: Colors.white24,
-                    size: 48,
-                  ),
+                  Icon(Icons.search_rounded, color: Colors.white24, size: 48),
                   SizedBox(height: 16),
                   Text(
                     'Search Bloom',
@@ -217,10 +228,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                   Text(
                     'Find events, friends, and hosts in your area',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white38, fontSize: 14),
                   ),
                 ],
               ),
@@ -282,9 +290,14 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
     );
   }
 
-  Widget _buildSearchResults(AsyncValue<DiscoverFeedCache?> cacheAsync, String? currentUserId) {
+  Widget _buildSearchResults(
+    AsyncValue<DiscoverFeedCache?> cacheAsync,
+    String? currentUserId,
+  ) {
     return cacheAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF0086D8))),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF0086D8)),
+      ),
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -323,10 +336,7 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
                   Text(
                     "We couldn't find any events matching your search",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.white38, fontSize: 14),
                   ),
                 ],
               ),
@@ -339,7 +349,8 @@ class _DiscoverSearchScreenState extends ConsumerState<DiscoverSearchScreen> {
           itemCount: results.length,
           itemBuilder: (context, index) {
             final event = results[index];
-            final isHost = currentUserId != null &&
+            final isHost =
+                currentUserId != null &&
                 (currentUserId == event.hostId ||
                     event.coHostIds.contains(currentUserId));
 

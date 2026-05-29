@@ -60,9 +60,7 @@ class ConfirmScreen extends ConsumerWidget {
 
           return Stack(
             children: [
-              const GradientTopBar(
-                showDarkOverlay: true,
-              ),
+              const GradientTopBar(showDarkOverlay: true),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 15.0),
@@ -99,10 +97,7 @@ class ConfirmScreen extends ConsumerWidget {
                       Center(
                         child: Column(
                           children: [
-                            buildAvatarImage(
-                              source: profileUrl,
-                              radius: 80,
-                            ),
+                            buildAvatarImage(source: profileUrl, radius: 80),
                             const SizedBox(height: 24),
                             Text(
                               displayUsername,
@@ -125,8 +120,8 @@ class ConfirmScreen extends ConsumerWidget {
                       const Spacer(),
                       BloomButton(
                         text: 'Login',
-                        isLoading: snapshot.connectionState ==
-                            ConnectionState.waiting,
+                        isLoading:
+                            snapshot.connectionState == ConnectionState.waiting,
                         onPressed: () {
                           context.go('/');
                         },

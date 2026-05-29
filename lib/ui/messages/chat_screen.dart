@@ -178,9 +178,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (byId >= 0) {
           _messages = _messages
               .map(
-                (e) => e.message.id == message.id
-                    ? _entryFromMessage(message)
-                    : e,
+                (e) =>
+                    e.message.id == message.id ? _entryFromMessage(message) : e,
               )
               .toList();
           return;
@@ -204,8 +203,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         }
       }
 
-      final exists =
-          _messages.any((e) => e.message.id == message.id && message.id != 0);
+      final exists = _messages.any(
+        (e) => e.message.id == message.id && message.id != 0,
+      );
       if (!exists) {
         _messages = [..._messages, _entryFromMessage(message)];
       }
@@ -219,7 +219,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final senderId = message.sender?.uid;
     final receiverId = message.receiverUid;
     final peerLower = widget.peerUid.toLowerCase();
-    return senderId?.toLowerCase() == peerLower || receiverId.toLowerCase() == peerLower;
+    return senderId?.toLowerCase() == peerLower ||
+        receiverId.toLowerCase() == peerLower;
   }
 
   Future<void> _bootstrap() async {
@@ -272,10 +273,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!mounted) return;
     setState(() => _loading = true);
     try {
-      final request = (MessagesRequestBuilder()
-            ..setUID(widget.peerUid)
-            ..setLimit(40))
-          .build();
+      final request =
+          (MessagesRequestBuilder()
+                ..setUID(widget.peerUid)
+                ..setLimit(40))
+              .build();
 
       final list = await request.fetchPrevious(onSuccess: null, onError: null);
       if (mounted) {
@@ -320,10 +322,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final attachedMessage = _textController.text;
       _textController.clear();
       ref.read(selectedEventForChatProvider.notifier).clear();
-      await _sendEventInvite(
-        selected,
-        attachedMessage: attachedMessage,
-      );
+      await _sendEventInvite(selected, attachedMessage: attachedMessage);
       return;
     }
 
@@ -493,7 +492,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<CometChatSessionState>(cometChatSessionProvider, (previous, next) {
+    ref.listen<CometChatSessionState>(cometChatSessionProvider, (
+      previous,
+      next,
+    ) {
       if (next.isReady && _sessionError != null) {
         _retryChatSession();
       }
@@ -695,7 +697,8 @@ class _ChatMessageListener with MessageListener {
     final senderId = message.sender?.uid;
     final receiverId = message.receiverUid;
     final peerLower = peerUid.toLowerCase();
-    return senderId?.toLowerCase() == peerLower || receiverId.toLowerCase() == peerLower;
+    return senderId?.toLowerCase() == peerLower ||
+        receiverId.toLowerCase() == peerLower;
   }
 
   @override

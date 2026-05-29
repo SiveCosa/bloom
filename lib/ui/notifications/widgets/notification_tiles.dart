@@ -23,11 +23,23 @@ class NotificationTile extends ConsumerWidget {
       case NotificationType.friendPostedEvent:
         return _FriendPostedEventTile(notification: notification);
       case NotificationType.eventRsvp:
-        return _EventRsvpTile(notification: notification, isWaitlist: false, isRequest: false);
+        return _EventRsvpTile(
+          notification: notification,
+          isWaitlist: false,
+          isRequest: false,
+        );
       case NotificationType.eventWaitlist:
-        return _EventRsvpTile(notification: notification, isWaitlist: true, isRequest: false);
+        return _EventRsvpTile(
+          notification: notification,
+          isWaitlist: true,
+          isRequest: false,
+        );
       case NotificationType.eventRequestToJoin:
-        return _EventRsvpTile(notification: notification, isWaitlist: false, isRequest: true);
+        return _EventRsvpTile(
+          notification: notification,
+          isWaitlist: false,
+          isRequest: true,
+        );
       case NotificationType.friendRequestAccepted:
         return _FriendRequestAcceptedTile(notification: notification);
       case NotificationType.eventUpdate:
@@ -73,7 +85,9 @@ class _BaseNotificationTile extends ConsumerWidget {
       },
       child: Container(
         height: 80,
-        color: notification.isRead ? Colors.transparent : Colors.white.withValues(alpha: 0.1),
+        color: notification.isRead
+            ? Colors.transparent
+            : Colors.white.withValues(alpha: 0.1),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -81,10 +95,7 @@ class _BaseNotificationTile extends ConsumerWidget {
             leading,
             const SizedBox(width: 12),
             Expanded(child: content),
-            if (trailing != null) ...[
-              const SizedBox(width: 12),
-              trailing!,
-            ]
+            if (trailing != null) ...[const SizedBox(width: 12), trailing!],
           ],
         ),
       ),
@@ -106,17 +117,14 @@ class _UserAvatar extends StatelessWidget {
         CircleAvatar(
           radius: 24,
           backgroundColor: Colors.grey[800],
-          backgroundImage: url != null && url!.isNotEmpty ? NetworkImage(url!) : null,
+          backgroundImage: url != null && url!.isNotEmpty
+              ? NetworkImage(url!)
+              : null,
           child: url == null || url!.isEmpty
               ? const Icon(Icons.person, color: Colors.white, size: 24)
               : null,
         ),
-        if (badge != null)
-          Positioned(
-            right: -4,
-            bottom: -4,
-            child: badge!,
-          ),
+        if (badge != null) Positioned(right: -4, bottom: -4, child: badge!),
       ],
     );
   }
@@ -136,10 +144,7 @@ class _EventImage extends StatelessWidget {
         color: Colors.grey[800],
         borderRadius: BorderRadius.circular(8),
         image: url != null && url!.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(url!),
-                fit: BoxFit.cover,
-              )
+            ? DecorationImage(image: NetworkImage(url!), fit: BoxFit.cover)
             : null,
       ),
       child: url == null || url!.isEmpty
@@ -177,7 +182,10 @@ class _FriendRequestTileState extends ConsumerState<_FriendRequestTile> {
             ),
             const TextSpan(text: ' sent you a friend request '),
             TextSpan(
-              text: timeago.format(widget.notification.createdAt, locale: 'en_short'),
+              text: timeago.format(
+                widget.notification.createdAt,
+                locale: 'en_short',
+              ),
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             ),
           ],
@@ -192,7 +200,10 @@ class _FriendRequestTileState extends ConsumerState<_FriendRequestTile> {
               ),
               child: const Text(
                 'Accepted',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             )
           : ActionButtons(
@@ -203,7 +214,9 @@ class _FriendRequestTileState extends ConsumerState<_FriendRequestTile> {
                 try {
                   final actorId = widget.notification.actorId;
                   if (actorId != null) {
-                    await ref.read(connectionRepositoryProvider).acceptRequest(actorId);
+                    await ref
+                        .read(connectionRepositoryProvider)
+                        .acceptRequest(actorId);
                     invalidateFriendshipCaches(ref, actorId);
                   }
                   if (mounted) {
@@ -228,7 +241,9 @@ class _FriendRequestTileState extends ConsumerState<_FriendRequestTile> {
                 try {
                   final actorId = widget.notification.actorId;
                   if (actorId != null) {
-                    await ref.read(connectionRepositoryProvider).removeConnection(actorId);
+                    await ref
+                        .read(connectionRepositoryProvider)
+                        .removeConnection(actorId);
                     ref.invalidate(recommendedFriendsProvider);
                     ref.invalidate(incomingRequestsCountProvider);
                     ref.invalidate(notificationsProvider);
@@ -355,7 +370,9 @@ class _EventRsvpTile extends StatelessWidget {
       othersText = ' +${notification.groupedCount} others';
     }
 
-    final badgeIcon = isWaitlist || isRequest ? Icons.question_mark : Icons.check;
+    final badgeIcon = isWaitlist || isRequest
+        ? Icons.question_mark
+        : Icons.check;
 
     return _BaseNotificationTile(
       notification: notification,
@@ -608,7 +625,8 @@ class _EventNudgeTile extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontSize: 15),
           children: [
             TextSpan(
-              text: notification.message ?? 'Nudge nudge. Don\'t forget to RSVP!',
+              text:
+                  notification.message ?? 'Nudge nudge. Don\'t forget to RSVP!',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const TextSpan(text: ' '),
@@ -623,4 +641,3 @@ class _EventNudgeTile extends StatelessWidget {
     );
   }
 }
-

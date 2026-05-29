@@ -25,20 +25,20 @@ import '../create_event/widgets/host_invite_section.dart';
 import 'package:bloom/ui/create_event/widgets/rsvp_option_preview.dart';
 import '../shared/widgets/event_map_card.dart';
 import 'package:bloom/domain/notification/notification_model.dart';
+
 class EventInvitationScreen extends ConsumerStatefulWidget {
   final String eventId;
 
-  const EventInvitationScreen({
-    super.key,
-    required this.eventId,
-  });
+  const EventInvitationScreen({super.key, required this.eventId});
 
   @override
-  ConsumerState<EventInvitationScreen> createState() => _EventInvitationScreenState();
+  ConsumerState<EventInvitationScreen> createState() =>
+      _EventInvitationScreenState();
 }
 
 class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  final DraggableScrollableController _sheetController =
+      DraggableScrollableController();
   final ValueNotifier<double> _sheetSize = ValueNotifier(0.55);
   bool _isDescriptionExpanded = false;
   bool _isDeleting = false;
@@ -77,9 +77,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 
   Widget _buildMessageScreen({
-    required IconData icon, 
-    required Color iconColor, 
-    required String title, 
+    required IconData icon,
+    required Color iconColor,
+    required String title,
     String? subtitle,
     String buttonText = 'Return Home',
     Color? buttonColor,
@@ -98,14 +98,21 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 12),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 16,
+                  ),
                 ),
               ],
               const Spacer(),
@@ -116,9 +123,18 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: buttonColor ?? const Color(0xFFAD83FE),
                     minimumSize: const Size(200, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
                   ),
-                  child: Text(buttonText, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -203,7 +219,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           );
         }
 
-        final bool isHost = currentUser?.uid == event.metadata.hostId || event.coHostIds.contains(currentUser?.uid);
+        final bool isHost =
+            currentUser?.uid == event.metadata.hostId ||
+            event.coHostIds.contains(currentUser?.uid);
 
         return Scaffold(
           backgroundColor: const Color(0xFF0B0E12),
@@ -236,389 +254,545 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               );
             },
             child: Stack(
-            children: [
-              // 2. Poster Image + Glow (Reactive)
-              ValueListenableBuilder<double>(
-                valueListenable: _sheetSize,
-                builder: (context, size, child) {
-                  final double screenHeight = MediaQuery.of(context).size.height;
-                  final double topBarHeight = MediaQuery.of(context).padding.top + 56;
-                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                  final double expandedProgress = ((size - 0.55) / (0.88 - 0.55)).clamp(0.0, 1.0);
-                  final double posterOpacity = (1.0 - expandedProgress).clamp(0.0, 1.0);
-                  
-                  final double actualPosterHeight = MediaQuery.of(context).size.width / (event.visuals.aspectRatio > 0 ? event.visuals.aspectRatio : 1.0);
-                  final bool isSquare = (event.visuals.aspectRatio - 1.0).abs() < 0.1;
-                  final double sheetTopMinimized = screenHeight * (1.0 - 0.28);
-                  final double availableSpaceMinimized = sheetTopMinimized - topBarHeight;
-                  
-                  final double statusBarHeight = MediaQuery.of(context).padding.top;
-                  final double targetTop = isSquare 
-                    ? topBarHeight + (availableSpaceMinimized - actualPosterHeight) / 2
-                    : topBarHeight;
+              children: [
+                // 2. Poster Image + Glow (Reactive)
+                ValueListenableBuilder<double>(
+                  valueListenable: _sheetSize,
+                  builder: (context, size, child) {
+                    final double screenHeight = MediaQuery.of(
+                      context,
+                    ).size.height;
+                    final double topBarHeight =
+                        MediaQuery.of(context).padding.top + 56;
+                    final double minimizedProgress =
+                        ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                    final double expandedProgress =
+                        ((size - 0.55) / (0.88 - 0.55)).clamp(0.0, 1.0);
+                    final double posterOpacity = (1.0 - expandedProgress).clamp(
+                      0.0,
+                      1.0,
+                    );
 
-                  final double posterTop = ui.lerpDouble(statusBarHeight, targetTop, minimizedProgress) ?? statusBarHeight;
+                    final double actualPosterHeight =
+                        MediaQuery.of(context).size.width /
+                        (event.visuals.aspectRatio > 0
+                            ? event.visuals.aspectRatio
+                            : 1.0);
+                    final bool isSquare =
+                        (event.visuals.aspectRatio - 1.0).abs() < 0.1;
+                    final double sheetTopMinimized =
+                        screenHeight * (1.0 - 0.28);
+                    final double availableSpaceMinimized =
+                        sheetTopMinimized - topBarHeight;
 
-                  return Positioned(
-                    top: posterTop,
-                    left: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
+                    final double statusBarHeight = MediaQuery.of(
+                      context,
+                    ).padding.top;
+                    final double targetTop = isSquare
+                        ? topBarHeight +
+                              (availableSpaceMinimized - actualPosterHeight) / 2
+                        : topBarHeight;
+
+                    final double posterTop =
+                        ui.lerpDouble(
+                          statusBarHeight,
+                          targetTop,
+                          minimizedProgress,
+                        ) ??
+                        statusBarHeight;
+
+                    return Positioned(
+                      top: posterTop,
+                      left: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (_sheetController.isAttached) {
+                            _sheetController.animateTo(
+                              0.28,
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOutCubic,
+                            );
+                          }
+                        },
+                        child: Opacity(
+                          opacity: posterOpacity,
+                          child: Center(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  if (minimizedProgress > 0)
+                                    BoxShadow(
+                                      color:
+                                          (event.visuals.auroraColors.isNotEmpty
+                                                  ? _parseHexColor(
+                                                      event
+                                                          .visuals
+                                                          .auroraColors[0],
+                                                    )
+                                                  : const Color(0xFFAD83FE))
+                                              .withValues(
+                                                alpha:
+                                                    0.45 *
+                                                    minimizedProgress *
+                                                    (1.0 - expandedProgress),
+                                              ),
+                                      blurRadius: 120,
+                                      spreadRadius: 40,
+                                    ),
+                                ],
+                              ),
+                              child: SizedBox(
+                                width: MediaQuery.of(context).size.width,
+                                child: AspectRatio(
+                                  aspectRatio: event.visuals.aspectRatio,
+                                  child: event.visuals.posterUrl != null
+                                      ? Image.network(
+                                          event.visuals.posterUrl!,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (context, child, progress) {
+                                                if (progress == null)
+                                                  return child;
+                                                return Stack(
+                                                  fit: StackFit.expand,
+                                                  children: [
+                                                    Container(
+                                                      color: Colors.grey[900],
+                                                    ),
+                                                    const Center(
+                                                      child:
+                                                          BloomLoadingIndicator(
+                                                            size: 36,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    color: Colors.grey[900],
+                                                  ),
+                                        )
+                                      : Container(color: Colors.grey[900]),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // 4. Draggable Scrollable Sheet
+                DraggableScrollableSheet(
+                  controller: _sheetController,
+                  initialChildSize: 0.55,
+                  minChildSize: 0.28,
+                  maxChildSize: 0.88,
+                  snap: true,
+                  snapSizes: const [0.28, 0.55, 0.88],
+                  builder: (context, scrollController) {
+                    return GestureDetector(
                       onTap: () {
-                        if (_sheetController.isAttached) {
+                        if (_sheetSize.value < 0.45) {
                           _sheetController.animateTo(
-                            0.28,
+                            0.55,
                             duration: const Duration(milliseconds: 400),
                             curve: Curves.easeInOutCubic,
                           );
                         }
                       },
-                      child: Opacity(
-                        opacity: posterOpacity,
-                        child: Center(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                if (minimizedProgress > 0)
-                                  BoxShadow(
-                                    color: (event.visuals.auroraColors.isNotEmpty 
-                                            ? _parseHexColor(event.visuals.auroraColors[0]) 
-                                            : const Color(0xFFAD83FE))
-                                        .withValues(alpha: 0.45 * minimizedProgress * (1.0 - expandedProgress)),
-                                    blurRadius: 120,
-                                    spreadRadius: 40,
-                                  ),
-                              ],
-                            ),
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width,
-                              child: AspectRatio(
-                                aspectRatio: event.visuals.aspectRatio,
-                                child: event.visuals.posterUrl != null
-                                    ? Image.network(
-                                        event.visuals.posterUrl!,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return Stack(
-                                            fit: StackFit.expand,
-                                            children: [
-                                              Container(color: Colors.grey[900]),
-                                              const Center(
-                                                child: BloomLoadingIndicator(size: 36),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Container(color: Colors.grey[900]),
-                                      )
-                                    : Container(color: Colors.grey[900]),
-                              ),
-                            ),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(30),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              // 4. Draggable Scrollable Sheet
-              DraggableScrollableSheet(
-                controller: _sheetController,
-                initialChildSize: 0.55,
-                minChildSize: 0.28,
-                maxChildSize: 0.88,
-                snap: true,
-                snapSizes: const [0.28, 0.55, 0.88],
-                builder: (context, scrollController) {
-                  return GestureDetector(
-                    onTap: () {
-                      if (_sheetSize.value < 0.45) {
-                        _sheetController.animateTo(
-                          0.55,
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeInOutCubic,
-                        );
-                      }
-                    },
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent, 
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-                        child: Stack(
-                          children: [
-                            // 1. Aurora Background (Reactive)
-                            ValueListenableBuilder<double>(
-                              valueListenable: _sheetSize,
-                              child: AuroraBackground(
-                                colors: event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList(),
-                              ),
-                              builder: (context, size, childWidget) {
-                                final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                final double opacity = (1.0 - minimizedProgress).clamp(0.0, 1.0);
-                                return Stack(
-                                  children: [
-                                    Positioned(
-                                      top: -(MediaQuery.of(context).size.height * (1.0 - size)),
-                                      left: 0,
-                                      right: 0,
-                                      height: MediaQuery.of(context).size.height,
-                                      child: Opacity(
-                                        opacity: opacity,
-                                        child: childWidget,
-                                      ),
-                                    ),
-                                    Positioned.fill(
-                                      child: Opacity(
-                                        opacity: opacity,
-                                        child: Container(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            
-                            Column(
-                              children: [
-                                SizedBox(
-                                  height: 25,
-                                  width: double.infinity,
-                                  child: Center(
-                                    child: Container(
-                                      width: 40,
-                                      height: 4,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.3),
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                    ),
-                                  ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(30),
+                          ),
+                          child: Stack(
+                            children: [
+                              // 1. Aurora Background (Reactive)
+                              ValueListenableBuilder<double>(
+                                valueListenable: _sheetSize,
+                                child: AuroraBackground(
+                                  colors: event.visuals.auroraColors
+                                      .map((c) => _parseHexColor(c))
+                                      .toList(),
                                 ),
-                                Expanded(
-                                  child: CustomScrollView(
-                                    controller: scrollController,
-                                    physics: const BouncingScrollPhysics(),
-                                    slivers: [
-                                      SliverToBoxAdapter(
-                                        child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(15, 0, 15, 0),
-                                          child: Column(
-                                            children: [
-                                              const SizedBox(height: 12),
-                                              _buildVisibilityPill(event),
-                                              const SizedBox(height: 16),
-                                              // Event Title
-                                              ShaderMask(
-                                                shaderCallback: (bounds) => ui.Gradient.linear(
-                                                  Offset.zero,
-                                                  Offset(bounds.width, 0),
-                                                  [Colors.white, Colors.white.withValues(alpha: 0.7)],
-                                                ),
-                                                child: Text(
-                                                  event.title,
-                                                  textAlign: TextAlign.center,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 32,
-                                                    fontWeight: FontWeight.w900,
-                                                    height: 1.1,
-                                                    letterSpacing: -0.5,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 25),
-                                              
-                                              ValueListenableBuilder<double>(
-                                                valueListenable: _sheetSize,
-                                                builder: (context, size, child) {
-                                                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                                                  return Column(
-                                                    children: [
-                                                      _buildDateRow(event),
-                                                      if (event.location != null) ...[
-                                                        const SizedBox(height: 10),
-                                                        Opacity(
-                                                          opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                                                          child: _buildLocationRow(event),
-                                                        ),
-                                                      ],
-                                                      const SizedBox(height: 25),
-                                                    ],
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
+                                builder: (context, size, childWidget) {
+                                  final double minimizedProgress =
+                                      ((0.55 - size) / (0.55 - 0.28)).clamp(
+                                        0.0,
+                                        1.0,
+                                      );
+                                  final double opacity =
+                                      (1.0 - minimizedProgress).clamp(0.0, 1.0);
+                                  return Stack(
+                                    children: [
+                                      Positioned(
+                                        top:
+                                            -(MediaQuery.of(
+                                                  context,
+                                                ).size.height *
+                                                (1.0 - size)),
+                                        left: 0,
+                                        right: 0,
+                                        height: MediaQuery.of(
+                                          context,
+                                        ).size.height,
+                                        child: Opacity(
+                                          opacity: opacity,
+                                          child: childWidget,
                                         ),
                                       ),
-                                      SliverToBoxAdapter(
-                                        child: ValueListenableBuilder<double>(
-                                          valueListenable: _sheetSize,
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 15),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                _buildDescriptionCard(event),
-                                                const SizedBox(height: 16),
-                                                _buildGuestList(event),
-                                                const SizedBox(height: 16),
-                                                Consumer(
-                                                  builder: (context, ref, child) {
-                                                    final hostProfile = ref.watch(userProfileStreamProvider(event.metadata.hostId)).value;
-                                                    final List<Map<String, dynamic>> resolvedCoHosts = [];
-                                                    for (final coHostId in event.coHostIds) {
-                                                      final coHostProfileAsync = ref.watch(userProfileStreamProvider(coHostId));
-                                                      final coHostProfile = coHostProfileAsync.value;
-                                                      if (coHostProfile != null) {
-                                                        resolvedCoHosts.add({
-                                                          'uid': coHostId,
-                                                          ...coHostProfile,
-                                                        });
-                                                      }
-                                                    }
-                                                    return HostPreviewWidget(
-                                                      userProfile: hostProfile, 
-                                                      coHosts: resolvedCoHosts,
-                                                    );
-                                                  },
-                                                ),
-                                                if (event.location != null) ...[
-                                                  const SizedBox(height: 16),
-                                                  _buildWeatherCard(event),
-                                                  const SizedBox(height: 16),
-                                                  Builder(
-                                                    builder: (context) {
-                                                      final parsedColors = event.visuals.auroraColors.map((c) {
-                                                        var hexString = c.replaceAll('#', '');
-                                                        if (hexString.length == 6) hexString = 'FF$hexString';
-                                                        return Color(int.parse(hexString, radix: 16));
-                                                      }).toList();
-                                                      return EventMapCard(
-                                                        event: event,
-                                                        themeColor: parsedColors.isNotEmpty ? parsedColors.first : Colors.blue,
-                                                      );
-                                                    }
-                                                  ),
-                                                ],
-                                                if (isHost) ...[
-                                                  const SizedBox(height: 16),
-                                                  _buildRsvpOptionPreview(event),
-                                                ],
-                                                const SizedBox(height: 120),
-                                              ],
+                                      Positioned.fill(
+                                        child: Opacity(
+                                          opacity: opacity,
+                                          child: Container(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.08,
                                             ),
                                           ),
-                                          builder: (context, size, childWidget) {
-                                            if (size < 0.4) return const SizedBox.shrink();
-                                            return childWidget!;
-                                          },
                                         ),
                                       ),
                                     ],
+                                  );
+                                },
+                              ),
+
+                              Column(
+                                children: [
+                                  SizedBox(
+                                    height: 25,
+                                    width: double.infinity,
+                                    child: Center(
+                                      child: Container(
+                                        width: 40,
+                                        height: 4,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                                  Expanded(
+                                    child: CustomScrollView(
+                                      controller: scrollController,
+                                      physics: const BouncingScrollPhysics(),
+                                      slivers: [
+                                        SliverToBoxAdapter(
+                                          child: Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              15,
+                                              0,
+                                              15,
+                                              0,
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                const SizedBox(height: 12),
+                                                _buildVisibilityPill(event),
+                                                const SizedBox(height: 16),
+                                                // Event Title
+                                                ShaderMask(
+                                                  shaderCallback: (bounds) =>
+                                                      ui.Gradient.linear(
+                                                        Offset.zero,
+                                                        Offset(bounds.width, 0),
+                                                        [
+                                                          Colors.white,
+                                                          Colors.white
+                                                              .withValues(
+                                                                alpha: 0.7,
+                                                              ),
+                                                        ],
+                                                      ),
+                                                  child: Text(
+                                                    event.title,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 32,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      height: 1.1,
+                                                      letterSpacing: -0.5,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 25),
 
-              // 5. Contextual Top App Bar
-              _buildTopAppBar(isHost, event),
-
-              // 6. Bottom Gradient Grounding (Reactive)
-              ValueListenableBuilder<double>(
-                valueListenable: _sheetSize,
-                builder: (context, size, child) {
-                  final double minimizedProgress = ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
-                  return Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 150,
-                    child: IgnorePointer(
-                      child: Opacity(
-                        opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.5),
-                                Colors.transparent,
-                              ],
-                            ),
+                                                ValueListenableBuilder<double>(
+                                                  valueListenable: _sheetSize,
+                                                  builder: (context, size, child) {
+                                                    final double
+                                                    minimizedProgress =
+                                                        ((0.55 - size) /
+                                                                (0.55 - 0.28))
+                                                            .clamp(0.0, 1.0);
+                                                    return Column(
+                                                      children: [
+                                                        _buildDateRow(event),
+                                                        if (event.location !=
+                                                            null) ...[
+                                                          const SizedBox(
+                                                            height: 10,
+                                                          ),
+                                                          Opacity(
+                                                            opacity:
+                                                                (1.0 -
+                                                                        minimizedProgress)
+                                                                    .clamp(
+                                                                      0.0,
+                                                                      1.0,
+                                                                    ),
+                                                            child:
+                                                                _buildLocationRow(
+                                                                  event,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                        const SizedBox(
+                                                          height: 25,
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        SliverToBoxAdapter(
+                                          child: ValueListenableBuilder<double>(
+                                            valueListenable: _sheetSize,
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 15,
+                                                  ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  _buildDescriptionCard(event),
+                                                  const SizedBox(height: 16),
+                                                  _buildGuestList(event),
+                                                  const SizedBox(height: 16),
+                                                  Consumer(
+                                                    builder: (context, ref, child) {
+                                                      final hostProfile = ref
+                                                          .watch(
+                                                            userProfileStreamProvider(
+                                                              event
+                                                                  .metadata
+                                                                  .hostId,
+                                                            ),
+                                                          )
+                                                          .value;
+                                                      final List<
+                                                        Map<String, dynamic>
+                                                      >
+                                                      resolvedCoHosts = [];
+                                                      for (final coHostId
+                                                          in event.coHostIds) {
+                                                        final coHostProfileAsync =
+                                                            ref.watch(
+                                                              userProfileStreamProvider(
+                                                                coHostId,
+                                                              ),
+                                                            );
+                                                        final coHostProfile =
+                                                            coHostProfileAsync
+                                                                .value;
+                                                        if (coHostProfile !=
+                                                            null) {
+                                                          resolvedCoHosts.add({
+                                                            'uid': coHostId,
+                                                            ...coHostProfile,
+                                                          });
+                                                        }
+                                                      }
+                                                      return HostPreviewWidget(
+                                                        userProfile:
+                                                            hostProfile,
+                                                        coHosts:
+                                                            resolvedCoHosts,
+                                                      );
+                                                    },
+                                                  ),
+                                                  if (event.location !=
+                                                      null) ...[
+                                                    const SizedBox(height: 16),
+                                                    _buildWeatherCard(event),
+                                                    const SizedBox(height: 16),
+                                                    Builder(
+                                                      builder: (context) {
+                                                        final parsedColors = event
+                                                            .visuals
+                                                            .auroraColors
+                                                            .map((c) {
+                                                              var hexString = c
+                                                                  .replaceAll(
+                                                                    '#',
+                                                                    '',
+                                                                  );
+                                                              if (hexString
+                                                                      .length ==
+                                                                  6)
+                                                                hexString =
+                                                                    'FF$hexString';
+                                                              return Color(
+                                                                int.parse(
+                                                                  hexString,
+                                                                  radix: 16,
+                                                                ),
+                                                              );
+                                                            })
+                                                            .toList();
+                                                        return EventMapCard(
+                                                          event: event,
+                                                          themeColor:
+                                                              parsedColors
+                                                                  .isNotEmpty
+                                                              ? parsedColors
+                                                                    .first
+                                                              : Colors.blue,
+                                                        );
+                                                      },
+                                                    ),
+                                                  ],
+                                                  if (isHost) ...[
+                                                    const SizedBox(height: 16),
+                                                    _buildRsvpOptionPreview(
+                                                      event,
+                                                    ),
+                                                  ],
+                                                  const SizedBox(height: 120),
+                                                ],
+                                              ),
+                                            ),
+                                            builder: (context, size, childWidget) {
+                                              if (size < 0.4)
+                                                return const SizedBox.shrink();
+                                              return childWidget!;
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              // 7. Fixed Action Bar (RSVP or Host Controls)
-              Positioned(
-                left: 15,
-                right: 15,
-                bottom: 30,
-                child: ValueListenableBuilder<double>(
-                  valueListenable: _sheetSize,
-                  builder: (context, size, child) {
-                    final double opacity = ((size - 0.28) / (0.45 - 0.28)).clamp(0.0, 1.0);
-
-                    if (opacity <= 0) return const SizedBox.shrink();
-
-                    return Opacity(
-                      opacity: opacity,
-                      child: IgnorePointer(
-                        ignoring: opacity < 0.5,
-                        child: isHost 
-                          ? HostControlBar(
-                              event: event,
-                              onGoingPressed: (tab) {
-                                context.push('/event/${event.id}/guests${tab != null ? '?tab=$tab' : ''}');
-                              },
-                              onInvitePressed: () => _showInviteFriendsSheet(context, event),
-                              onRemindersPressed: () => _showRemindersModal(context, event),
-                            )
-                          : EventRsvpBar(eventId: widget.eventId),
                       ),
                     );
                   },
                 ),
-              ),
-            ],
-          ),
+
+                // 5. Contextual Top App Bar
+                _buildTopAppBar(isHost, event),
+
+                // 6. Bottom Gradient Grounding (Reactive)
+                ValueListenableBuilder<double>(
+                  valueListenable: _sheetSize,
+                  builder: (context, size, child) {
+                    final double minimizedProgress =
+                        ((0.55 - size) / (0.55 - 0.28)).clamp(0.0, 1.0);
+                    return Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 150,
+                      child: IgnorePointer(
+                        child: Opacity(
+                          opacity: (1.0 - minimizedProgress).clamp(0.0, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.5),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // 7. Fixed Action Bar (RSVP or Host Controls)
+                Positioned(
+                  left: 15,
+                  right: 15,
+                  bottom: 30,
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _sheetSize,
+                    builder: (context, size, child) {
+                      final double opacity = ((size - 0.28) / (0.45 - 0.28))
+                          .clamp(0.0, 1.0);
+
+                      if (opacity <= 0) return const SizedBox.shrink();
+
+                      return Opacity(
+                        opacity: opacity,
+                        child: IgnorePointer(
+                          ignoring: opacity < 0.5,
+                          child: isHost
+                              ? HostControlBar(
+                                  event: event,
+                                  onGoingPressed: (tab) {
+                                    context.push(
+                                      '/event/${event.id}/guests${tab != null ? '?tab=$tab' : ''}',
+                                    );
+                                  },
+                                  onInvitePressed: () =>
+                                      _showInviteFriendsSheet(context, event),
+                                  onNudgePressed: () =>
+                                      _nudgeAllPendingGuests(context, event),
+                                )
+                              : EventRsvpBar(eventId: widget.eventId),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
       loading: () => const Scaffold(
         backgroundColor: Color(0xFF0B0E12),
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       ),
       error: (err, stack) => Scaffold(
         backgroundColor: const Color(0xFF0B0E12),
         body: Stack(
           children: [
             Positioned.fill(
-              child: AuroraBackground(colors: const [Color(0xFF2D2D2D), Color(0xFF1A1A1A)]),
+              child: AuroraBackground(
+                colors: const [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+              ),
             ),
             Positioned.fill(
               child: BackdropFilter(
@@ -632,18 +806,29 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.white70, size: 64),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white70,
+                      size: 64,
+                    ),
                     const SizedBox(height: 24),
                     const Text(
                       'This event is no longer available',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'It may have been cancelled or moved. Check back later!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
@@ -651,8 +836,13 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text('Go Back'),
                     ),
@@ -686,23 +876,34 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 children: [
                   if (isHost) ...[
                     _buildTopButton(
-                      const Icon(Icons.mode_edit_outline, color: Colors.black, size: 22),
+                      const Icon(
+                        Icons.mode_edit_outline,
+                        color: Colors.black,
+                        size: 22,
+                      ),
                       () async {
                         // Edit logic
                         final router = GoRouter.of(context);
                         final hostId = event.metadata.hostId;
-                        final hostProfile = await ref.read(userProfileFutureProvider(hostId).future);
+                        final hostProfile = await ref.read(
+                          userProfileFutureProvider(hostId).future,
+                        );
                         final List<Map<String, dynamic>> resolvedCoHosts = [];
                         for (final coHostId in event.coHostIds) {
-                          final profile = await ref.read(userProfileFutureProvider(coHostId).future);
+                          final profile = await ref.read(
+                            userProfileFutureProvider(coHostId).future,
+                          );
                           if (profile != null) {
-                            resolvedCoHosts.add({
-                              'uid': coHostId,
-                              ...profile,
-                            });
+                            resolvedCoHosts.add({'uid': coHostId, ...profile});
                           }
                         }
-                        ref.read(createEventProvider.notifier).loadEventForEditing(event, hostProfile, resolvedCoHosts);
+                        ref
+                            .read(createEventProvider.notifier)
+                            .loadEventForEditing(
+                              event,
+                              hostProfile,
+                              resolvedCoHosts,
+                            );
                         router.push('/create-event');
                       },
                     ),
@@ -715,7 +916,11 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   _buildTopButton(
                     Transform.flip(
                       flipX: true,
-                      child: const Icon(Icons.reply_rounded, color: Colors.black, size: 22),
+                      child: const Icon(
+                        Icons.reply_rounded,
+                        color: Colors.black,
+                        size: 22,
+                      ),
                     ),
                     () {
                       _showInviteFriendsSheet(context, event);
@@ -723,7 +928,11 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   ),
                   const SizedBox(width: 10),
                   _buildTopButton(
-                    const Icon(Icons.more_vert_rounded, color: Colors.black, size: 22),
+                    const Icon(
+                      Icons.more_vert_rounded,
+                      color: Colors.black,
+                      size: 22,
+                    ),
                     () {
                       // Options logic
                       _showOptionsModal(context, event, isHost);
@@ -758,18 +967,21 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     final timeStatus = _getTimeStatusText(event);
     final status = event.computedStatus;
     final isLive = status == EventStatus.active && event.timing.isOngoing;
-    
+
     String text = visibility.title;
-    if (visibility == EventVisibility.public || visibility == EventVisibility.private) {
+    if (visibility == EventVisibility.public ||
+        visibility == EventVisibility.private) {
       text += ' event';
     }
-    
+
     if (timeStatus.isNotEmpty) {
       text += ' • $timeStatus';
     }
 
     final accentColor = Color(event.statusColorValue);
-    final useAccent = timeStatus.isNotEmpty && status != EventStatus.active; // For Cancelled/Ended
+    final useAccent =
+        timeStatus.isNotEmpty &&
+        status != EventStatus.active; // For Cancelled/Ended
     final isSpecial = isLive || useAccent;
 
     return Row(
@@ -778,10 +990,14 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isSpecial ? accentColor.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.08),
+            color: isSpecial
+                ? accentColor.withValues(alpha: 0.1)
+                : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSpecial ? accentColor.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.08), 
+              color: isSpecial
+                  ? accentColor.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.08),
               width: 0.5,
             ),
           ),
@@ -792,14 +1008,20 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 width: 16,
                 height: 16,
                 child: FittedBox(
-                  child: Icon(visibility.filledIconData, color: isSpecial ? accentColor : Colors.white, size: 28),
+                  child: Icon(
+                    visibility.filledIconData,
+                    color: isSpecial ? accentColor : Colors.white,
+                    size: 28,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
-                  color: isSpecial ? accentColor : Colors.white.withValues(alpha: 0.9),
+                  color: isSpecial
+                      ? accentColor
+                      : Colors.white.withValues(alpha: 0.9),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.3,
@@ -815,10 +1037,10 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   String _getTimeStatusText(Event event) {
     if (event.metadata.status == EventStatus.cancelled) return 'Cancelled';
     if (event.timing.isPast) return 'Ended';
-    
+
     final now = DateTime.now();
     if (event.timing.isOngoing) return 'Live now';
-    
+
     final start = event.timing.startDate;
     if (start != null && event.timing.isUpcoming) {
       final diff = start.difference(now);
@@ -851,7 +1073,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     String display = startStr;
     if (end != null) {
       String endStr = '';
-      if (start.year == end.year && start.month == end.month && start.day == end.day) {
+      if (start.year == end.year &&
+          start.month == end.month &&
+          start.day == end.day) {
         if (!endTbd) {
           endStr = DateFormat('ha').format(end).toLowerCase();
         }
@@ -941,7 +1165,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
-                    children: event.tags.map((tag) => _buildTagChip(tag)).toList(),
+                    children: event.tags
+                        .map((tag) => _buildTagChip(tag))
+                        .toList(),
                   ),
                 ),
                 const SizedBox(height: 25),
@@ -950,45 +1176,62 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
               ],
 
               _buildLogisticsSection(event),
-              
+
               if (hasExtras) ...[
                 const SizedBox(height: 25),
                 ...(() {
-                  final auroraColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-                  final sortedExtras = [...event.extras]..sort((a, b) {
-                    final aIsLink = a.url != null && a.url!.isNotEmpty;
-                    final bIsLink = b.url != null && b.url!.isNotEmpty;
-                    if (aIsLink && !bIsLink) return -1;
-                    if (!aIsLink && bIsLink) return 1;
-                    return 0;
-                  });
-                  
+                  final auroraColors = event.visuals.auroraColors
+                      .map((c) => _parseHexColor(c))
+                      .toList();
+                  final sortedExtras = [...event.extras]
+                    ..sort((a, b) {
+                      final aIsLink = a.url != null && a.url!.isNotEmpty;
+                      final bIsLink = b.url != null && b.url!.isNotEmpty;
+                      if (aIsLink && !bIsLink) return -1;
+                      if (!aIsLink && bIsLink) return 1;
+                      return 0;
+                    });
+
                   return List.generate(sortedExtras.length, (index) {
                     final extra = sortedExtras[index];
-                    final bool isLink = extra.url != null && extra.url!.isNotEmpty;
-                    final Color textColor = isLink ? _getBestExtraColor(auroraColors) : Colors.white;
+                    final bool isLink =
+                        extra.url != null && extra.url!.isNotEmpty;
+                    final Color textColor = isLink
+                        ? _getBestExtraColor(auroraColors)
+                        : Colors.white;
                     final bool isLast = index == sortedExtras.length - 1;
 
                     return Column(
                       children: [
                         GestureDetector(
-                          onTap: isLink ? () async {
-                            final url = extra.url!.trim();
-                            final uri = Uri.parse(url.startsWith('http') ? url : 'https://$url');
-                            try {
-                              if (await canLaunchUrl(uri)) {
-                                await launchUrl(uri, mode: LaunchMode.platformDefault);
-                              }
-                            } catch (e) {
-                              debugPrint('Error launching $uri: $e');
-                            }
-                          } : null,
+                          onTap: isLink
+                              ? () async {
+                                  final url = extra.url!.trim();
+                                  final uri = Uri.parse(
+                                    url.startsWith('http')
+                                        ? url
+                                        : 'https://$url',
+                                  );
+                                  try {
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(
+                                        uri,
+                                        mode: LaunchMode.platformDefault,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    debugPrint('Error launching $uri: $e');
+                                  }
+                                }
+                              : null,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Icon(
                                 isLink ? Icons.link : extra.type.icon,
-                                color: isLink ? textColor : Colors.white.withValues(alpha: 0.6),
+                                color: isLink
+                                    ? textColor
+                                    : Colors.white.withValues(alpha: 0.6),
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
@@ -998,13 +1241,19 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                   style: TextStyle(
                                     color: textColor,
                                     fontSize: 14,
-                                    fontWeight: isLink ? FontWeight.bold : FontWeight.w500,
+                                    fontWeight: isLink
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
                               if (isLink) ...[
                                 const SizedBox(width: 4),
-                                Icon(Icons.chevron_right, color: textColor.withValues(alpha: 0.4), size: 16),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: textColor.withValues(alpha: 0.4),
+                                  size: 16,
+                                ),
                               ],
                             ],
                           ),
@@ -1096,7 +1345,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
             return GestureDetector(
               onTap: needsExpansion
-                  ? () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded)
+                  ? () => setState(
+                      () => _isDescriptionExpanded = !_isDescriptionExpanded,
+                    )
                   : null,
               behavior: HitTestBehavior.opaque,
               child: Column(
@@ -1110,12 +1361,17 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                         ? ShaderMask(
                             shaderCallback: (bounds) {
                               if (isExpanded) {
-                                return const LinearGradient(colors: [Colors.white, Colors.white]).createShader(bounds);
+                                return const LinearGradient(
+                                  colors: [Colors.white, Colors.white],
+                                ).createShader(bounds);
                               }
                               return LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [Colors.white, Colors.white.withValues(alpha: 0)],
+                                colors: [
+                                  Colors.white,
+                                  Colors.white.withValues(alpha: 0),
+                                ],
                                 stops: const [0.7, 1.0],
                               ).createShader(bounds);
                             },
@@ -1180,7 +1436,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         if (event.audience.rsvpDeadline != null) ...[
           _buildAudienceRow(
             icon: Icons.hourglass_bottom_rounded,
-            text: 'RSVP by ${DateFormat('d MMMM yyyy').format(event.audience.rsvpDeadline!)}',
+            text:
+                'RSVP by ${DateFormat('d MMMM yyyy').format(event.audience.rsvpDeadline!)}',
           ),
           const SizedBox(height: 25),
         ],
@@ -1193,24 +1450,28 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         const SizedBox(height: 25),
         _buildAudienceRow(
           icon: Icons.person_add_rounded,
-          text: event.audience.maxPlusOnes > 0 ? '+${event.audience.maxPlusOnes} guests allowed' : 'No plus ones allowed',
+          text: event.audience.maxPlusOnes > 0
+              ? '+${event.audience.maxPlusOnes} guests allowed'
+              : 'No plus ones allowed',
         ),
       ],
     );
   }
 
-  Widget _buildAudienceRow({IconData? icon, Widget? customIcon, required String text}) {
+  Widget _buildAudienceRow({
+    IconData? icon,
+    Widget? customIcon,
+    required String text,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         SizedBox(
           width: 18,
           height: 18,
-          child: customIcon ?? Icon(
-            icon,
-            color: Colors.white.withValues(alpha: 0.6),
-            size: 18,
-          ),
+          child:
+              customIcon ??
+              Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 18),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -1235,11 +1496,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     final List<String> lines = displayStr.split('\n');
     final List<InlineSpan> lineSpans = [];
 
-    const baseStyle = TextStyle(
-      color: Colors.white,
-      fontSize: 14,
-      height: 1.5,
-    );
+    const baseStyle = TextStyle(color: Colors.white, fontSize: 14, height: 1.5);
 
     // Matches inline bold (*bold*) and inline heading (!heading!)
     final pattern = RegExp(
@@ -1266,39 +1523,42 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
       for (final match in pattern.allMatches(lineText)) {
         if (match.start > lastMatchEnd) {
-          lineChildren.add(TextSpan(
-            text: lineText.substring(lastMatchEnd, match.start),
-            style: baseStyle,
-          ));
+          lineChildren.add(
+            TextSpan(
+              text: lineText.substring(lastMatchEnd, match.start),
+              style: baseStyle,
+            ),
+          );
         }
 
         final matchText = match.group(0)!;
 
         if (matchText.startsWith('*')) {
-          lineChildren.add(TextSpan(
-            text: matchText.substring(1, matchText.length - 1),
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.bold,
+          lineChildren.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: baseStyle.copyWith(fontWeight: FontWeight.bold),
             ),
-          ));
+          );
         } else if (matchText.startsWith('!')) {
-          lineChildren.add(TextSpan(
-            text: matchText.substring(1, matchText.length - 1),
-            style: baseStyle.copyWith(
-              fontWeight: FontWeight.w900,
-              fontSize: 16.0,
+          lineChildren.add(
+            TextSpan(
+              text: matchText.substring(1, matchText.length - 1),
+              style: baseStyle.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: 16.0,
+              ),
             ),
-          ));
+          );
         }
 
         lastMatchEnd = match.end;
       }
 
       if (lastMatchEnd < lineText.length) {
-        lineChildren.add(TextSpan(
-          text: lineText.substring(lastMatchEnd),
-          style: baseStyle,
-        ));
+        lineChildren.add(
+          TextSpan(text: lineText.substring(lastMatchEnd), style: baseStyle),
+        );
       }
 
       lineSpans.add(TextSpan(children: lineChildren));
@@ -1349,173 +1609,113 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     );
   }
 
+  Future<void> _nudgeAllPendingGuests(BuildContext context, Event event) async {
+    final guestsAsync = ref.read(eventGuestsProvider(event.id));
+    final guests = guestsAsync.value;
+    if (guests == null) return;
 
-  void _showRemindersModal(BuildContext context, Event event) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.fromLTRB(24, 12, 24, 24 + MediaQuery.of(context).padding.bottom),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
+    final pendingGuests = guests.where((g) {
+      final status = g['status'] as String? ?? 'invited';
+      return status != 'going' &&
+          status != 'declined' &&
+          status != 'not_going';
+    }).toList();
+
+    final selectedUids = pendingGuests.map((g) => g['uid'] as String?).whereType<String>().toList();
+
+    if (selectedUids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No pending guests to nudge.')),
+      );
+      return;
+    }
+
+    final currentUser = ref.read(firebaseAuthProvider).currentUser;
+    if (currentUser == null) return;
+
+    final currentUserProfile = await ref.read(userProfileFutureProvider(currentUser.uid).future);
+    final firestore = ref.read(firestoreProvider);
+    final batch = firestore.batch();
+
+    String message = "Nudge nudge. Don't forget to RSVP to ${event.title}";
+    if (event.audience.rsvpDeadline != null) {
+      final deadlineStr = DateFormat('MMM d, h:mm a').format(event.audience.rsvpDeadline!);
+      message += " by $deadlineStr";
+    } else {
+      message += "!";
+    }
+
+    for (final uid in selectedUids) {
+      final docRef = firestore
+          .collection('users')
+          .doc(uid)
+          .collection('notifications')
+          .doc();
+      final notification = AppNotification(
+        id: docRef.id,
+        type: NotificationType.eventNudge,
+        createdAt: DateTime.now(),
+        actorId: currentUser.uid,
+        actorUsername: currentUserProfile?['name'] ?? currentUser.displayName ?? 'A host',
+        actorAvatarUrl: currentUserProfile?['profile_image_url'],
+        targetId: event.id,
+        targetName: event.title,
+        targetImageUrl: event.visuals.posterUrl,
+        message: message,
+      );
+      batch.set(docRef, notification.toFirestore());
+    }
+
+    try {
+      await batch.commit();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            content: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2E3B4E), Color(0xFF1F2937)],
                 ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Event Reminders',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'All pending guests have been nudged',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Nudge guests who haven\'t RSVP\'d yet.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              _buildReminderOption(Icons.notifications_active, 'Nudge pending guests', () {
-                Navigator.pop(context);
-                _showNudgeModal(context, event);
-              }),
-              const SizedBox(height: 24),
-          ],
-        ),
-        ),
-      ),
-    );
-  }
-
-  void _showNudgeModal(BuildContext context, Event event) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF15191D),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
           ),
-          child: Consumer(
-            builder: (context, ref, child) {
-              final guestsAsync = ref.watch(eventGuestsProvider(event.id));
-              return guestsAsync.when(
-                data: (guests) {
-                  final pendingGuests = guests.where((g) {
-                    final status = g['status'] as String? ?? 'invited';
-                    return status != 'going' && status != 'declined' && status != 'not_going';
-                  }).toList();
-
-                  return _NudgeGuestsSheet(
-                    pendingGuests: pendingGuests,
-                    scrollController: scrollController,
-                    onNudge: (selectedUids) async {
-                      Navigator.pop(context);
-                      
-                      final currentUser = ref.read(firebaseAuthProvider).currentUser;
-                      if (currentUser != null) {
-                        final currentUserProfile = await ref.read(userProfileFutureProvider(currentUser.uid).future);
-                        final firestore = ref.read(firestoreProvider);
-                        final batch = firestore.batch();
-
-                        String message = "Nudge nudge. Don't forget to RSVP to ${event.title}";
-                        if (event.audience.rsvpDeadline != null) {
-                          final deadlineStr = DateFormat('MMM d, h:mm a').format(event.audience.rsvpDeadline!);
-                          message += " by $deadlineStr";
-                        } else {
-                          message += "!";
-                        }
-
-                        for (final uid in selectedUids) {
-                          final docRef = firestore.collection('users').doc(uid).collection('notifications').doc();
-                          final notification = AppNotification(
-                            id: docRef.id,
-                            type: NotificationType.eventNudge,
-                            createdAt: DateTime.now(),
-                            actorId: currentUser.uid,
-                            actorUsername: currentUserProfile?['name'] ?? currentUser.displayName ?? 'A host',
-                            actorAvatarUrl: currentUserProfile?['profile_image_url'],
-                            targetId: event.id,
-                            targetName: event.title,
-                            targetImageUrl: event.visuals.posterUrl,
-                            message: message,
-                          );
-                          batch.set(docRef, notification.toFirestore());
-                        }
-                        
-                        try {
-                          await batch.commit();
-                        } catch (e) {
-                          debugPrint('Error sending nudges: $e');
-                        }
-                      }
-
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
-                            content: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF2E3B4E), Color(0xFF1F2937)],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  )
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Successfully nudged ${selectedUids.length} guest${selectedUids.length == 1 ? '' : 's'}!',
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-                error: (e, s) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white))),
-              );
-            },
-          ),
-        ),
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending nudges: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending nudges: $e')),
+        );
+      }
+    }
   }
 
   void _showOptionsModal(BuildContext context, Event event, bool isHost) {
@@ -1529,7 +1729,12 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + MediaQuery.of(context).padding.bottom),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          24 + MediaQuery.of(context).padding.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1544,7 +1749,11 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
             const SizedBox(height: 24),
             Text(
               isHost ? 'Host Options' : 'Event Options',
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 32),
             if (isHost) ...[
@@ -1555,15 +1764,21 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                   final router = GoRouter.of(context);
                   Navigator.pop(modalContext);
                   final hostId = event.metadata.hostId;
-                  final hostProfile = await ref.read(userProfileFutureProvider(hostId).future);
+                  final hostProfile = await ref.read(
+                    userProfileFutureProvider(hostId).future,
+                  );
                   final List<Map<String, dynamic>> resolvedCoHosts = [];
                   for (final coHostId in event.coHostIds) {
-                    final profile = await ref.read(userProfileFutureProvider(coHostId).future);
+                    final profile = await ref.read(
+                      userProfileFutureProvider(coHostId).future,
+                    );
                     if (profile != null) {
                       resolvedCoHosts.add(profile);
                     }
                   }
-                  ref.read(createEventProvider.notifier).loadEventForEditing(event, hostProfile, resolvedCoHosts);
+                  ref
+                      .read(createEventProvider.notifier)
+                      .loadEventForEditing(event, hostProfile, resolvedCoHosts);
                   router.push('/create-event');
                 },
               ),
@@ -1577,16 +1792,28 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       backgroundColor: const Color(0xFF15191D),
-                      title: const Text('Cancel Event', style: TextStyle(color: Colors.white)),
-                      content: const Text('Are you sure you want to cancel this event? This will notify your guests.', style: TextStyle(color: Colors.white70)),
+                      title: const Text(
+                        'Cancel Event',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      content: const Text(
+                        'Are you sure you want to cancel this event? This will notify your guests.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('No', style: TextStyle(color: Colors.white70)),
+                          child: const Text(
+                            'No',
+                            style: TextStyle(color: Colors.white70),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, true),
-                          child: const Text('Yes, Cancel', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text(
+                            'Yes, Cancel',
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
                         ),
                       ],
                     ),
@@ -1598,10 +1825,14 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                         updatedAt: DateTime.now(),
                       ),
                     );
-                    await ref.read(eventRepositoryProvider).updateEvent(cancelledEvent);
+                    await ref
+                        .read(eventRepositoryProvider)
+                        .updateEvent(cancelledEvent);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Event has been cancelled.')),
+                        const SnackBar(
+                          content: Text('Event has been cancelled.'),
+                        ),
                       );
                     }
                   }
@@ -1613,7 +1844,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 'Delete Event',
                 () async {
                   Navigator.pop(modalContext);
-                  final currentUser = ref.read(firebaseAuthProvider).currentUser;
+                  final currentUser = ref
+                      .read(firebaseAuthProvider)
+                      .currentUser;
                   if (event.metadata.hostId != currentUser?.uid) {
                     setState(() {
                       _deleteDenied = true;
@@ -1625,16 +1858,28 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                     context: context,
                     builder: (dialogContext) => AlertDialog(
                       backgroundColor: const Color(0xFF15191D),
-                      title: const Text('Delete Event', style: TextStyle(color: Colors.white)),
-                      content: const Text('Are you sure you want to permanently delete this event? This action cannot be undone.', style: TextStyle(color: Colors.white70)),
+                      title: const Text(
+                        'Delete Event',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      content: const Text(
+                        'Are you sure you want to permanently delete this event? This action cannot be undone.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white70),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(dialogContext, true),
-                          child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
                         ),
                       ],
                     ),
@@ -1644,14 +1889,20 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                       _isDeleting = true;
                     });
                     try {
-                      await ref.read(eventRepositoryProvider).deleteEvent(event);
+                      await ref
+                          .read(eventRepositoryProvider)
+                          .deleteEvent(event);
                       if (context.mounted) {
                         setState(() {
                           _isDeleting = false;
                           _hasDeleted = true;
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Event has been permanently deleted.')),
+                          const SnackBar(
+                            content: Text(
+                              'Event has been permanently deleted.',
+                            ),
+                          ),
                         );
                       }
                     } catch (e) {
@@ -1668,45 +1919,61 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                 },
               ),
             ] else ...[
-              _buildReminderOption(
-                Icons.reply_rounded,
-                'Share Event',
-                () {
-                  Navigator.pop(modalContext);
-                  Share.share('Check out ${event.title} on Bloom!');
-                },
-              ),
+              _buildReminderOption(Icons.reply_rounded, 'Share Event', () {
+                Navigator.pop(modalContext);
+                Share.share('Check out ${event.title} on Bloom!');
+              }),
               const SizedBox(height: 12),
               _buildReminderOption(
                 Icons.exit_to_app_rounded,
                 'Leave Event',
                 () async {
                   Navigator.pop(modalContext);
-                  final currentUser = ref.read(firebaseAuthProvider).currentUser;
+                  final currentUser = ref
+                      .read(firebaseAuthProvider)
+                      .currentUser;
                   if (currentUser != null) {
                     final bool? confirm = await showDialog<bool>(
                       context: context,
                       builder: (leaveDialogContext) => AlertDialog(
                         backgroundColor: const Color(0xFF15191D),
-                        title: const Text('Leave Event', style: TextStyle(color: Colors.white)),
-                        content: const Text('Are you sure you want to leave this event?', style: TextStyle(color: Colors.white70)),
+                        title: const Text(
+                          'Leave Event',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        content: const Text(
+                          'Are you sure you want to leave this event?',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                         actions: [
                           TextButton(
-                            onPressed: () => Navigator.pop(leaveDialogContext, false),
-                            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                            onPressed: () =>
+                                Navigator.pop(leaveDialogContext, false),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.white70),
+                            ),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pop(leaveDialogContext, true),
-                            child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
+                            onPressed: () =>
+                                Navigator.pop(leaveDialogContext, true),
+                            child: const Text(
+                              'Leave',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
                           ),
                         ],
                       ),
                     );
                     if (confirm == true) {
-                      await ref.read(eventRepositoryProvider).updateRSVP(event.id, currentUser.uid, 'declined');
+                      await ref
+                          .read(eventRepositoryProvider)
+                          .updateRSVP(event.id, currentUser.uid, 'declined');
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('You have left the event.')),
+                          const SnackBar(
+                            content: Text('You have left the event.'),
+                          ),
                         );
                       }
                     }
@@ -1745,11 +2012,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(37.5),
-            border: Border.all(
-              color: Colors.white.withValues(
-                alpha: 0.15,
-              ),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
           ),
           child: requireApproval
               ? const Row(
@@ -1794,176 +2057,38 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
   }
 }
 
-
-
-class _NudgeGuestsSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> pendingGuests;
-  final ScrollController scrollController;
-  final Function(List<String>) onNudge;
-
-  const _NudgeGuestsSheet({
-    required this.pendingGuests,
-    required this.scrollController,
-    required this.onNudge,
-  });
-
-  @override
-  State<_NudgeGuestsSheet> createState() => _NudgeGuestsSheetState();
-}
-
-class _NudgeGuestsSheetState extends State<_NudgeGuestsSheet> {
-  final Set<String> _selectedUids = {};
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    for (final guest in widget.pendingGuests) {
-      final uid = guest['uid'] as String?;
-      if (uid != null) {
-        _selectedUids.add(uid);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filteredGuests = widget.pendingGuests.where((guest) {
-      final displayName = (guest['displayName'] as String? ?? '').toLowerCase();
-      final email = (guest['email'] as String? ?? '').toLowerCase();
-      return displayName.contains(_searchQuery) || email.contains(_searchQuery);
-    }).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
+Widget _buildReminderOption(IconData icon, String title, VoidCallback onTap) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
         children: [
-          const SizedBox(height: 16),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Nudge Pending Guests',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
+          Icon(icon, color: Colors.white, size: 22),
+          const SizedBox(width: 16),
           Text(
-            'Remind guests who have not responded to RSVP.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            onChanged: (val) {
-              setState(() {
-                _searchQuery = val.trim().toLowerCase();
-              });
-            },
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Search guests...',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.4)),
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              filled: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFAD83FE)),
-              ),
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
             ),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: filteredGuests.isEmpty
-                ? Center(
-                    child: Text(
-                      'No pending guests found',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: widget.scrollController,
-                    itemCount: filteredGuests.length,
-                    itemBuilder: (context, index) {
-                      final guest = filteredGuests[index];
-                      final uid = guest['uid'] as String? ?? '';
-                      final displayName = guest['displayName'] as String? ?? 'Guest';
-                      final isSelected = _selectedUids.contains(uid);
-
-                      return CheckboxListTile(
-                        title: Text(displayName, style: const TextStyle(color: Colors.white, fontSize: 15)),
-                        subtitle: Text(guest['email'] as String? ?? '', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
-                        value: isSelected,
-                        activeColor: const Color(0xFFAD83FE),
-                        onChanged: (val) {
-                          setState(() {
-                            if (val == true) {
-                              _selectedUids.add(uid);
-                            } else {
-                              _selectedUids.remove(uid);
-                            }
-                          });
-                        },
-                      );
-                    },
-                  ),
+          const Spacer(),
+          Icon(
+            Icons.chevron_right,
+            color: Colors.white.withValues(alpha: 0.2),
+            size: 20,
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _selectedUids.isEmpty
-                ? null
-                : () => widget.onNudge(_selectedUids.toList()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFAD83FE),
-              disabledBackgroundColor: Colors.white.withValues(alpha: 0.1),
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: Text(
-              'Send Nudge (${_selectedUids.length})',
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SizedBox(height: 24 + MediaQuery.of(context).padding.bottom),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
-
-Widget _buildReminderOption(IconData icon, String title, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 22),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.2), size: 20),
-          ],
-        ),
-      ),
-    );
-  }
 
 class _AppBarInterestedButton extends ConsumerStatefulWidget {
   final String eventId;
@@ -1971,10 +2096,12 @@ class _AppBarInterestedButton extends ConsumerStatefulWidget {
   const _AppBarInterestedButton({required this.eventId});
 
   @override
-  ConsumerState<_AppBarInterestedButton> createState() => _AppBarInterestedButtonState();
+  ConsumerState<_AppBarInterestedButton> createState() =>
+      _AppBarInterestedButtonState();
 }
 
-class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton> {
+class _AppBarInterestedButtonState
+    extends ConsumerState<_AppBarInterestedButton> {
   @override
   Widget build(BuildContext context) {
     final rsvpStatus = ref.watch(userEventRsvpProvider(widget.eventId)).value;
@@ -1983,7 +2110,7 @@ class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton
 
     final fullEvent = ref.watch(eventStreamProvider(widget.eventId)).value;
     final baseCount = fullEvent?.liveCounts.interested ?? 0;
-    
+
     int displayCount = baseCount;
     final optMap = ref.watch(optimisticInterestedCountProvider);
     final optData = optMap[widget.eventId];
@@ -1994,39 +2121,57 @@ class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton
     if (displayCount < 0) displayCount = 0;
 
     return GestureDetector(
-      onTap: isGoing ? null : () {
-        final newInterested = !isInterested;
-        final newCount = newInterested ? displayCount + 1 : displayCount - 1;
-        ref.read(optimisticInterestedCountProvider.notifier).updateCount(
-          widget.eventId,
-          OptimisticCount(
-            newCount < 0 ? 0 : newCount,
-            DateTime.now().add(const Duration(seconds: 5)),
-          ),
-        );
-        
-        final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
-        if (userId != null) {
-          if (newInterested) {
-            ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, 'interested');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Marked Interested', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                backgroundColor: Color(0xFF333333),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-                margin: EdgeInsets.fromLTRB(16, 0, 16, 80),
-              ),
-            );
-          } else {
-            ref.read(eventRepositoryProvider).removeRSVP(widget.eventId, userId);
-          }
-        }
-      },
+      onTap: isGoing
+          ? null
+          : () {
+              final newInterested = !isInterested;
+              final newCount = newInterested
+                  ? displayCount + 1
+                  : displayCount - 1;
+              ref
+                  .read(optimisticInterestedCountProvider.notifier)
+                  .updateCount(
+                    widget.eventId,
+                    OptimisticCount(
+                      newCount < 0 ? 0 : newCount,
+                      DateTime.now().add(const Duration(seconds: 5)),
+                    ),
+                  );
+
+              final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
+              if (userId != null) {
+                if (newInterested) {
+                  ref
+                      .read(eventRepositoryProvider)
+                      .updateRSVP(widget.eventId, userId, 'interested');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Marked Interested',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      backgroundColor: Color(0xFF333333),
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.fromLTRB(16, 0, 16, 80),
+                    ),
+                  );
+                } else {
+                  ref
+                      .read(eventRepositoryProvider)
+                      .removeRSVP(widget.eventId, userId);
+                }
+              }
+            },
       child: Container(
         height: 40,
         width: displayCount > 0 ? null : 40,
-        padding: displayCount > 0 ? const EdgeInsets.symmetric(horizontal: 12) : EdgeInsets.zero,
+        padding: displayCount > 0
+            ? const EdgeInsets.symmetric(horizontal: 12)
+            : EdgeInsets.zero,
         alignment: displayCount > 0 ? null : Alignment.center,
         decoration: BoxDecoration(
           color: Colors.white,
@@ -2039,9 +2184,7 @@ class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton
             Icon(
               isInterested ? Icons.star : Icons.star_border,
               size: 22,
-              color: isGoing 
-                  ? Colors.black26 
-                  : Colors.black,
+              color: isGoing ? Colors.black26 : Colors.black,
             ),
             if (displayCount > 0) ...[
               const SizedBox(width: 6),
@@ -2060,4 +2203,3 @@ class _AppBarInterestedButtonState extends ConsumerState<_AppBarInterestedButton
     );
   }
 }
-

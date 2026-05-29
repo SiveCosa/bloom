@@ -65,7 +65,9 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
     if (trimmed.isEmpty) return;
 
     // Avoid duplicates by removing existing value (ignoring case)
-    _recentSearches.removeWhere((item) => item.toLowerCase() == trimmed.toLowerCase());
+    _recentSearches.removeWhere(
+      (item) => item.toLowerCase() == trimmed.toLowerCase(),
+    );
     _recentSearches.insert(0, trimmed);
 
     // Limit search history list to 10 entries
@@ -140,10 +142,7 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
       child: Stack(
         children: [
           // Background Gradient (100dp high, matches Messages screen)
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -153,7 +152,11 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
               centerTitle: true,
               leadingWidth: 48,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: const Text(
@@ -171,19 +174,30 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
                 children: [
                   // Search Bar Input (styled matching the guest list)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 4.0,
+                    ),
                     child: RoundedTextField(
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       hintText: 'Search by name or username...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? GestureDetector(
                               onTap: () {
                                 _searchController.clear();
                                 _searchFocusNode.unfocus();
                               },
-                              child: const Icon(Icons.clear, color: Colors.white54, size: 20),
+                              child: const Icon(
+                                Icons.clear,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
                             )
                           : null,
                     ),
@@ -279,9 +293,10 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
                       child: GestureDetector(
                         onTap: () {
                           _searchController.text = query;
-                          _searchController.selection = TextSelection.fromPosition(
-                            TextPosition(offset: query.length),
-                          );
+                          _searchController.selection =
+                              TextSelection.fromPosition(
+                                TextPosition(offset: query.length),
+                              );
                         },
                         behavior: HitTestBehavior.opaque,
                         child: Text(
@@ -319,9 +334,7 @@ class _SearchPeopleScreenState extends ConsumerState<SearchPeopleScreen> {
   Widget _buildSearchResultsList() {
     if (_isLoadingUsers) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF0086D8),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF0086D8)),
       );
     }
 
@@ -399,12 +412,15 @@ class SearchUserRow extends ConsumerWidget {
     final uid = user['uid'] ?? user['id'] ?? '';
     final name = user['name'] as String? ?? 'Bloom User';
     final username = user['username'] as String? ?? '';
-    final imageUrl = user['profile_image_url']?.toString() ?? user['avatar_url']?.toString();
+    final imageUrl =
+        user['profile_image_url']?.toString() ?? user['avatar_url']?.toString();
 
     final connectionStateAsync = ref.watch(connectionStateProvider(uid));
     final currentState = connectionStateAsync.value ?? FriendshipState.none;
 
-    final isActionPending = currentState == FriendshipState.sentPending || currentState == FriendshipState.connected;
+    final isActionPending =
+        currentState == FriendshipState.sentPending ||
+        currentState == FriendshipState.connected;
 
     return GestureDetector(
       onTap: onTap,
@@ -431,7 +447,9 @@ class SearchUserRow extends ConsumerWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    username.isNotEmpty ? username.replaceAll('@', '') : 'bloom member',
+                    username.isNotEmpty
+                        ? username.replaceAll('@', '')
+                        : 'bloom member',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 12,
@@ -485,13 +503,17 @@ class SearchUserRow extends ConsumerWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isActionPending ? const Color(0xFF25282D) : const Color(0xFF0086D8),
+                  backgroundColor: isActionPending
+                      ? const Color(0xFF25282D)
+                      : const Color(0xFF0086D8),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   shape: StadiumBorder(
                     side: isActionPending
-                        ? BorderSide(color: Colors.white.withValues(alpha: 0.15))
+                        ? BorderSide(
+                            color: Colors.white.withValues(alpha: 0.15),
+                          )
                         : BorderSide.none,
                   ),
                 ),
@@ -506,10 +528,10 @@ class SearchUserRow extends ConsumerWidget {
                       currentState == FriendshipState.sentPending
                           ? 'Requested'
                           : currentState == FriendshipState.receivedPending
-                              ? 'Accept'
-                              : currentState == FriendshipState.connected
-                                  ? 'Friends'
-                                  : 'Add friend',
+                          ? 'Accept'
+                          : currentState == FriendshipState.connected
+                          ? 'Friends'
+                          : 'Add friend',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,

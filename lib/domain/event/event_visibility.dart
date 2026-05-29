@@ -77,7 +77,11 @@ extension EventVisibilityExtension on EventVisibility {
               const Icon(Icons.favorite, color: Colors.white, size: 18),
               Transform.translate(
                 offset: const Offset(10, 10),
-                child: const Icon(Icons.favorite, color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.favorite,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ],
           ),

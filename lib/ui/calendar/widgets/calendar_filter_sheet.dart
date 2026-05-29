@@ -19,7 +19,8 @@ class CalendarFilterSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<CalendarFilterSheet> createState() => _CalendarFilterSheetState();
+  ConsumerState<CalendarFilterSheet> createState() =>
+      _CalendarFilterSheetState();
 }
 
 class _CalendarFilterSheetState extends ConsumerState<CalendarFilterSheet> {
@@ -28,7 +29,9 @@ class _CalendarFilterSheetState extends ConsumerState<CalendarFilterSheet> {
   @override
   void initState() {
     super.initState();
-    _selected = Set<CalendarFilterCategory>.from(ref.read(calendarFilterProvider));
+    _selected = Set<CalendarFilterCategory>.from(
+      ref.read(calendarFilterProvider),
+    );
   }
 
   void _handleReset() {
@@ -172,11 +175,7 @@ class _FilterBadge extends StatelessWidget {
           gradient: gradient,
           color: gradient == null ? backgroundColor : null,
         ),
-        child: Icon(
-          icon,
-          color: iconColor,
-          size: iconSize,
-        ),
+        child: Icon(icon, color: iconColor, size: iconSize),
       ),
     );
   }

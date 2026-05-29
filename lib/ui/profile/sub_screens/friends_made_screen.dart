@@ -12,18 +12,18 @@ class FriendsMadeScreen extends ConsumerStatefulWidget {
   final String? targetUserId;
   final String? targetUsername;
 
-  const FriendsMadeScreen({
-    super.key,
-    this.targetUserId,
-    this.targetUsername,
-  });
+  const FriendsMadeScreen({super.key, this.targetUserId, this.targetUsername});
 
   @override
   ConsumerState<FriendsMadeScreen> createState() => _FriendsMadeScreenState();
 }
 
 class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
-  void _showUnfriendOptions(BuildContext context, String friendUid, String displayName) {
+  void _showUnfriendOptions(
+    BuildContext context,
+    String friendUid,
+    String displayName,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF191B1D),
@@ -42,7 +42,9 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
               ),
               onTap: () {
                 Navigator.pop(context);
-                ref.read(connectionRepositoryProvider).removeConnection(friendUid);
+                ref
+                    .read(connectionRepositoryProvider)
+                    .removeConnection(friendUid);
                 ref.invalidate(recommendedFriendsProvider);
               },
             ),
@@ -52,7 +54,11 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
     );
   }
 
-  Widget _buildFriendRow(Map<String, dynamic> friend, {required bool isMutual, required bool isCurrentUserList}) {
+  Widget _buildFriendRow(
+    Map<String, dynamic> friend, {
+    required bool isMutual,
+    required bool isCurrentUserList,
+  }) {
     final friendUid = friend['uid'] as String;
     final profileAsync = ref.watch(userProfileStreamProvider(friendUid));
 
@@ -63,14 +69,15 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-        ),
+        decoration: const BoxDecoration(color: Colors.transparent),
         child: Row(
           children: [
             profileAsync.when(
               data: (profile) {
-                final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
+                final avatarUrl =
+                    profile?['profile_image_url'] ??
+                    profile?['avatarUrl'] ??
+                    profile?['avatar_url'] as String?;
                 return buildAvatarImage(source: avatarUrl, radius: 24);
               },
               loading: () => const CircleAvatar(
@@ -98,7 +105,9 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                 children: [
                   profileAsync.when(
                     data: (profile) => Text(
-                      profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
+                      profile?['name'] as String? ??
+                          profile?['username'] as String? ??
+                          'Bloom User',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -107,7 +116,8 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    loading: () => const ContainerPlaceholder(width: 80, height: 14),
+                    loading: () =>
+                        const ContainerPlaceholder(width: 80, height: 14),
                     error: (err, stack) => const Text(
                       'User',
                       style: TextStyle(
@@ -132,7 +142,8 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                         ),
                       );
                     },
-                    loading: () => const ContainerPlaceholder(width: 120, height: 12),
+                    loading: () =>
+                        const ContainerPlaceholder(width: 120, height: 12),
                     error: (err, stack) => Text(
                       'bloom member',
                       style: TextStyle(
@@ -167,7 +178,10 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
               GestureDetector(
                 onTap: () {
                   final profile = profileAsync.value;
-                  final name = profile?['name'] as String? ?? profile?['username'] as String? ?? 'this user';
+                  final name =
+                      profile?['name'] as String? ??
+                      profile?['username'] as String? ??
+                      'this user';
                   _showUnfriendOptions(context, friendUid, name);
                 },
                 child: Padding(
@@ -198,10 +212,7 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -218,11 +229,17 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
               centerTitle: false,
               leadingWidth: 48,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            body: widget.targetUserId != null ? _buildTargetFriendsBody() : _buildCurrentUserFriendsBody(),
+            body: widget.targetUserId != null
+                ? _buildTargetFriendsBody()
+                : _buildCurrentUserFriendsBody(),
           ),
         ],
       ),
@@ -230,7 +247,9 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
   }
 
   Widget _buildTargetFriendsBody() {
-    final targetFriendsAsync = ref.watch(userFriendsProvider(widget.targetUserId!));
+    final targetFriendsAsync = ref.watch(
+      userFriendsProvider(widget.targetUserId!),
+    );
     final currentFriendsAsync = ref.watch(friendsMadeProvider);
 
     return targetFriendsAsync.when(
@@ -238,9 +257,11 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
         return currentFriendsAsync.when(
           data: (currentFriends) {
             final currentUid = ref.watch(firebaseAuthProvider).currentUser?.uid;
-            
+
             // Filter out target user being friends with the current user themselves
-            final filteredTargetFriends = targetFriends.where((f) => f['uid'] != currentUid).toList();
+            final filteredTargetFriends = targetFriends
+                .where((f) => f['uid'] != currentUid)
+                .toList();
 
             if (filteredTargetFriends.isEmpty) {
               return const Center(
@@ -266,19 +287,21 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
               );
             }
 
-            final currentUserFriendUids = currentFriends.map((f) => f['uid'] as String).toSet();
+            final currentUserFriendUids = currentFriends
+                .map((f) => f['uid'] as String)
+                .toSet();
 
             // Separate into mutual and other
             final mutualFriends = <Map<String, dynamic>>[];
             final otherFriends = <Map<String, dynamic>>[];
 
             for (final friend in filteredTargetFriends) {
-               final friendUid = friend['uid'] as String;
-               if (currentUserFriendUids.contains(friendUid)) {
-                 mutualFriends.add(friend);
-               } else {
-                 otherFriends.add(friend);
-               }
+              final friendUid = friend['uid'] as String;
+              if (currentUserFriendUids.contains(friendUid)) {
+                mutualFriends.add(friend);
+              } else {
+                otherFriends.add(friend);
+              }
             }
 
             final children = <Widget>[];
@@ -299,7 +322,13 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                 ),
               );
               for (int i = 0; i < mutualFriends.length; i++) {
-                children.add(_buildFriendRow(mutualFriends[i], isMutual: true, isCurrentUserList: false));
+                children.add(
+                  _buildFriendRow(
+                    mutualFriends[i],
+                    isMutual: true,
+                    isCurrentUserList: false,
+                  ),
+                );
                 if (i < mutualFriends.length - 1) {
                   children.add(const SizedBox(height: 12));
                 }
@@ -327,7 +356,13 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
                 );
               }
               for (int i = 0; i < otherFriends.length; i++) {
-                children.add(_buildFriendRow(otherFriends[i], isMutual: false, isCurrentUserList: false));
+                children.add(
+                  _buildFriendRow(
+                    otherFriends[i],
+                    isMutual: false,
+                    isCurrentUserList: false,
+                  ),
+                );
                 if (i < otherFriends.length - 1) {
                   children.add(const SizedBox(height: 12));
                 }
@@ -345,7 +380,10 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
             ),
           ),
           error: (err, stack) => Center(
-            child: Text('Error: $err', style: const TextStyle(color: Colors.redAccent)),
+            child: Text(
+              'Error: $err',
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
         );
       },
@@ -355,7 +393,10 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
         ),
       ),
       error: (err, stack) => Center(
-        child: Text('Error: $err', style: const TextStyle(color: Colors.redAccent)),
+        child: Text(
+          'Error: $err',
+          style: const TextStyle(color: Colors.redAccent),
+        ),
       ),
     );
   }
@@ -394,7 +435,11 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
           itemCount: friends.length,
           separatorBuilder: (context, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            return _buildFriendRow(friends[index], isMutual: false, isCurrentUserList: true);
+            return _buildFriendRow(
+              friends[index],
+              isMutual: false,
+              isCurrentUserList: true,
+            );
           },
         );
       },
@@ -404,7 +449,10 @@ class _FriendsMadeScreenState extends ConsumerState<FriendsMadeScreen> {
         ),
       ),
       error: (err, stack) => Center(
-        child: Text('Error: $err', style: const TextStyle(color: Colors.redAccent)),
+        child: Text(
+          'Error: $err',
+          style: const TextStyle(color: Colors.redAccent),
+        ),
       ),
     );
   }

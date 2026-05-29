@@ -18,7 +18,8 @@ class CustomAnimatedClockWidget extends StatefulWidget {
   });
 
   @override
-  State<CustomAnimatedClockWidget> createState() => _CustomAnimatedClockWidgetState();
+  State<CustomAnimatedClockWidget> createState() =>
+      _CustomAnimatedClockWidgetState();
 }
 
 class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
@@ -27,7 +28,8 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
   @override
   void didUpdateWidget(CustomAnimatedClockWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedHour != null && widget.selectedHour != oldWidget.selectedHour) {
+    if (widget.selectedHour != null &&
+        widget.selectedHour != oldWidget.selectedHour) {
       _calculateTargetAngle(widget.selectedHour!);
     }
   }
@@ -37,7 +39,7 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
     double diff = (targetAngle - (_currentAngle % (2 * pi)));
     if (diff > pi) diff -= 2 * pi;
     if (diff < -pi) diff += 2 * pi;
-    
+
     setState(() {
       _currentAngle += diff;
     });
@@ -57,19 +59,20 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
             final touchPos = details.localPosition;
             final dx = touchPos.dx - center.dx;
             final dy = touchPos.dy - center.dy;
-            
+
             final distance = sqrt(dx * dx + dy * dy);
-            if (distance < (radius * 0.25)) { // Relative TBD area
+            if (distance < (radius * 0.25)) {
+              // Relative TBD area
               if (widget.onTbdReset != null) widget.onTbdReset!();
               return;
             }
 
             double angle = atan2(dy, dx) + pi / 2;
             if (angle < 0) angle += 2 * pi;
-            
+
             int hour = ((angle / (2 * pi)) * 12).round();
             if (hour == 0) hour = 12;
-            
+
             widget.onHourSelected(hour);
           },
           child: Container(
@@ -99,7 +102,8 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
                         painter: ClockSelectorPainter(
                           angle: _currentAngle - pi / 2,
                           radius: numberRadius,
-                          selectorRadius: (radius * 0.18) - 2, // 2dp gap from edge
+                          selectorRadius:
+                              (radius * 0.18) - 2, // 2dp gap from edge
                         ),
                         size: Size(widget.size, widget.size),
                       ),
@@ -130,9 +134,16 @@ class _CustomAnimatedClockWidgetState extends State<CustomAnimatedClockWidget> {
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
-                  child: widget.isTbd 
-                    ? Text('TBD', style: TextStyle(color: Colors.black, fontSize: radius * 0.12, fontWeight: FontWeight.bold))
-                    : null,
+                  child: widget.isTbd
+                      ? Text(
+                          'TBD',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: radius * 0.12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
               ],
             ),
@@ -228,7 +239,9 @@ class ClockSelectorPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ClockSelectorPainter oldDelegate) =>
-      oldDelegate.angle != angle || oldDelegate.radius != radius || oldDelegate.selectorRadius != selectorRadius;
+      oldDelegate.angle != angle ||
+      oldDelegate.radius != radius ||
+      oldDelegate.selectorRadius != selectorRadius;
 }
 
 class SelectorClipper extends CustomClipper<Path> {
@@ -237,7 +250,7 @@ class SelectorClipper extends CustomClipper<Path> {
   final double selectorRadius;
 
   SelectorClipper({
-    required this.angle, 
+    required this.angle,
     required this.radius,
     required this.selectorRadius,
   });
@@ -249,10 +262,13 @@ class SelectorClipper extends CustomClipper<Path> {
       center.dx + radius * cos(angle),
       center.dy + radius * sin(angle),
     );
-    return Path()..addOval(Rect.fromCircle(center: endPoint, radius: selectorRadius));
+    return Path()
+      ..addOval(Rect.fromCircle(center: endPoint, radius: selectorRadius));
   }
 
   @override
   bool shouldReclip(SelectorClipper oldClipper) =>
-      oldClipper.angle != angle || oldClipper.radius != radius || oldClipper.selectorRadius != selectorRadius;
+      oldClipper.angle != angle ||
+      oldClipper.radius != radius ||
+      oldClipper.selectorRadius != selectorRadius;
 }

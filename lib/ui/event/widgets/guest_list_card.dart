@@ -50,13 +50,14 @@ class GuestListCard extends ConsumerWidget {
   }
 
   Widget _buildAvatarLayout(WidgetRef ref) {
-    final bool canInvite = isHost ||
+    final bool canInvite =
+        isHost ||
         (event.audience.visibility != EventVisibility.private &&
             event.audience.visibility != EventVisibility.friendsOnly);
 
     final guestsListAsync = ref.watch(eventGuestsProvider(event.id));
     final guestsData = guestsListAsync.value ?? [];
-    
+
     final goingUserIds = guestsData
         .where((g) => g['status'] == 'going')
         .map((g) => g['uid'] as String)
@@ -64,7 +65,9 @@ class GuestListCard extends ConsumerWidget {
 
     final List<String> guests = [];
     for (int i = 0; i < goingUserIds.length && i < 6; i++) {
-      final profileAsync = ref.watch(userProfileStreamProvider(goingUserIds[i]));
+      final profileAsync = ref.watch(
+        userProfileStreamProvider(goingUserIds[i]),
+      );
       final profile = profileAsync.value;
       if (profile != null) {
         final avatar = profile['avatar_url'] ?? profile['profile_image_url'];
@@ -75,7 +78,7 @@ class GuestListCard extends ConsumerWidget {
     }
 
     final int displayCount = guests.length;
-    
+
     final List<_AvatarData> data = [];
 
     if (displayCount == 0) {
@@ -125,16 +128,17 @@ class GuestListCard extends ConsumerWidget {
       children: List.generate(data.length, (index) {
         final item = data[index];
         final bool isLast = index == data.length - 1;
-        
-        Widget avatar = _buildAvatarItem(item.url, item.size, isButton: item.isButton);
-        
+
+        Widget avatar = _buildAvatarItem(
+          item.url,
+          item.size,
+          isButton: item.isButton,
+        );
+
         if (!isLast) {
           return Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              avatar,
-              const SizedBox(width: 8),
-            ],
+            children: [avatar, const SizedBox(width: 8)],
           );
         }
         return avatar;
@@ -152,13 +156,16 @@ class GuestListCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.1),
+              width: 1,
+            ),
           ),
           child: const Icon(Icons.add, color: Colors.white, size: 24),
         ),
       );
     }
-    
+
     final bool hasValidImage = url != null && url.isNotEmpty;
 
     return Container(
@@ -175,7 +182,11 @@ class GuestListCard extends ConsumerWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: const Color(0xFF1A1D24),
-                  child: Icon(Icons.person, color: Colors.white24, size: size * 0.45),
+                  child: Icon(
+                    Icons.person,
+                    color: Colors.white24,
+                    size: size * 0.45,
+                  ),
                 ),
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
@@ -187,7 +198,9 @@ class GuestListCard extends ConsumerWidget {
                         height: size * 0.4,
                         child: const CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white30),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white30,
+                          ),
                         ),
                       ),
                     ),
@@ -201,7 +214,7 @@ class GuestListCard extends ConsumerWidget {
 
   Widget _buildFooterText(WidgetRef ref) {
     final int capacity = event.audience.capacity ?? 0;
-    
+
     int totalSpotsTaken = event.liveCounts.going;
     final guestsAsync = ref.watch(eventGuestsProvider(event.id));
     if (guestsAsync.hasValue) {
@@ -214,13 +227,13 @@ class GuestListCard extends ConsumerWidget {
       }
       totalSpotsTaken = actualGoing;
     }
-    
+
     final int spotsLeft = capacity - totalSpotsTaken;
-    
+
     final parts = <String>[];
-    
+
     parts.add('$totalSpotsTaken going');
-    
+
     if (mutualFriendsCount > 0) {
       final String friendLabel = mutualFriendsCount == 1 ? 'friend' : 'friends';
       parts.add('$mutualFriendsCount $friendLabel going');
@@ -246,6 +259,6 @@ class _AvatarData {
   final String? url;
   final double size;
   final bool isButton;
-  
+
   _AvatarData(this.url, this.size, {this.isButton = false});
 }

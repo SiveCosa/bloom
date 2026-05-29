@@ -12,7 +12,8 @@ class CoHostSelectionModal extends ConsumerStatefulWidget {
   const CoHostSelectionModal({super.key});
 
   @override
-  ConsumerState<CoHostSelectionModal> createState() => _CoHostSelectionModalState();
+  ConsumerState<CoHostSelectionModal> createState() =>
+      _CoHostSelectionModalState();
 }
 
 class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
@@ -23,7 +24,9 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
   @override
   void initState() {
     super.initState();
-    _selectedCoHosts = List<Map<String, dynamic>>.from(ref.read(createEventProvider).coHosts);
+    _selectedCoHosts = List<Map<String, dynamic>>.from(
+      ref.read(createEventProvider).coHosts,
+    );
     _searchController.addListener(() {
       setState(() {
         _searchText = _searchController.text.trim().toLowerCase();
@@ -74,10 +77,18 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                   _searchText = val.trim().toLowerCase();
                 });
               },
-              prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Colors.white54,
+                size: 20,
+              ),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.white54, size: 20),
+                      icon: const Icon(
+                        Icons.clear,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
                       onPressed: () {
                         _searchController.clear();
                         setState(() {
@@ -98,9 +109,7 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
               error: (err, stack) => Center(
                 child: Text(
                   'Error loading friends',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                 ),
               ),
               data: (friendsList) {
@@ -119,23 +128,26 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                 final List<Map<String, dynamic>> resolvedFriends = [];
                 for (final friend in friendsList) {
                   final uid = friend['uid'] as String;
-                  final profileAsync = ref.watch(userProfileStreamProvider(uid));
+                  final profileAsync = ref.watch(
+                    userProfileStreamProvider(uid),
+                  );
                   final profile = profileAsync.value;
                   if (profile != null) {
-                    resolvedFriends.add({
-                      'uid': uid,
-                      ...profile,
-                    });
+                    resolvedFriends.add({'uid': uid, ...profile});
                   }
                 }
 
                 final filteredFriends = resolvedFriends.where((profile) {
-                  final username = (profile['username'] as String? ?? '').toLowerCase();
-                  final nickname = (profile['nickname'] as String? ?? '').toLowerCase();
-                  return username.contains(_searchText) || nickname.contains(_searchText);
+                  final username = (profile['username'] as String? ?? '')
+                      .toLowerCase();
+                  final nickname = (profile['nickname'] as String? ?? '')
+                      .toLowerCase();
+                  return username.contains(_searchText) ||
+                      nickname.contains(_searchText);
                 }).toList();
 
-                final bool isAllLoaded = resolvedFriends.length == friendsList.length;
+                final bool isAllLoaded =
+                    resolvedFriends.length == friendsList.length;
 
                 if (filteredFriends.isEmpty) {
                   return Center(
@@ -162,8 +174,16 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                   if (aSelected && !bSelected) return -1;
                   if (!aSelected && bSelected) return 1;
 
-                  final aName = (a['nickname'] as String? ?? a['username'] as String? ?? '').toLowerCase();
-                  final bName = (b['nickname'] as String? ?? b['username'] as String? ?? '').toLowerCase();
+                  final aName =
+                      (a['nickname'] as String? ??
+                              a['username'] as String? ??
+                              '')
+                          .toLowerCase();
+                  final bName =
+                      (b['nickname'] as String? ??
+                              b['username'] as String? ??
+                              '')
+                          .toLowerCase();
                   return aName.compareTo(bName);
                 });
 
@@ -175,7 +195,8 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                     final uid = user['uid'] as String;
                     final username = user['username'] as String? ?? 'username';
                     final nickname = user['nickname'] as String? ?? '';
-                    final profileImageUrl = user['profile_image_url'] as String?;
+                    final profileImageUrl =
+                        user['profile_image_url'] as String?;
 
                     final isSelected = _selectedCoHosts.any(
                       (host) => (host['uid'] ?? host['id']) == uid,
@@ -197,8 +218,12 @@ class _CoHostSelectionModalState extends ConsumerState<CoHostSelectionModal> {
                           radius: 25,
                         ),
                       ),
-                      title: nickname.isNotEmpty ? nickname : username.replaceAll('@', ''),
-                      subtitle: nickname.isNotEmpty ? username.replaceAll('@', '') : '',
+                      title: nickname.isNotEmpty
+                          ? nickname
+                          : username.replaceAll('@', ''),
+                      subtitle: nickname.isNotEmpty
+                          ? username.replaceAll('@', '')
+                          : '',
                       isSelected: isSelected,
                       useSolidCheck: true,
                       verticalPadding: 10,

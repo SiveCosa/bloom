@@ -30,7 +30,8 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
     super.initState();
     final state = ref.read(createEventProvider);
     final now = DateTime.now();
-    _startDate = state.timing.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
+    _startDate =
+        state.timing.startDate ?? DateTime(now.year, now.month, now.day, 0, 0);
     _startTimeTbd = state.timing.startTimeTbd;
     _endDate = state.timing.endDate;
     _endTimeTbd = state.timing.endTimeTbd;
@@ -540,7 +541,9 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                   child: Text(
                     'AM',
                     style: TextStyle(
-                      color: _isAm ? Colors.black : Colors.white.withValues(alpha: 0.5),
+                      color: _isAm
+                          ? Colors.black
+                          : Colors.white.withValues(alpha: 0.5),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -556,7 +559,9 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
                   child: Text(
                     'PM',
                     style: TextStyle(
-                      color: !_isAm ? Colors.black : Colors.white.withValues(alpha: 0.5),
+                      color: !_isAm
+                          ? Colors.black
+                          : Colors.white.withValues(alpha: 0.5),
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -660,6 +665,4 @@ class _DateTimeModalState extends ConsumerState<DateTimeModal> {
       ),
     );
   }
-
-
 }

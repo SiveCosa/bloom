@@ -42,9 +42,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
       ),
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -106,15 +104,23 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                               ...categories.map((category) {
                                 final filteredTags = query.isEmpty
                                     ? category.tags
-                                    : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
-                                    
-                                if (filteredTags.isEmpty) return const SizedBox.shrink();
+                                    : category.tags
+                                          .where(
+                                            (i) =>
+                                                i.toLowerCase().contains(query),
+                                          )
+                                          .toList();
+
+                                if (filteredTags.isEmpty)
+                                  return const SizedBox.shrink();
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                       child: Text(
                                         category.name,
                                         style: const TextStyle(
@@ -128,13 +134,16 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                       spacing: 8.0,
                                       runSpacing: 12.0,
                                       children: filteredTags.map((interest) {
-                                        final isActive = formState.interests.contains(interest);
+                                        final isActive = formState.interests
+                                            .contains(interest);
                                         return GestureDetector(
                                           onTap: () => ref
                                               .read(signUpFormProvider.notifier)
                                               .toggleInterest(interest),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
+                                            duration: const Duration(
+                                              milliseconds: 200,
+                                            ),
                                             padding: const EdgeInsets.symmetric(
                                               vertical: 8,
                                               horizontal: 12,
@@ -142,10 +151,17 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                             decoration: BoxDecoration(
                                               color: isActive
                                                   ? Colors.white
-                                                  : Colors.white.withValues(alpha: 0.05),
-                                              borderRadius: BorderRadius.circular(_kRadius),
+                                                  : Colors.white.withValues(
+                                                      alpha: 0.05,
+                                                    ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    _kRadius,
+                                                  ),
                                               border: Border.all(
-                                                color: isActive ? Colors.white : _kBorderColor,
+                                                color: isActive
+                                                    ? Colors.white
+                                                    : _kBorderColor,
                                               ),
                                             ),
                                             child: Row(
@@ -154,7 +170,9 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                                                 Text(
                                                   interest,
                                                   style: TextStyle(
-                                                    color: isActive ? Colors.black : Colors.white,
+                                                    color: isActive
+                                                        ? Colors.black
+                                                        : Colors.white,
                                                     fontWeight: isActive
                                                         ? FontWeight.bold
                                                         : FontWeight.normal,
@@ -185,8 +203,7 @@ class _InterestsScreenState extends ConsumerState<InterestsScreen> {
                       ),
                       BloomButton(
                         text: 'Continue',
-                        onPressed: () =>
-                            context.go('/auth/signup/permissions'),
+                        onPressed: () => context.go('/auth/signup/permissions'),
                       ),
                       const SizedBox(height: 10),
                     ],

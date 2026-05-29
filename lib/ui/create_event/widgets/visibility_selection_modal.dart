@@ -10,7 +10,10 @@ class VisibilitySelectionModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedVisibility = ref.watch(createEventProvider).audience.visibility;
+    final selectedVisibility = ref
+        .watch(createEventProvider)
+        .audience
+        .visibility;
     final menuOrder = [
       EventVisibility.public,
       EventVisibility.private,

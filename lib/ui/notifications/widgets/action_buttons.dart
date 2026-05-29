@@ -43,10 +43,7 @@ class ActionButtons extends StatelessWidget {
           ),
           child: Text(
             primaryText,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
         ),
         const SizedBox(width: 8),
@@ -62,11 +59,7 @@ class ActionButtons extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white70,
-                size: 18,
-              ),
+              child: const Icon(Icons.close, color: Colors.white70, size: 18),
             ),
           ),
         ),

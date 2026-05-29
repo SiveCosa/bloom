@@ -109,10 +109,7 @@ class DiscoverFeedCard {
         aspectRatio: 1.0,
         auroraColors: auroraColors,
       ),
-      timing: EventTiming(
-        startDate: start,
-        startTimeTbd: start == null,
-      ),
+      timing: EventTiming(startDate: start, startTimeTbd: start == null),
       location: EventLocation(
         displayName: locationName,
         formattedAddress: locationName,
@@ -167,9 +164,7 @@ class DiscoverFeedAllResponse {
       for (final item in raw) {
         if (item is! Map) continue;
         try {
-          cards.add(
-            DiscoverFeedCard.fromMap(Map<String, dynamic>.from(item)),
-          );
+          cards.add(DiscoverFeedCard.fromMap(Map<String, dynamic>.from(item)));
         } catch (e) {
           debugPrint('DiscoverFeedCard parse skip: $e');
         }
@@ -191,15 +186,15 @@ class DiscoverFeedAllResponse {
   }
 
   Iterable<List<DiscoverFeedCard>> get carouselLists => [
-        weekendForecast,
-        community,
-        music,
-        arts,
-        fitness,
-        food,
-        film,
-        education,
-      ];
+    weekendForecast,
+    community,
+    music,
+    arts,
+    fitness,
+    food,
+    film,
+    education,
+  ];
 }
 
 /// Union result from [getDiscoverFeed].
@@ -208,12 +203,12 @@ class DiscoverFeedResult {
   final List<DiscoverFeedCard>? categoryFeed;
 
   const DiscoverFeedResult.all(DiscoverFeedAllResponse response)
-      : allTab = response,
-        categoryFeed = null;
+    : allTab = response,
+      categoryFeed = null;
 
   const DiscoverFeedResult.category(List<DiscoverFeedCard> cards)
-      : allTab = null,
-        categoryFeed = cards;
+    : allTab = null,
+      categoryFeed = cards;
 
   bool get isAllTab => allTab != null;
 

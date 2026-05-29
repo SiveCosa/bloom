@@ -39,8 +39,8 @@ class EventLocation {
     final resolvedGeohash = geohash.isNotEmpty
         ? geohash
         : (latitude != 0 || longitude != 0
-            ? _encodeGeohash(longitude, latitude)
-            : '');
+              ? _encodeGeohash(longitude, latitude)
+              : '');
 
     return {
       'latitude': latitude,
@@ -60,19 +60,22 @@ class EventLocation {
     final lat = map['latitude'] ?? map['lat'];
     final lng = map['longitude'] ?? map['lng'];
     if (lat is! num || lng is! num) {
-      throw const FormatException('EventLocation requires numeric latitude/longitude');
+      throw const FormatException(
+        'EventLocation requires numeric latitude/longitude',
+      );
     }
     return EventLocation(
       latitude: lat.toDouble(),
       longitude: lng.toDouble(),
       geohash: map['geohash'] as String? ?? '',
-      formattedAddress: map['formattedAddress'] as String? ??
+      formattedAddress:
+          map['formattedAddress'] as String? ??
           map['formatted_address'] as String? ??
           '',
-      displayName: map['displayName'] as String? ??
-          map['display_name'] as String? ??
-          '',
-      apartmentInfo: map['apartmentInfo'] as String? ?? map['apartment_info'] as String?,
+      displayName:
+          map['displayName'] as String? ?? map['display_name'] as String? ?? '',
+      apartmentInfo:
+          map['apartmentInfo'] as String? ?? map['apartment_info'] as String?,
     );
   }
 }

@@ -34,19 +34,22 @@ class EventCardLarge extends ConsumerWidget {
 
   List<Color> _parseAuroraColors(List<String> hexColors) {
     if (hexColors.isEmpty) return CreateEventState.defaultAuroraColors;
-    return hexColors.map((hex) {
-      try {
-        final cleanHex = hex.replaceAll('#', '');
-        if (cleanHex.length == 6) {
-          return Color(int.parse('FF$cleanHex', radix: 16));
-        } else if (cleanHex.length == 8) {
-          return Color(int.parse(cleanHex, radix: 16));
-        }
-        return Colors.transparent;
-      } catch (e) {
-        return Colors.transparent;
-      }
-    }).where((c) => c != Colors.transparent).toList();
+    return hexColors
+        .map((hex) {
+          try {
+            final cleanHex = hex.replaceAll('#', '');
+            if (cleanHex.length == 6) {
+              return Color(int.parse('FF$cleanHex', radix: 16));
+            } else if (cleanHex.length == 8) {
+              return Color(int.parse(cleanHex, radix: 16));
+            }
+            return Colors.transparent;
+          } catch (e) {
+            return Colors.transparent;
+          }
+        })
+        .where((c) => c != Colors.transparent)
+        .toList();
   }
 
   String _formatDateTime(DateTime? startTime) {
@@ -81,11 +84,13 @@ class EventCardLarge extends ConsumerWidget {
       hostImageUrl = event.hostImageUrl ?? '';
       hostName = event.hostName;
     } else {
-      final hostProfileAsync =
-          ref.watch(userProfileStreamProvider(event.hostId));
+      final hostProfileAsync = ref.watch(
+        userProfileStreamProvider(event.hostId),
+      );
 
       hostImageUrl = hostProfileAsync.when(
-        data: (profile) => profile?['profile_image_url']?.toString() ??
+        data: (profile) =>
+            profile?['profile_image_url']?.toString() ??
             profile?['avatar_url']?.toString() ??
             event.hostImageUrl ??
             '',
@@ -94,7 +99,8 @@ class EventCardLarge extends ConsumerWidget {
       );
 
       hostName = hostProfileAsync.when(
-        data: (profile) => profile?['name']?.toString() ??
+        data: (profile) =>
+            profile?['name']?.toString() ??
             profile?['username']?.toString() ??
             event.hostName,
         loading: () => event.hostName,
@@ -107,27 +113,25 @@ class EventCardLarge extends ConsumerWidget {
         currentUserId != null && event.coHostIds.contains(currentUserId);
     // 1. Extract and process color palette
     final colors = _parseAuroraColors(event.auroraColors);
-    final displayColors = colors.isNotEmpty ? colors : CreateEventState.defaultAuroraColors;
+    final displayColors = colors.isNotEmpty
+        ? colors
+        : CreateEventState.defaultAuroraColors;
     final color1 = displayColors[0];
-    final color2 = displayColors.length > 1 ? displayColors[1] : displayColors[0];
+    final color2 = displayColors.length > 1
+        ? displayColors[1]
+        : displayColors[0];
 
     // 2. Opaque gradient for Host Bar, glassmorphic gradient for bottom Info Box
     final hostBarGradient = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [
-        color1,
-        color2,
-      ],
+      colors: [color1, color2],
     );
 
     final infoGradient = LinearGradient(
       begin: Alignment.bottomLeft,
       end: Alignment.topRight,
-      colors: [
-        color1,
-        color2,
-      ],
+      colors: [color1, color2],
     );
 
     // 3. Structural Container & Clip
@@ -135,13 +139,13 @@ class EventCardLarge extends ConsumerWidget {
       onTap: () => pushEventDetail(context, event.id),
       child: Container(
         width: 250,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
         child: Align(
           alignment: Alignment.topCenter,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(15), // Fit cleanly inside border
+            borderRadius: BorderRadius.circular(
+              15,
+            ), // Fit cleanly inside border
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -151,210 +155,207 @@ class EventCardLarge extends ConsumerWidget {
                 Container(
                   height: hostBarHeight,
                   padding: const EdgeInsets.only(left: 12, right: 8),
-                  decoration: BoxDecoration(
-                    gradient: hostBarGradient,
-                  ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: event.hostId.isNotEmpty
-                              ? () => context.push('/profile/${event.hostId}')
-                              : null,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 4,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  radius: 14,
-                                  backgroundImage: hostImageUrl.isNotEmpty
-                                      ? NetworkImage(hostImageUrl)
-                                      : null,
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.2),
-                                  child: hostImageUrl.isEmpty
-                                      ? const Icon(
-                                          Icons.person,
-                                          size: 14,
-                                          color: Colors.white,
-                                        )
-                                      : null,
-                                ),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    hostName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
+                  decoration: BoxDecoration(gradient: hostBarGradient),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: event.hostId.isNotEmpty
+                                ? () => context.push('/profile/${event.hostId}')
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundImage: hostImageUrl.isNotEmpty
+                                        ? NetworkImage(hostImageUrl)
+                                        : null,
+                                    backgroundColor: Colors.white.withValues(
+                                      alpha: 0.2,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    child: hostImageUrl.isEmpty
+                                        ? const Icon(
+                                            Icons.person,
+                                            size: 14,
+                                            color: Colors.white,
+                                          )
+                                        : null,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Square poster (250×250), flush below host bar
-              SizedBox(
-                width: posterSize,
-                height: posterSize,
-                child: event.posterUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: event.posterUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          child: const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white70,
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      hostName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        errorWidget: (context, url, error) => Container(
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Square poster (250×250), flush below host bar
+                SizedBox(
+                  width: posterSize,
+                  height: posterSize,
+                  child: event.posterUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: event.posterUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              color: Colors.white30,
+                              size: 32,
+                            ),
+                          ),
+                        )
+                      : Container(
                           color: Colors.white.withValues(alpha: 0.05),
                           child: const Icon(
-                            Icons.image_not_supported,
+                            Icons.image,
                             color: Colors.white30,
                             size: 32,
                           ),
                         ),
-                      )
-                    : Container(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        child: const Icon(
-                          Icons.image,
-                          color: Colors.white30,
-                          size: 32,
-                        ),
-                      ),
-              ),
-
-              // Details container, flush below poster
-              Container(
-                decoration: BoxDecoration(
-                  gradient: infoGradient,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(15),
-                  ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 12,
-                    bottom: 12,
-                  ),
+
+                // Details container, flush below poster
+                Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.6),
-                      ],
-                    ),
+                    gradient: infoGradient,
                     borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(15),
                     ),
                   ),
-                  child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      event.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  child: Container(
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 12,
+                      bottom: 12,
                     ),
-                    const SizedBox(height: 6),
-                    Row(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.6),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(15),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.calendar_month,
-                          size: 18,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _formatDateTime(event.startTime),
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          event.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month,
+                              size: 18,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _formatDateTime(event.startTime),
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: 18,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                event.locationName.trim().isEmpty
+                                    ? 'Location TBD'
+                                    : event.locationName,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (!isCoHost) ...[
+                          const SizedBox(height: 8),
+                          Center(child: _InterestedButton(eventId: event.id)),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 18,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            event.locationName.trim().isEmpty
-                                ? 'Location TBD'
-                                : event.locationName,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (!isCoHost) ...[
-                      const SizedBox(height: 8),
-                      Center(
-                        child: _InterestedButton(eventId: event.id),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -393,11 +394,12 @@ class _InterestedButtonState extends ConsumerState<_InterestedButton> {
     final isWaitlist = rsvpStatus == 'waitlisted';
     final isRequested = rsvpStatus == 'requested';
     final isInterested = rsvpStatus == 'interested';
-    final hasActiveRsvp = isGoing || isMaybe || isNotGoing || isWaitlist || isRequested;
+    final hasActiveRsvp =
+        isGoing || isMaybe || isNotGoing || isWaitlist || isRequested;
 
     final fullEvent = ref.watch(eventStreamProvider(widget.eventId)).value;
     final baseCount = fullEvent?.liveCounts.interested ?? 0;
-    
+
     int displayCount = baseCount;
     final optMap = ref.watch(optimisticInterestedCountProvider);
     final optData = optMap[widget.eventId];
@@ -409,7 +411,7 @@ class _InterestedButtonState extends ConsumerState<_InterestedButton> {
 
     String buttonLabel;
     IconData buttonIcon;
-    
+
     if (hasActiveRsvp) {
       if (isGoing) {
         buttonLabel = 'Going';
@@ -428,58 +430,58 @@ class _InterestedButtonState extends ConsumerState<_InterestedButton> {
         buttonIcon = Icons.cancel;
       }
     } else {
-      buttonLabel = displayCount > 0 ? '$displayCount Interested' : 'Interested';
+      buttonLabel = displayCount > 0
+          ? '$displayCount Interested'
+          : 'Interested';
       buttonIcon = isInterested ? Icons.star : Icons.star_border;
     }
 
     return TextButton.icon(
       focusNode: _focusNode,
-      onPressed: hasActiveRsvp ? null : () {
-        final newInterested = !isInterested;
-        final newCount = newInterested ? displayCount + 1 : displayCount - 1;
-        ref.read(optimisticInterestedCountProvider.notifier).updateCount(
-          widget.eventId,
-          OptimisticCount(
-            newCount < 0 ? 0 : newCount,
-            DateTime.now().add(const Duration(seconds: 5)),
-          ),
-        );
-        
-        final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
-        if (userId != null) {
-          if (newInterested) {
-            ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, 'interested');
-          } else {
-            ref.read(eventRepositoryProvider).removeRSVP(widget.eventId, userId);
-          }
-        }
-      },
+      onPressed: hasActiveRsvp
+          ? null
+          : () {
+              final newInterested = !isInterested;
+              final newCount = newInterested
+                  ? displayCount + 1
+                  : displayCount - 1;
+              ref
+                  .read(optimisticInterestedCountProvider.notifier)
+                  .updateCount(
+                    widget.eventId,
+                    OptimisticCount(
+                      newCount < 0 ? 0 : newCount,
+                      DateTime.now().add(const Duration(seconds: 5)),
+                    ),
+                  );
+
+              final userId = ref.read(firebaseAuthProvider).currentUser?.uid;
+              if (userId != null) {
+                if (newInterested) {
+                  ref
+                      .read(eventRepositoryProvider)
+                      .updateRSVP(widget.eventId, userId, 'interested');
+                } else {
+                  ref
+                      .read(eventRepositoryProvider)
+                      .removeRSVP(widget.eventId, userId);
+                }
+              }
+            },
       style: TextButton.styleFrom(
         foregroundColor: Colors.white,
         disabledForegroundColor: Colors.white.withValues(alpha: 0.9),
         backgroundColor: Colors.transparent,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         minimumSize: Size.zero,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 4,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
-      icon: Icon(
-        buttonIcon,
-        size: 20,
-      ),
+      icon: Icon(buttonIcon, size: 20),
       label: Text(
         buttonLabel,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
     );
   }
 }
-

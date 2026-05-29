@@ -36,7 +36,10 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
   void _initializeIfNeeded(String? initialStatus, bool allowMaybe) {
     if (_isInitialized) return;
     _isInitialized = true;
-    final initialIndex = _getIndexForStatus(initialStatus, allowMaybe: allowMaybe);
+    final initialIndex = _getIndexForStatus(
+      initialStatus,
+      allowMaybe: allowMaybe,
+    );
     if (initialIndex != null) {
       _hasActiveSelection = true;
       _lastNonNullActiveIndex = initialIndex;
@@ -46,12 +49,20 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
   @override
   Widget build(BuildContext context) {
     // Listen to changes to handle animation transition toggles
-    ref.listen<AsyncValue<String?>>(userEventRsvpProvider(widget.eventId), (prevVal, nextVal) {
+    ref.listen<AsyncValue<String?>>(userEventRsvpProvider(widget.eventId), (
+      prevVal,
+      nextVal,
+    ) {
       final prevStatus = prevVal?.value;
       final nextStatus = nextVal.value;
 
       final allowMaybe =
-          ref.read(eventStreamProvider(widget.eventId)).value?.audience.allowMaybe ?? true;
+          ref
+              .read(eventStreamProvider(widget.eventId))
+              .value
+              ?.audience
+              .allowMaybe ??
+          true;
       final prevIndex = _getIndexForStatus(prevStatus, allowMaybe: allowMaybe);
       final nextIndex = _getIndexForStatus(nextStatus, allowMaybe: allowMaybe);
 
@@ -114,10 +125,14 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     final bool isAlreadyWaitlisted = currentStatus == 'waitlisted';
     final requireApproval = event.audience.requireApproval;
     final allowMaybe = event.audience.allowMaybe;
-    final isPastDeadline = event.audience.rsvpDeadline != null && DateTime.now().isAfter(event.audience.rsvpDeadline!);
+    final isPastDeadline =
+        event.audience.rsvpDeadline != null &&
+        DateTime.now().isAfter(event.audience.rsvpDeadline!);
 
-    final colors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
-    
+    final colors = event.visuals.auroraColors
+        .map((c) => _parseHexColor(c))
+        .toList();
+
     List<Color> gradientColors;
     if (colors.length >= 2) {
       gradientColors = [colors[0], colors[1]];
@@ -130,7 +145,10 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     final double barHeight = 75;
     final double borderRadiusVal = 37.5;
 
-    final activeIndex = _getIndexForStatus(currentStatus, allowMaybe: allowMaybe);
+    final activeIndex = _getIndexForStatus(
+      currentStatus,
+      allowMaybe: allowMaybe,
+    );
     final displayIndex = _lastNonNullActiveIndex ?? 0;
     final buttonCount = allowMaybe ? 3 : 2;
 
@@ -165,12 +183,20 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
           : requireApproval
           ? GestureDetector(
               onTap: () async {
-                if (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going') {
+                if (currentStatus == 'requested' ||
+                    currentStatus == 'waitlisted' ||
+                    currentStatus == 'going') {
                   final bool? confirm = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
                       backgroundColor: const Color(0xFF15191D),
-                      title: const Text('Remove RSVP?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      title: const Text(
+                        'Remove RSVP?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       content: const Text(
                         'If you remove your RSVP, you will need to request to get on the list again.',
                         style: TextStyle(color: Colors.white70),
@@ -178,11 +204,17 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white70),
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Remove', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text(
+                            'Remove',
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
                         ),
                       ],
                     ),
@@ -205,7 +237,10 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                 alignment: Alignment.center,
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 decoration: BoxDecoration(
-                  color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
+                  color:
+                      (currentStatus == 'requested' ||
+                          currentStatus == 'waitlisted' ||
+                          currentStatus == 'going')
                       ? Colors.white
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(34),
@@ -214,12 +249,17 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
+                      (currentStatus == 'requested' ||
+                              currentStatus == 'waitlisted' ||
+                              currentStatus == 'going')
                           ? Icons.check_circle
-                          : (isFull && !showWaitlist && !isAlreadyGoing) 
-                              ? Icons.block 
-                              : Icons.add_circle_outline,
-                      color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
+                          : (isFull && !showWaitlist && !isAlreadyGoing)
+                          ? Icons.block
+                          : Icons.add_circle_outline,
+                      color:
+                          (currentStatus == 'requested' ||
+                              currentStatus == 'waitlisted' ||
+                              currentStatus == 'going')
                           ? Colors.black
                           : Colors.white,
                       size: 24,
@@ -229,14 +269,17 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                       currentStatus == 'going'
                           ? 'Going'
                           : currentStatus == 'requested'
-                              ? 'Requested'
-                              : currentStatus == 'waitlisted'
-                                  ? 'Waitlisted'
-                                  : (isFull && !isAlreadyGoing)
-                                      ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
-                                      : 'Get on List',
+                          ? 'Requested'
+                          : currentStatus == 'waitlisted'
+                          ? 'Waitlisted'
+                          : (isFull && !isAlreadyGoing)
+                          ? (showWaitlist ? 'Join Waitlist' : 'Event Full')
+                          : 'Get on List',
                       style: TextStyle(
-                        color: (currentStatus == 'requested' || currentStatus == 'waitlisted' || currentStatus == 'going')
+                        color:
+                            (currentStatus == 'requested' ||
+                                currentStatus == 'waitlisted' ||
+                                currentStatus == 'going')
                             ? const Color(0xFF4B5563)
                             : Colors.white,
                         fontSize: 12,
@@ -250,19 +293,28 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
           : LayoutBuilder(
               builder: (context, constraints) {
                 final totalDividerWidth = (buttonCount - 1).toDouble();
-                final actualMaxWidth = (constraints.maxWidth.isInfinite || constraints.maxWidth.isNaN) 
-                    ? MediaQuery.of(context).size.width - 30.0 
+                final actualMaxWidth =
+                    (constraints.maxWidth.isInfinite ||
+                        constraints.maxWidth.isNaN)
+                    ? MediaQuery.of(context).size.width - 30.0
                     : constraints.maxWidth;
                 final safeMaxWidth = actualMaxWidth < 0 ? 0.0 : actualMaxWidth;
-                final buttonWidth = (safeMaxWidth - totalDividerWidth) / buttonCount;
-                final safeButtonWidth = (buttonWidth.isInfinite || buttonWidth.isNaN || buttonWidth < 0) 
-                    ? 0.0 
+                final buttonWidth =
+                    (safeMaxWidth - totalDividerWidth) / buttonCount;
+                final safeButtonWidth =
+                    (buttonWidth.isInfinite ||
+                        buttonWidth.isNaN ||
+                        buttonWidth < 0)
+                    ? 0.0
                     : buttonWidth;
-                
+
                 final maxLeft = safeMaxWidth - safeButtonWidth;
                 double leftOffset = displayIndex * (safeButtonWidth + 1.0);
                 if (leftOffset.isNaN || leftOffset.isInfinite) leftOffset = 0.0;
-                if (!maxLeft.isNaN && !maxLeft.isInfinite && leftOffset > maxLeft) leftOffset = maxLeft;
+                if (!maxLeft.isNaN &&
+                    !maxLeft.isInfinite &&
+                    leftOffset > maxLeft)
+                  leftOffset = maxLeft;
                 if (leftOffset < 0) leftOffset = 0.0;
 
                 return Stack(
@@ -280,7 +332,10 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                         duration: const Duration(milliseconds: 200),
                         opacity: _hasActiveSelection ? 1.0 : 0.0,
                         child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(34),
@@ -308,11 +363,17 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                         else if (isFull)
                           _RsvpButton(
                             label: showWaitlist ? 'Waitlist' : 'Event Full',
-                            icon: showWaitlist ? Icons.access_time_rounded : Icons.block,
+                            icon: showWaitlist
+                                ? Icons.access_time_rounded
+                                : Icons.block,
                             isSelected: activeIndex == 0,
                             isDisabled: !showWaitlist,
-                            onPressed: showWaitlist 
-                                ? () => _handleRsvp(userId, 'waitlisted', event: event)
+                            onPressed: showWaitlist
+                                ? () => _handleRsvp(
+                                    userId,
+                                    'waitlisted',
+                                    event: event,
+                                  )
                                 : () {},
                           )
                         else
@@ -334,7 +395,8 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
                             label: 'Maybe',
                             icon: Icons.help_outline,
                             isSelected: activeIndex == 1,
-                            isDisabled: isFull &&
+                            isDisabled:
+                                isFull &&
                                 !isAlreadyGoing &&
                                 !isAlreadyWaitlisted &&
                                 currentStatus != 'maybe',
@@ -446,14 +508,19 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
               Column(
                 children: List.generate(maxPlusOnes + 1, (index) {
                   final title = index == 0 ? 'Just Me' : '+$index';
-                  final subtitle = index == 0 
-                      ? "I won't be bringing anyone" 
-                      : (index == 1 ? "I'll be bringing +1 person" : "I'll be bringing +$index people");
-                  
+                  final subtitle = index == 0
+                      ? "I won't be bringing anyone"
+                      : (index == 1
+                            ? "I'll be bringing +1 person"
+                            : "I'll be bringing +$index people");
+
                   return InkWell(
                     onTap: () => Navigator.of(context).pop(index),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                       child: Row(
                         children: [
                           Container(
@@ -511,17 +578,28 @@ class _EventRsvpBarState extends ConsumerState<EventRsvpBar> {
     );
   }
 
-  Future<void> _handleRsvp(String? userId, String status, {Event? event}) async {
+  Future<void> _handleRsvp(
+    String? userId,
+    String status, {
+    Event? event,
+  }) async {
     if (userId == null) return;
-    
+
     int plusOnes = 0;
-    if ((status == 'going' || status == 'requested') && event != null && event.audience.maxPlusOnes > 0) {
-      final selectedPlusOnes = await _showPlusOnesSelector(context, event.audience.maxPlusOnes);
+    if ((status == 'going' || status == 'requested') &&
+        event != null &&
+        event.audience.maxPlusOnes > 0) {
+      final selectedPlusOnes = await _showPlusOnesSelector(
+        context,
+        event.audience.maxPlusOnes,
+      );
       if (selectedPlusOnes == null) return; // Cancelled
       plusOnes = selectedPlusOnes;
     }
-    
-    await ref.read(eventRepositoryProvider).updateRSVP(widget.eventId, userId, status, plusOnesCount: plusOnes);
+
+    await ref
+        .read(eventRepositoryProvider)
+        .updateRSVP(widget.eventId, userId, status, plusOnesCount: plusOnes);
   }
 
   Future<void> _handleRemoveRsvp(String? userId) async {
@@ -561,22 +639,22 @@ class _RsvpButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 24,
-                color: isDisabled 
+                color: isDisabled
                     ? Colors.white.withValues(alpha: 0.2)
                     : isSelected
-                        ? Colors.black
-                        : Colors.white.withValues(alpha: 0.9),
+                    ? Colors.black
+                    : Colors.white.withValues(alpha: 0.9),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: isDisabled 
+                  color: isDisabled
                       ? Colors.white.withValues(alpha: 0.2)
                       : isSelected
-                          ? const Color(0xFF4B5563)
-                          : Colors.white.withValues(alpha: 0.9),
+                      ? const Color(0xFF4B5563)
+                      : Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),

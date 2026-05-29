@@ -42,13 +42,19 @@ class EventGuestListScreen extends ConsumerStatefulWidget {
   final String eventId;
   final String? initialTab;
 
-  const EventGuestListScreen({super.key, required this.eventId, this.initialTab});
+  const EventGuestListScreen({
+    super.key,
+    required this.eventId,
+    this.initialTab,
+  });
 
   @override
-  ConsumerState<EventGuestListScreen> createState() => _EventGuestListScreenState();
+  ConsumerState<EventGuestListScreen> createState() =>
+      _EventGuestListScreenState();
 }
 
-class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> with SingleTickerProviderStateMixin {
+class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen>
+    with SingleTickerProviderStateMixin {
   TabController? _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -89,13 +95,20 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
         if (event == null) {
           return const Scaffold(
             backgroundColor: Colors.black,
-            body: Center(child: Text('Event not found', style: TextStyle(color: Colors.white54))),
+            body: Center(
+              child: Text(
+                'Event not found',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
           );
         }
 
         final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
-        final isHostOrCoHost = userId != null &&
-            (event.metadata.hostId == userId || event.coHostIds.contains(userId));
+        final isHostOrCoHost =
+            userId != null &&
+            (event.metadata.hostId == userId ||
+                event.coHostIds.contains(userId));
         final newTabs = _buildTabs(event, isHostOrCoHost: isHostOrCoHost);
 
         bool tabsChanged = false;
@@ -114,15 +127,17 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
           _tabs = newTabs;
           _lastEvent = event;
           _tabController?.dispose();
-          
+
           int initialIndex = 0;
           if (widget.initialTab != null) {
-            final idx = _tabs.indexWhere((t) => _tabMatchesInitial(t, widget.initialTab!));
+            final idx = _tabs.indexWhere(
+              (t) => _tabMatchesInitial(t, widget.initialTab!),
+            );
             if (idx != -1) {
               initialIndex = idx;
             }
           }
-          
+
           _tabController = TabController(
             length: _tabs.length,
             vsync: this,
@@ -136,18 +151,26 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
         int getCountForTab(String tabName) {
           final targetStatus = _tabToRsvpStatus(tabName);
           return guests.where((g) {
-            final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();
+            final status =
+                (g['status'] as String? ?? g['rsvp_status'] as String? ?? '')
+                    .toLowerCase();
             return status == targetStatus;
           }).length;
         }
 
-        final palette = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+        final palette = event.visuals.auroraColors
+            .map((c) => _parseHexColor(c))
+            .toList();
 
         return Scaffold(
           backgroundColor: Colors.black,
           body: Stack(
             children: [
-              AuroraBackground(colors: palette.isNotEmpty ? palette : const [Color(0xFFAD83FE), Color(0xFF6C35DE)]),
+              AuroraBackground(
+                colors: palette.isNotEmpty
+                    ? palette
+                    : const [Color(0xFFAD83FE), Color(0xFF6C35DE)],
+              ),
               Container(
                 width: double.infinity,
                 height: double.infinity,
@@ -173,12 +196,20 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 2,
+                                ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
                                       onPressed: () => context.pop(),
                                     ),
                                     const Text(
@@ -195,11 +226,18 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                  vertical: 4.0,
+                                ),
                                 child: RoundedTextField(
                                   controller: _searchController,
                                   hintText: 'Search guests...',
-                                  prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                                  prefixIcon: const Icon(
+                                    Icons.search,
+                                    color: Colors.white54,
+                                    size: 20,
+                                  ),
                                   onChanged: (value) {
                                     setState(() {
                                       _searchQuery = value.toLowerCase();
@@ -210,14 +248,18 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                               const SizedBox(height: 4),
                               Theme(
                                 data: Theme.of(context).copyWith(
-                                  colorScheme: Theme.of(context).colorScheme.copyWith(
-                                    surfaceContainerHighest: Colors.transparent,
-                                  ),
+                                  colorScheme: Theme.of(context).colorScheme
+                                      .copyWith(
+                                        surfaceContainerHighest:
+                                            Colors.transparent,
+                                      ),
                                 ),
-                                 child: TabBar(
+                                child: TabBar(
                                   controller: _tabController,
                                   isScrollable: false,
-                                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                                  overlayColor: WidgetStateProperty.all(
+                                    Colors.transparent,
+                                  ),
                                   splashFactory: NoSplash.splashFactory,
                                   indicator: const UnderlineTabIndicator(
                                     borderSide: BorderSide(
@@ -227,9 +269,17 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                   ),
                                   indicatorSize: TabBarIndicatorSize.tab,
                                   labelColor: Colors.white,
-                                  unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
-                                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                  unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  unselectedLabelColor: Colors.white.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                  labelStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                  unselectedLabelStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                   dividerColor: Colors.transparent,
                                   tabAlignment: TabAlignment.fill,
                                   padding: EdgeInsets.zero,
@@ -250,7 +300,9 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                                             children: [
                                               Text(
                                                 '$count',
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                               const SizedBox(width: 4),
                                               Text(tab),
@@ -273,11 +325,15 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
                           top: false,
                           child: TabBarView(
                             controller: _tabController,
-                            children: _tabs.map((tab) => _GuestListTabView(
-                              event: event,
-                              tabName: tab,
-                              searchQuery: _searchQuery,
-                            )).toList(),
+                            children: _tabs
+                                .map(
+                                  (tab) => _GuestListTabView(
+                                    event: event,
+                                    tabName: tab,
+                                    searchQuery: _searchQuery,
+                                  ),
+                                )
+                                .toList(),
                           ),
                         ),
                       ),
@@ -295,7 +351,9 @@ class _EventGuestListScreenState extends ConsumerState<EventGuestListScreen> wit
       ),
       error: (err, stack) => Scaffold(
         backgroundColor: Colors.black,
-        body: Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+        body: Center(
+          child: Text('Error: $err', style: const TextStyle(color: Colors.red)),
+        ),
       ),
     );
   }
@@ -316,14 +374,18 @@ class _GuestListTabView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final guestsAsync = ref.watch(eventGuestFilterProvider(event.id));
     final userId = ref.watch(firebaseAuthProvider).currentUser?.uid;
-    final isHost = userId != null && (event.metadata.hostId == userId || event.coHostIds.contains(userId));
+    final isHost =
+        userId != null &&
+        (event.metadata.hostId == userId || event.coHostIds.contains(userId));
 
     return guestsAsync.when(
       data: (guests) {
         final targetStatus = _tabToRsvpStatus(tabName);
-        
+
         final filteredGuests = guests.where((g) {
-          final status = (g['status'] as String? ?? g['rsvp_status'] as String? ?? '').toLowerCase();
+          final status =
+              (g['status'] as String? ?? g['rsvp_status'] as String? ?? '')
+                  .toLowerCase();
           if (status != targetStatus) return false;
 
           if (searchQuery.isEmpty) return true;
@@ -334,11 +396,15 @@ class _GuestListTabView extends ConsumerWidget {
         }).toList();
 
         if (filteredGuests.isEmpty) {
-           return Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.people_outline, color: Colors.white.withValues(alpha: 0.2), size: 64),
+                Icon(
+                  Icons.people_outline,
+                  color: Colors.white.withValues(alpha: 0.2),
+                  size: 64,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'No one here yet',
@@ -366,8 +432,11 @@ class _GuestListTabView extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red))),
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (err, stack) => Center(
+        child: Text('Error: $err', style: const TextStyle(color: Colors.red)),
+      ),
     );
   }
 }

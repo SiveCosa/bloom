@@ -15,7 +15,8 @@ class PendingRequestsScreen extends ConsumerStatefulWidget {
   const PendingRequestsScreen({super.key});
 
   @override
-  ConsumerState<PendingRequestsScreen> createState() => _PendingRequestsScreenState();
+  ConsumerState<PendingRequestsScreen> createState() =>
+      _PendingRequestsScreenState();
 }
 
 class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
@@ -54,10 +55,7 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -73,7 +71,11 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
               elevation: 0,
               scrolledUnderElevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -104,9 +106,13 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   itemCount: requests.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final request = requests[index];
                     final recipientUid = request['uid'] as String;
@@ -115,10 +121,14 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                     if (timestamp is Timestamp) {
                       requestedAt = timestamp.toDate();
                     } else if (timestamp is int) {
-                      requestedAt = DateTime.fromMillisecondsSinceEpoch(timestamp);
+                      requestedAt = DateTime.fromMillisecondsSinceEpoch(
+                        timestamp,
+                      );
                     }
 
-                    final profileAsync = ref.watch(userProfileStreamProvider(recipientUid));
+                    final profileAsync = ref.watch(
+                      userProfileStreamProvider(recipientUid),
+                    );
 
                     return Container(
                       height: 80,
@@ -131,14 +141,21 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                           Expanded(
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () => context.push('/profile/$recipientUid'),
+                              onTap: () =>
+                                  context.push('/profile/$recipientUid'),
                               child: Row(
                                 children: [
                                   // Avatar image loading or error states handled cleanly
                                   profileAsync.when(
                                     data: (profile) {
-                                      final avatarUrl = profile?['profile_image_url'] ?? profile?['avatarUrl'] ?? profile?['avatar_url'] as String?;
-                                      return buildAvatarImage(source: avatarUrl, radius: 25);
+                                      final avatarUrl =
+                                          profile?['profile_image_url'] ??
+                                          profile?['avatarUrl'] ??
+                                          profile?['avatar_url'] as String?;
+                                      return buildAvatarImage(
+                                        source: avatarUrl,
+                                        radius: 25,
+                                      );
                                     },
                                     loading: () => const CircleAvatar(
                                       radius: 25,
@@ -148,25 +165,37 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                         height: 16,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white24),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white24,
+                                              ),
                                         ),
                                       ),
                                     ),
                                     error: (err, stack) => const CircleAvatar(
                                       radius: 25,
                                       backgroundColor: Color(0xFF1A1D24),
-                                      child: Icon(Icons.person, color: Colors.white24, size: 25),
+                                      child: Icon(
+                                        Icons.person,
+                                        color: Colors.white24,
+                                        size: 25,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         profileAsync.when(
                                           data: (profile) => Text(
-                                            profile?['name'] as String? ?? profile?['username'] as String? ?? 'Bloom User',
+                                            profile?['name'] as String? ??
+                                                profile?['username']
+                                                    as String? ??
+                                                'Bloom User',
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
@@ -175,7 +204,11 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          loading: () => const ContainerPlaceholder(width: 80, height: 14),
+                                          loading: () =>
+                                              const ContainerPlaceholder(
+                                                width: 80,
+                                                height: 14,
+                                              ),
                                           error: (err, stack) => const Text(
                                             'User',
                                             style: TextStyle(
@@ -188,23 +221,35 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                         const SizedBox(height: 4),
                                         profileAsync.when(
                                           data: (profile) {
-                                            final username = profile?['username'] as String?;
+                                            final username =
+                                                profile?['username'] as String?;
                                             return Row(
                                               children: [
-                                                if (username != null && username.isNotEmpty) ...[
+                                                if (username != null &&
+                                                    username.isNotEmpty) ...[
                                                   Text(
-                                                    username.replaceAll('@', ''),
+                                                    username.replaceAll(
+                                                      '@',
+                                                      '',
+                                                    ),
                                                     style: TextStyle(
-                                                      color: Colors.white.withValues(alpha: 0.5),
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.5,
+                                                          ),
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.w500,
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 6),
                                                   Text(
                                                     '•',
                                                     style: TextStyle(
-                                                      color: Colors.white.withValues(alpha: 0.3),
+                                                      color: Colors.white
+                                                          .withValues(
+                                                            alpha: 0.3,
+                                                          ),
                                                       fontSize: 12,
                                                     ),
                                                   ),
@@ -212,23 +257,34 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                                 ],
                                                 Text(
                                                   requestedAt != null
-                                                      ? _getElapsedTime(requestedAt)
+                                                      ? _getElapsedTime(
+                                                          requestedAt,
+                                                        )
                                                       : 'now',
                                                   style: TextStyle(
-                                                    color: Colors.white.withValues(alpha: 0.35),
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.35,
+                                                        ),
                                                     fontSize: 12,
                                                   ),
                                                 ),
                                               ],
                                             );
                                           },
-                                          loading: () => const ContainerPlaceholder(width: 120, height: 12),
+                                          loading: () =>
+                                              const ContainerPlaceholder(
+                                                width: 120,
+                                                height: 12,
+                                              ),
                                           error: (err, stack) => Text(
                                             requestedAt != null
                                                 ? _getElapsedTime(requestedAt)
                                                 : 'now',
                                             style: TextStyle(
-                                              color: Colors.white.withValues(alpha: 0.35),
+                                              color: Colors.white.withValues(
+                                                alpha: 0.35,
+                                              ),
                                               fontSize: 12,
                                             ),
                                           ),
@@ -259,7 +315,9 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Friend request cancelled.'),
+                                      content: Text(
+                                        'Friend request cancelled.',
+                                      ),
                                       duration: Duration(seconds: 2),
                                     ),
                                   );
@@ -268,7 +326,9 @@ class _PendingRequestsScreenState extends ConsumerState<PendingRequestsScreen> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Failed to cancel request: $e'),
+                                      content: Text(
+                                        'Failed to cancel request: $e',
+                                      ),
                                       backgroundColor: Colors.redAccent,
                                     ),
                                   );

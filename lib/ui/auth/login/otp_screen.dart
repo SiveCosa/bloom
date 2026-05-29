@@ -61,9 +61,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
       body: Stack(
         children: [
-          const GradientTopBar(
-            showDarkOverlay: true,
-          ),
+          const GradientTopBar(showDarkOverlay: true),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15.0),
@@ -123,18 +121,24 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                     counterText: "",
                                     contentPadding: EdgeInsets.zero,
                                     filled: true,
-                                    fillColor: Colors.white.withValues(alpha: 0.15),
+                                    fillColor: Colors.white.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(15),
                                       borderSide: BorderSide(
-                                        color: Colors.white.withValues(alpha: 0.25),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         width: 1.5,
                                       ),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(15),
                                       borderSide: BorderSide(
-                                        color: Colors.white.withValues(alpha: 0.25),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         width: 1.5,
                                       ),
                                     ),
@@ -150,7 +154,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               ),
                               if (i == 2)
                                 const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                  ),
                                   child: Text(
                                     '-',
                                     style: TextStyle(
@@ -184,15 +190,22 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                             onPressed: timerState.canResend
                                 ? () async {
                                     try {
-                                      ref.read(otpTimerProvider.notifier).start();
+                                      ref
+                                          .read(otpTimerProvider.notifier)
+                                          .start();
                                       await ref
-                                          .read(emailOtpControllerProvider.notifier)
+                                          .read(
+                                            emailOtpControllerProvider.notifier,
+                                          )
                                           .sendOtp(email, AuthOtpFlow.login);
                                     } catch (e) {
-                                      ref.read(otpTimerProvider.notifier).stop();
+                                      ref
+                                          .read(otpTimerProvider.notifier)
+                                          .stop();
                                       if (context.mounted) {
                                         setState(() {
-                                          _errorMessage = otpRequestErrorMessage(e);
+                                          _errorMessage =
+                                              otpRequestErrorMessage(e);
                                         });
                                       }
                                     }
@@ -213,7 +226,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                                 fontWeight: FontWeight.bold,
                                 color: timerState.canResend
                                     ? const Color(0xFFFF007F)
-                                    : const Color(0xFFFF007F).withValues(alpha: 0.5),
+                                    : const Color(
+                                        0xFFFF007F,
+                                      ).withValues(alpha: 0.5),
                               ),
                             ),
                           ),

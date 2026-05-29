@@ -17,13 +17,11 @@ import '../widgets/scheduled_event_card.dart';
 class PublicProfileScreen extends ConsumerStatefulWidget {
   final String userId;
 
-  const PublicProfileScreen({
-    super.key,
-    required this.userId,
-  });
+  const PublicProfileScreen({super.key, required this.userId});
 
   @override
-  ConsumerState<PublicProfileScreen> createState() => _PublicProfileScreenState();
+  ConsumerState<PublicProfileScreen> createState() =>
+      _PublicProfileScreenState();
 }
 
 class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
@@ -47,16 +45,14 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
         final cutoffPx = _contentCutoff(context);
         const fadeHeightPx = 6.0;
         final cutoff = (cutoffPx / bounds.height).clamp(0.0, 1.0);
-        final fadeEnd =
-            ((cutoffPx + fadeHeightPx) / bounds.height).clamp(cutoff, 1.0);
+        final fadeEnd = ((cutoffPx + fadeHeightPx) / bounds.height).clamp(
+          cutoff,
+          1.0,
+        );
         return LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: const [
-            Colors.transparent,
-            Colors.transparent,
-            Colors.black,
-          ],
+          colors: const [Colors.transparent, Colors.transparent, Colors.black],
           stops: [0.0, cutoff, fadeEnd],
         ).createShader(bounds);
       },
@@ -111,9 +107,11 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     final profileUserId = widget.userId;
     final profileAsync = ref.watch(userProfileStreamProvider(profileUserId));
     final connectionState =
-        ref.watch(connectionStateProvider(profileUserId)).value ?? FriendshipState.none;
-    final upcomingEventsAsync =
-        ref.watch(publicProfileUpcomingEventsProvider(profileUserId));
+        ref.watch(connectionStateProvider(profileUserId)).value ??
+        FriendshipState.none;
+    final upcomingEventsAsync = ref.watch(
+      publicProfileUpcomingEventsProvider(profileUserId),
+    );
     final friendsListAsync = ref.watch(userFriendsProvider(profileUserId));
     final contentCutoff = _contentCutoff(context);
 
@@ -158,151 +156,186 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                 final friendsCount =
                     (friendsListAsync.value?.length ?? counts?['friends'] ?? 0)
                         .toString();
-                final hostedCount =
-                    ref.watch(publicProfileHostedCountProvider(profileUserId)).toString();
-                final joinedCount =
-                    ref.watch(publicProfileJoinedCountProvider(profileUserId)).toString();
+                final hostedCount = ref
+                    .watch(publicProfileHostedCountProvider(profileUserId))
+                    .toString();
+                final joinedCount = ref
+                    .watch(publicProfileJoinedCountProvider(profileUserId))
+                    .toString();
 
-                final socialLinks = doc['social_links'] as Map<String, dynamic>?;
+                final socialLinks =
+                    doc['social_links'] as Map<String, dynamic>?;
 
                 return CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(child: SizedBox(height: contentCutoff)),
                     SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 20),
-                          
-                          Center(
-                            child: Column(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+
+                            Center(
+                              child: Column(
+                                children: [
+                                  buildAvatarImage(
+                                    source: imageUrl,
+                                    radius: 58,
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(
+                                    name,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 25),
+
+                            Row(
                               children: [
-                                buildAvatarImage(source: imageUrl, radius: 58),
-                                const SizedBox(height: 15),
-                                Text(
-                                  name,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
+                                Expanded(
+                                  child: _buildStatItem(
+                                    'Friends made',
+                                    friendsCount,
+                                    () {
+                                      context.push(
+                                        '/profile/$profileUserId/friends',
+                                        extra: name,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                _buildDivider(),
+                                Expanded(
+                                  child: _buildStatItem(
+                                    'Hosted events',
+                                    hostedCount,
+                                    () {
+                                      context.push(
+                                        '/profile/$profileUserId/hosted',
+                                        extra: name,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                _buildDivider(),
+                                Expanded(
+                                  child: _buildStatItem(
+                                    'Joined events',
+                                    joinedCount,
+                                    () {
+                                      context.push(
+                                        '/profile/$profileUserId/joined',
+                                        extra: name,
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 25),
-                          
-                          Row(
-                            children: [
-                              Expanded(child: _buildStatItem('Friends made', friendsCount, () {
-                                context.push('/profile/$profileUserId/friends', extra: name);
-                              })),
-                              _buildDivider(),
-                              Expanded(child: _buildStatItem('Hosted events', hostedCount, () {
-                                context.push('/profile/$profileUserId/hosted', extra: name);
-                              })),
-                              _buildDivider(),
-                              Expanded(child: _buildStatItem('Joined events', joinedCount, () {
-                                context.push('/profile/$profileUserId/joined', extra: name);
-                              })),
+
+                            if (socialLinks != null &&
+                                socialLinks.isNotEmpty) ...[
+                              const SizedBox(height: 28),
+                              _buildSocialLinksRow(socialLinks),
+                              const SizedBox(height: 10),
+                              _buildBioText(bio),
+                            ] else ...[
+                              const SizedBox(height: 20),
+                              _buildBioText(bio),
                             ],
-                          ),
 
-                          if (socialLinks != null && socialLinks.isNotEmpty) ...[
-                            const SizedBox(height: 28),
-                            _buildSocialLinksRow(socialLinks),
-                            const SizedBox(height: 10),
-                            _buildBioText(bio),
-                          ] else ...[
-                            const SizedBox(height: 20),
-                            _buildBioText(bio),
-                          ],
-                          
-                          const SizedBox(height: 25),
-                          
-                          _buildConnectionActionBar(
-                            context,
-                            ref,
-                            connectionState,
-                            displayName: name,
-                          ),
-                          const SizedBox(height: 30),
-                          
-                          Text(
-                            "$name's Schedule",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            const SizedBox(height: 25),
+
+                            _buildConnectionActionBar(
+                              context,
+                              ref,
+                              connectionState,
+                              displayName: name,
                             ),
-                          ),
-                          const SizedBox(height: 15),
-                        ],
-                      ),
-                    ),
-                  ),
+                            const SizedBox(height: 30),
 
-                  upcomingEventsAsync.when(
-                    loading: () => const SliverToBoxAdapter(
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF0086D8),
-                          ),
-                        ),
-                      ),
-                    ),
-                    error: (e, _) => SliverToBoxAdapter(
-                      child: Center(
-                        child: Text(
-                          'Error loading events: $e',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ),
-                    ),
-                    data: (events) {
-                      if (events.isEmpty) {
-                        return const SliverToBoxAdapter(
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(40.0),
-                              child: Text(
-                                'No upcoming joining events yet.',
-                                style: TextStyle(color: Colors.white38),
+                            Text(
+                              "$name's Schedule",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                        );
-                      }
+                            const SizedBox(height: 15),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                      return SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
+                    upcomingEventsAsync.when(
+                      loading: () => const SliverToBoxAdapter(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF0086D8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      error: (e, _) => SliverToBoxAdapter(
+                        child: Center(
+                          child: Text(
+                            'Error loading events: $e',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      ),
+                      data: (events) {
+                        if (events.isEmpty) {
+                          return const SliverToBoxAdapter(
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(40.0),
+                                child: Text(
+                                  'No upcoming joining events yet.',
+                                  style: TextStyle(color: Colors.white38),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
                               final event = events[index];
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: ScheduledEventCard(
                                   event: event,
-                                  isHost: event.hostId == profileUserId ||
+                                  isHost:
+                                      event.hostId == profileUserId ||
                                       event.coHostIds.contains(profileUserId),
                                   onTap: () =>
                                       pushEventDetail(context, event.id),
                                 ),
                               );
-                            },
-                            childCount: events.length,
+                            }, childCount: events.length),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                  
+                        );
+                      },
+                    ),
+
                     const SliverToBoxAdapter(child: SizedBox(height: 50)),
                   ],
                 );
@@ -329,10 +362,13 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
         children: [
           if (instagram.isNotEmpty)
             _buildSocialLink('instagram', instagram, false),
-          if (x.isNotEmpty)
-            _buildSocialLink('x', x, instagram.isNotEmpty),
+          if (x.isNotEmpty) _buildSocialLink('x', x, instagram.isNotEmpty),
           if (snapchat.isNotEmpty)
-            _buildSocialLink('snapchat', snapchat, instagram.isNotEmpty || x.isNotEmpty),
+            _buildSocialLink(
+              'snapchat',
+              snapchat,
+              instagram.isNotEmpty || x.isNotEmpty,
+            ),
         ],
       ),
     );
@@ -374,11 +410,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               ),
             )
           else
-            const Icon(
-              Icons.link,
-              size: 14,
-              color: Colors.white10,
-            ),
+            const Icon(Icons.link, size: 14, color: Colors.white10),
           const SizedBox(width: 4),
           Text(
             handle,
@@ -540,7 +572,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     required String displayName,
   }) {
     final showDecline = state == FriendshipState.receivedPending;
-    
+
     return SizedBox(
       height: 40,
       child: Row(
@@ -552,35 +584,36 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               textColor: Colors.white,
               onTap: () {
                 if (showDecline) {
-                  ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+                  ref
+                      .read(connectionRepositoryProvider)
+                      .removeConnection(widget.userId);
                   ref.invalidate(recommendedFriendsProvider);
                 } else {
-                  openChat(
-                    context,
-                    uid: widget.userId,
-                    username: displayName,
-                  );
+                  openChat(context, uid: widget.userId, username: displayName);
                 }
               },
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: _buildReactiveConnectionButton(context, ref, state),
-          ),
+          Expanded(child: _buildReactiveConnectionButton(context, ref, state)),
         ],
       ),
     );
   }
 
-  Widget _buildReactiveConnectionButton(BuildContext context, WidgetRef ref, FriendshipState state) {
+  Widget _buildReactiveConnectionButton(
+    BuildContext context,
+    WidgetRef ref,
+    FriendshipState state,
+  ) {
     switch (state) {
       case FriendshipState.none:
         return _buildBaseButton(
           label: 'Add Friend',
           backgroundColor: const Color(0xFF0086D8),
           textColor: Colors.white,
-          onTap: () => ref.read(connectionRepositoryProvider).sendRequest(widget.userId),
+          onTap: () =>
+              ref.read(connectionRepositoryProvider).sendRequest(widget.userId),
         );
       case FriendshipState.sentPending:
         return _buildBaseButton(
@@ -589,7 +622,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           textColor: Colors.white54,
           trailingIcon: Icons.close,
           onTap: () {
-            ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+            ref
+                .read(connectionRepositoryProvider)
+                .removeConnection(widget.userId);
             ref.invalidate(recommendedFriendsProvider);
           },
         );
@@ -604,8 +639,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   .read(connectionRepositoryProvider)
                   .acceptRequest(widget.userId);
               invalidateFriendshipCaches(ref, widget.userId);
-            } catch (_) {
-            }
+            } catch (_) {}
           },
         );
       case FriendshipState.connected:
@@ -634,7 +668,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -662,17 +699,24 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF191B1D),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.person_remove, color: Colors.redAccent),
-              title: const Text('Remove Friend', style: TextStyle(color: Colors.redAccent)),
+              title: const Text(
+                'Remove Friend',
+                style: TextStyle(color: Colors.redAccent),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                ref.read(connectionRepositoryProvider).removeConnection(widget.userId);
+                ref
+                    .read(connectionRepositoryProvider)
+                    .removeConnection(widget.userId);
                 ref.invalidate(recommendedFriendsProvider);
               },
             ),
@@ -682,6 +726,3 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     );
   }
 }
-
-
-

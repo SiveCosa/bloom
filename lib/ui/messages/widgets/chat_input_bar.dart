@@ -172,10 +172,7 @@ class ChatInputBar extends ConsumerWidget {
 }
 
 class _EventAttachmentPreview extends StatelessWidget {
-  const _EventAttachmentPreview({
-    required this.event,
-    required this.onClear,
-  });
+  const _EventAttachmentPreview({required this.event, required this.onClear});
 
   final Event event;
   final VoidCallback onClear;
@@ -267,11 +264,7 @@ class _GradientPlusButton extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
-          colors: [
-            Color(0xFFC151FD),
-            Color(0xFFF04A9F),
-            Color(0xFFFFB965),
-          ],
+          colors: [Color(0xFFC151FD), Color(0xFFF04A9F), Color(0xFFFFB965)],
         ),
       ),
       child: const Icon(Icons.add, color: Colors.white, size: 25),

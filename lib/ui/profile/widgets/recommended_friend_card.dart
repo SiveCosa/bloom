@@ -17,14 +17,16 @@ class RecommendedFriendCard extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<RecommendedFriendCard> createState() => _RecommendedFriendCardState();
+  ConsumerState<RecommendedFriendCard> createState() =>
+      _RecommendedFriendCardState();
 }
 
-class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> with SingleTickerProviderStateMixin {
+class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _widthAnimation;
   late Animation<double> _opacityAnimation;
-  
+
   bool _isDismissing = false;
   FriendshipState? _localStateOverride;
 
@@ -35,12 +37,14 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _widthAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _opacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _widthAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -62,19 +66,28 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
   @override
   Widget build(BuildContext context) {
     final uid = widget.user['uid'] ?? widget.user['id'] ?? '';
-    final username = (widget.user['username']?.toString() ?? 'User').replaceAll('@', '');
-    final imageUrl = widget.user['profile_image_url']?.toString() ?? widget.user['avatar_url']?.toString();
+    final username = (widget.user['username']?.toString() ?? 'User').replaceAll(
+      '@',
+      '',
+    );
+    final imageUrl =
+        widget.user['profile_image_url']?.toString() ??
+        widget.user['avatar_url']?.toString();
     final defaultContext = widget.user['known_from'] ?? 'Same institution';
 
     final connectionStateAsync = ref.watch(connectionStateProvider(uid));
-    final currentState = _localStateOverride ?? (connectionStateAsync.value ?? FriendshipState.none);
+    final currentState =
+        _localStateOverride ??
+        (connectionStateAsync.value ?? FriendshipState.none);
 
     final affinityAsync = ref.watch(recommendedFriendAffinityProvider(uid));
-    final contextText = affinityAsync.value?.isNotEmpty == true 
-        ? affinityAsync.value! 
+    final contextText = affinityAsync.value?.isNotEmpty == true
+        ? affinityAsync.value!
         : defaultContext;
 
-    final isActionPending = currentState == FriendshipState.sentPending || currentState == FriendshipState.connected;
+    final isActionPending =
+        currentState == FriendshipState.sentPending ||
+        currentState == FriendshipState.connected;
 
     return SizeTransition(
       axis: Axis.horizontal,
@@ -97,18 +110,20 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                   decoration: BoxDecoration(
                     color: const Color(0xFF25282D),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     child: Column(
                       children: [
-                        buildAvatarImage(
-                          source: imageUrl,
-                          radius: 35,
-                        ),
+                        buildAvatarImage(source: imageUrl, radius: 35),
                         const SizedBox(height: 8),
-                        
+
                         Text(
                           username,
                           style: const TextStyle(
@@ -120,7 +135,7 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        
+
                         Expanded(
                           child: Center(
                             child: AnimatedSwitcher(
@@ -141,19 +156,22 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                           ),
                         ),
                         const SizedBox(height: 4),
-                        
+
                         SizedBox(
                           width: double.infinity,
                           height: 32,
                           child: ElevatedButton(
                             onPressed: () async {
                               if (uid.isEmpty) return;
-                              final repo = ref.read(connectionRepositoryProvider);
+                              final repo = ref.read(
+                                connectionRepositoryProvider,
+                              );
 
                               switch (currentState) {
                                 case FriendshipState.none:
                                   setState(() {
-                                    _localStateOverride = FriendshipState.sentPending;
+                                    _localStateOverride =
+                                        FriendshipState.sentPending;
                                   });
                                   try {
                                     await repo.sendRequest(uid);
@@ -177,7 +195,8 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                                   break;
                                 case FriendshipState.receivedPending:
                                   setState(() {
-                                    _localStateOverride = FriendshipState.connected;
+                                    _localStateOverride =
+                                        FriendshipState.connected;
                                   });
                                   try {
                                     await repo.acceptRequest(uid);
@@ -203,7 +222,9 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isActionPending ? const Color(0xFF3A3F45) : const Color(0xFF0086D8),
+                              backgroundColor: isActionPending
+                                  ? const Color(0xFF3A3F45)
+                                  : const Color(0xFF0086D8),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: EdgeInsets.zero,
@@ -213,18 +234,27 @@ class _RecommendedFriendCardState extends ConsumerState<RecommendedFriendCard> w
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (isActionPending) ...[
-                                  const Icon(Icons.check, size: 14, color: Colors.white),
+                                  const Icon(
+                                    Icons.check,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                   const SizedBox(width: 4),
                                 ],
                                 Text(
                                   currentState == FriendshipState.sentPending
                                       ? 'Requested'
-                                      : currentState == FriendshipState.receivedPending
-                                          ? 'Accept'
-                                          : currentState == FriendshipState.connected
-                                              ? 'Friends'
-                                              : 'Add Friend',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                      : currentState ==
+                                            FriendshipState.receivedPending
+                                      ? 'Accept'
+                                      : currentState ==
+                                            FriendshipState.connected
+                                      ? 'Friends'
+                                      : 'Add Friend',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),

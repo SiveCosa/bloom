@@ -69,14 +69,18 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
               controller: _searchController,
               hintText: 'Search tags...',
               onChanged: (_) => setState(() {}),
-              prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+              prefixIcon: const Icon(
+                Icons.search,
+                color: Colors.white54,
+                size: 20,
+              ),
             ),
             const SizedBox(height: 20),
             Expanded(
               child: categoriesAsync.when(
                 data: (categories) {
                   final query = _searchController.text.toLowerCase().trim();
-                  
+
                   return ListView.builder(
                     physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -85,12 +89,14 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
                       if (index == categories.length) {
                         return const SizedBox(height: 40);
                       }
-                      
+
                       final category = categories[index];
                       final filteredTags = query.isEmpty
                           ? category.tags
-                          : category.tags.where((i) => i.toLowerCase().contains(query)).toList();
-                          
+                          : category.tags
+                                .where((i) => i.toLowerCase().contains(query))
+                                .toList();
+
                       if (filteredTags.isEmpty) return const SizedBox.shrink();
 
                       return Column(
@@ -128,10 +134,16 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
                                     horizontal: 12,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? Colors.white : Colors.transparent,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.transparent,
                                     borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
-                                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
                                       width: 1,
                                     ),
                                   ),
@@ -141,7 +153,9 @@ class _TagSelectionModalState extends ConsumerState<TagSelectionModal> {
                                       Text(
                                         tag,
                                         style: TextStyle(
-                                          color: isSelected ? Colors.black : Colors.white,
+                                          color: isSelected
+                                              ? Colors.black
+                                              : Colors.white,
                                           fontWeight: isSelected
                                               ? FontWeight.bold
                                               : FontWeight.normal,

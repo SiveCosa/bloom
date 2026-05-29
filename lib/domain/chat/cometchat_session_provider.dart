@@ -12,10 +12,7 @@ import 'cometchat_config_loader.dart';
 enum CometChatSessionStatus { idle, loggingIn, ready, failed }
 
 class CometChatSessionState {
-  const CometChatSessionState({
-    required this.status,
-    this.error,
-  });
+  const CometChatSessionState({required this.status, this.error});
 
   final CometChatSessionStatus status;
   final String? error;
@@ -59,9 +56,7 @@ class CometChatSessionNotifier extends Notifier<CometChatSessionState> {
       await CometChatProvider.ensureInitialized();
       await CometChatAuthService.loginWithFirebaseSession();
 
-      state = const CometChatSessionState(
-        status: CometChatSessionStatus.ready,
-      );
+      state = const CometChatSessionState(status: CometChatSessionStatus.ready);
     } catch (e, stack) {
       debugPrint('CometChat session failed: $e\n$stack');
       state = CometChatSessionState(
@@ -91,5 +86,5 @@ class CometChatSessionNotifier extends Notifier<CometChatSessionState> {
 
 final cometChatSessionProvider =
     NotifierProvider<CometChatSessionNotifier, CometChatSessionState>(
-  CometChatSessionNotifier.new,
-);
+      CometChatSessionNotifier.new,
+    );

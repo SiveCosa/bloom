@@ -17,11 +17,13 @@ class EventsHostedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPublic = targetUserId != null;
-    final eventsAsync = isPublic 
-        ? ref.watch(publicHostedEventsProvider(targetUserId!)) 
+    final eventsAsync = isPublic
+        ? ref.watch(publicHostedEventsProvider(targetUserId!))
         : ref.watch(hostedEventsProvider);
-    
-    final titleText = isPublic ? '${targetUsername ?? "User"} hosted' : 'Events Hosted';
+
+    final titleText = isPublic
+        ? '${targetUsername ?? "User"} hosted'
+        : 'Events Hosted';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
@@ -88,12 +90,24 @@ class EventsHostedScreen extends ConsumerWidget {
 
                       final now = DateTime.now();
                       // Group events: Upcoming (Future or Ongoing) vs Past
-                      final upcoming = events.where((e) => !e.timing.isPast).toList();
-                      final past = events.where((e) => e.timing.isPast).toList();
+                      final upcoming = events
+                          .where((e) => !e.timing.isPast)
+                          .toList();
+                      final past = events
+                          .where((e) => e.timing.isPast)
+                          .toList();
 
                       // Sort: Upcoming (closest first), Past (most recent first)
-                      upcoming.sort((a, b) => (a.timing.startDate ?? now).compareTo(b.timing.startDate ?? now));
-                      past.sort((a, b) => (b.timing.startDate ?? now).compareTo(a.timing.startDate ?? now));
+                      upcoming.sort(
+                        (a, b) => (a.timing.startDate ?? now).compareTo(
+                          b.timing.startDate ?? now,
+                        ),
+                      );
+                      past.sort(
+                        (a, b) => (b.timing.startDate ?? now).compareTo(
+                          a.timing.startDate ?? now,
+                        ),
+                      );
 
                       return CustomScrollView(
                         physics: const BouncingScrollPhysics(),
@@ -103,14 +117,19 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: upcoming[index],
-                                  onTap: () => pushEventDetail(context, upcoming[index].id),
+                                  onTap: () => pushEventDetail(
+                                    context,
+                                    upcoming[index].id,
+                                  ),
                                 ),
                                 childCount: upcoming.length,
                               ),
                             ),
 
                           if (past.isNotEmpty)
-                            const SliverToBoxAdapter(child: PastEventsDivider()),
+                            const SliverToBoxAdapter(
+                              child: PastEventsDivider(),
+                            ),
 
                           // Past Events List
                           if (past.isNotEmpty)
@@ -118,12 +137,13 @@ class EventsHostedScreen extends ConsumerWidget {
                               delegate: SliverChildBuilderDelegate(
                                 (context, index) => EventMediumCard(
                                   event: past[index],
-                                  onTap: () => pushEventDetail(context, past[index].id),
+                                  onTap: () =>
+                                      pushEventDetail(context, past[index].id),
                                 ),
                                 childCount: past.length,
                               ),
                             ),
-                            
+
                           const SliverToBoxAdapter(child: SizedBox(height: 40)),
                         ],
                       );

@@ -416,11 +416,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             radius: 60,
           ),
           if (!isLocked)
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: _buildEditIconButton(),
-            ),
+            Positioned(right: 0, bottom: 0, child: _buildEditIconButton()),
         ],
       ),
     );
@@ -467,7 +463,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         children: [
           IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 8),
           const Text(
@@ -574,7 +574,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(borderRadius),
               borderSide: BorderSide(
-              color: Colors.white.withValues(alpha: 0.15),
+                color: Colors.white.withValues(alpha: 0.15),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -608,11 +608,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           color: Color(0xFF0086D8), // Using the blue from ProfileScreen
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.camera_alt,
-          color: Colors.white,
-          size: 20,
-        ),
+        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
       ),
     );
   }

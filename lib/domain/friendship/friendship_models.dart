@@ -1,9 +1,4 @@
-enum FriendshipState { 
-  none, 
-  sentPending, 
-  receivedPending, 
-  connected 
-}
+enum FriendshipState { none, sentPending, receivedPending, connected }
 
 class RecommendationContext {
   final String text;

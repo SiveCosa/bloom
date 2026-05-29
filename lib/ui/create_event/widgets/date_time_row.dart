@@ -29,8 +29,11 @@ class DateTimeRow extends ConsumerWidget {
     final endDate = state.timing.endDate;
 
     bool isUnset = startDate == null;
-    bool isSingleDay = startDate != null && (endDate == null || _isSameDay(startDate, endDate));
-    bool isMultiDay = startDate != null && endDate != null && !_isSameDay(startDate, endDate);
+    bool isSingleDay =
+        startDate != null &&
+        (endDate == null || _isSameDay(startDate, endDate));
+    bool isMultiDay =
+        startDate != null && endDate != null && !_isSameDay(startDate, endDate);
 
     return GestureDetector(
       onTap: onTap,
@@ -88,9 +91,14 @@ class DateTimeRow extends ConsumerWidget {
     }
 
     if (isSingleDay) {
-      final startTimeStr = _formatTime(state.timing.startDate!, state.timing.startTimeTbd);
-      final endTimeStr = state.timing.endDate != null ? _formatTime(state.timing.endDate!, state.timing.endTimeTbd) : null;
-      
+      final startTimeStr = _formatTime(
+        state.timing.startDate!,
+        state.timing.startTimeTbd,
+      );
+      final endTimeStr = state.timing.endDate != null
+          ? _formatTime(state.timing.endDate!, state.timing.endTimeTbd)
+          : null;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -131,7 +139,10 @@ class DateTimeRow extends ConsumerWidget {
                 ),
               ),
               TextSpan(
-                text: _formatTime(state.timing.startDate!, state.timing.startTimeTbd),
+                text: _formatTime(
+                  state.timing.startDate!,
+                  state.timing.startTimeTbd,
+                ),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 16,
@@ -154,7 +165,10 @@ class DateTimeRow extends ConsumerWidget {
                 ),
               ),
               TextSpan(
-                text: _formatTime(state.timing.endDate!, state.timing.endTimeTbd),
+                text: _formatTime(
+                  state.timing.endDate!,
+                  state.timing.endTimeTbd,
+                ),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 16,

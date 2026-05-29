@@ -18,10 +18,7 @@ class AddChatScreen extends ConsumerWidget {
       color: const Color(0xFF0B0E12),
       child: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
           Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(
@@ -74,10 +71,7 @@ class AddChatScreen extends ConsumerWidget {
                         SizedBox(height: 16),
                         Text(
                           'Add friends to start chatting',
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 15,
-                          ),
+                          style: TextStyle(color: Colors.white54, fontSize: 15),
                         ),
                       ],
                     ),
@@ -85,7 +79,10 @@ class AddChatScreen extends ConsumerWidget {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   itemCount: friends.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 4),
                   itemBuilder: (context, index) {

@@ -379,8 +379,14 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     );
   }
 
-  void loadEventForEditing(Event event, Map<String, dynamic>? hostProfile, List<Map<String, dynamic>> resolvedCoHosts) {
-    final parsedColors = event.visuals.auroraColors.map((c) => _parseHexColor(c)).toList();
+  void loadEventForEditing(
+    Event event,
+    Map<String, dynamic>? hostProfile,
+    List<Map<String, dynamic>> resolvedCoHosts,
+  ) {
+    final parsedColors = event.visuals.auroraColors
+        .map((c) => _parseHexColor(c))
+        .toList();
     state = CreateEventState(
       title: event.title,
       description: event.description,
@@ -391,8 +397,11 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       audience: event.audience,
       extras: event.extras,
       rsvpReminders: event.rsvpReminders,
-      auroraColors: parsedColors.isEmpty ? CreateEventState.defaultAuroraColors : parsedColors,
-      defaultPosterUrl: event.visuals.posterUrl ?? CreateEventState.fallbackPosterUrl,
+      auroraColors: parsedColors.isEmpty
+          ? CreateEventState.defaultAuroraColors
+          : parsedColors,
+      defaultPosterUrl:
+          event.visuals.posterUrl ?? CreateEventState.fallbackPosterUrl,
       editingEventId: event.id,
       coHosts: resolvedCoHosts,
     );
@@ -415,7 +424,9 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
   void removeCoHost(String uid) {
     state = state.copyWith(
-      coHosts: state.coHosts.where((host) => (host['uid'] ?? host['id']) != uid).toList(),
+      coHosts: state.coHosts
+          .where((host) => (host['uid'] ?? host['id']) != uid)
+          .toList(),
     );
   }
 
@@ -426,17 +437,17 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
   Future<void> compileAndPublishEvent() async {
     final user = ref.read(firebaseAuthProvider).currentUser;
     final hostId = user?.uid;
-    
+
     if (hostId == null) {
       throw 'You must be signed in to post an event.';
     }
-    
+
     final repo = ref.read(eventRepositoryProvider);
 
     try {
       final isEditing = state.editingEventId != null;
-      final eventId = isEditing 
-          ? state.editingEventId! 
+      final eventId = isEditing
+          ? state.editingEventId!
           : FirebaseFirestore.instance.collection('events').doc().id;
 
       String? finalPosterUrl =
@@ -476,7 +487,9 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
       final event = Event(
         id: eventId,
-        title: state.title.trim().isEmpty ? 'Untitled Event' : state.title.trim(),
+        title: state.title.trim().isEmpty
+            ? 'Untitled Event'
+            : state.title.trim(),
         description: state.description,
         tags: state.tags,
         visuals: state.visuals.copyWith(posterUrl: finalPosterUrl),

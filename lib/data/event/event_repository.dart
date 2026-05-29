@@ -32,10 +32,13 @@ class EventRepository {
         'startTime': Timestamp.fromDate(event.timing.startDate!),
       if (event.timing.startDate != null)
         'start_time': Timestamp.fromDate(event.timing.startDate!),
-      if (event.timing.endDate != null) 'endTime': Timestamp.fromDate(event.timing.endDate!),
-      if (event.timing.endDate != null) 'end_time': Timestamp.fromDate(event.timing.endDate!),
+      if (event.timing.endDate != null)
+        'endTime': Timestamp.fromDate(event.timing.endDate!),
+      if (event.timing.endDate != null)
+        'end_time': Timestamp.fromDate(event.timing.endDate!),
       if (event.visuals.posterUrl != null) 'posterUrl': event.visuals.posterUrl,
-      if (event.visuals.posterUrl != null) 'poster_url': event.visuals.posterUrl,
+      if (event.visuals.posterUrl != null)
+        'poster_url': event.visuals.posterUrl,
       'auroraColors': event.visuals.auroraColors,
       'aurora_colors': event.visuals.auroraColors,
       if (event.location != null) 'locationName': event.location!.displayName,
@@ -57,12 +60,18 @@ class EventRepository {
     final participantIds = {event.metadata.hostId, ...event.coHostIds};
     for (final uid in participantIds) {
       if (uid.isEmpty) continue;
-      final ref = _firestore.collection('users').doc(uid).collection('schedule').doc(eventId);
+      final ref = _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('schedule')
+          .doc(eventId);
       batch.set(ref, _schedulePayload(event, eventId, hostName: hostName));
     }
   }
 
-  List<Event> _parseEventDocs(Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+  List<Event> _parseEventDocs(
+    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
     final events = <Event>[];
     for (final doc in docs) {
       try {
@@ -85,7 +94,11 @@ class EventRepository {
   }
 
   Future<String> uploadPoster(String eventId, Uint8List bytes) async {
-    final ref = _storage.ref().child('posters').child(eventId).child('poster.webp');
+    final ref = _storage
+        .ref()
+        .child('posters')
+        .child(eventId)
+        .child('poster.webp');
     final uploadTask = await ref.putData(
       bytes,
       SettableMetadata(contentType: 'image/webp'),
@@ -94,45 +107,52 @@ class EventRepository {
   }
 
   Future<String> createEvent(Event event) async {
-    final docRef = event.id.isNotEmpty 
+    final docRef = event.id.isNotEmpty
         ? _firestore.collection('events').doc(event.id)
         : _firestore.collection('events').doc();
-    
+
     final eventWithId = event.copyWith(id: docRef.id);
-    
+
     // Use a transaction or batch to ensure both happen or neither
     final batch = _firestore.batch();
-    
+
     // Operation 1: Main Event
     batch.set(docRef, eventWithId.toMap());
-    
+
     _writeSchedulesForHostAndCoHosts(batch, eventWithId, docRef.id);
-    
+
     // Increment hosted count for the user
     final userRef = _firestore.collection('users').doc(event.metadata.hostId);
     batch.set(userRef, {
-      'counts': {
-        'hosted': FieldValue.increment(1),
-      }
+      'counts': {'hosted': FieldValue.increment(1)},
     }, SetOptions(merge: true));
-    
+
     await batch.commit();
     return docRef.id;
   }
 
   Future<void> updateEvent(Event event) async {
     final batch = _firestore.batch();
-    batch.set(_firestore.collection('events').doc(event.id), event.toMap(), SetOptions(merge: true));
-    
+    batch.set(
+      _firestore.collection('events').doc(event.id),
+      event.toMap(),
+      SetOptions(merge: true),
+    );
+
     _writeSchedulesForHostAndCoHosts(batch, event, event.id, hostName: 'Me');
     await batch.commit();
   }
 
   Future<void> deleteEvent(Event event) async {
     // Delete the poster image from Firebase Storage if it has one
-    if (event.visuals.posterUrl != null && event.visuals.posterUrl!.isNotEmpty) {
+    if (event.visuals.posterUrl != null &&
+        event.visuals.posterUrl!.isNotEmpty) {
       try {
-        final ref = _storage.ref().child('posters').child(event.id).child('poster.webp');
+        final ref = _storage
+            .ref()
+            .child('posters')
+            .child(event.id)
+            .child('poster.webp');
         await ref.delete();
       } catch (e) {
         // If file doesn't exist or deletion fails, log and continue
@@ -141,26 +161,28 @@ class EventRepository {
     }
 
     final batch = _firestore.batch();
-    
+
     // Remove from main collection
     batch.delete(_firestore.collection('events').doc(event.id));
-    
+
     final scheduleParticipantIds = {event.metadata.hostId, ...event.coHostIds};
     for (final uid in scheduleParticipantIds) {
       if (uid.isEmpty) continue;
       batch.delete(
-        _firestore.collection('users').doc(uid).collection('schedule').doc(event.id),
+        _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('schedule')
+            .doc(event.id),
       );
     }
-        
+
     // Decrement hosted count for the user
     final userRef = _firestore.collection('users').doc(event.metadata.hostId);
     batch.set(userRef, {
-      'counts': {
-        'hosted': FieldValue.increment(-1),
-      }
+      'counts': {'hosted': FieldValue.increment(-1)},
     }, SetOptions(merge: true));
-    
+
     await batch.commit();
   }
 
@@ -183,10 +205,12 @@ class EventRepository {
         .where('metadata.hostId', isEqualTo: userId)
         .snapshots()
         .map((snapshot) {
-      final events = _parseEventDocs(snapshot.docs);
-      events.sort((a, b) => b.metadata.createdAt.compareTo(a.metadata.createdAt));
-      return events;
-    });
+          final events = _parseEventDocs(snapshot.docs);
+          events.sort(
+            (a, b) => b.metadata.createdAt.compareTo(a.metadata.createdAt),
+          );
+          return events;
+        });
   }
 
   Stream<List<Event>> getCoHostedEventsStream(String userId) {
@@ -196,10 +220,12 @@ class EventRepository {
         .where('co_host_ids', arrayContains: userId)
         .snapshots()
         .map((snapshot) {
-      final events = _parseEventDocs(snapshot.docs);
-      events.sort((a, b) => b.metadata.createdAt.compareTo(a.metadata.createdAt));
-      return events;
-    });
+          final events = _parseEventDocs(snapshot.docs);
+          events.sort(
+            (a, b) => b.metadata.createdAt.compareTo(a.metadata.createdAt),
+          );
+          return events;
+        });
   }
 
   Stream<List<Event>> getHostedAndCoHostedEventsStream(String userId) {
@@ -221,18 +247,18 @@ class EventRepository {
         .where('metadata.hostId', isEqualTo: userId)
         .snapshots()
         .listen((snap) {
-      hosted = _parseEventDocs(snap.docs);
-      emitMerged();
-    }, onError: controller.addError);
+          hosted = _parseEventDocs(snap.docs);
+          emitMerged();
+        }, onError: controller.addError);
 
     final coSub = _firestore
         .collection('events')
         .where('co_host_ids', arrayContains: userId)
         .snapshots()
         .listen((snap) {
-      coHosted = _parseEventDocs(snap.docs);
-      emitMerged();
-    }, onError: controller.addError);
+          coHosted = _parseEventDocs(snap.docs);
+          emitMerged();
+        }, onError: controller.addError);
 
     controller.onCancel = () {
       hostSub.cancel();
@@ -258,7 +284,9 @@ class EventRepository {
     final eventSubs = <String, StreamSubscription<Event?>>{};
 
     void publish() {
-      if (latestSchedule == null || latestHostedIds == null || controller.isClosed) {
+      if (latestSchedule == null ||
+          latestHostedIds == null ||
+          controller.isClosed) {
         return;
       }
 
@@ -277,17 +305,14 @@ class EventRepository {
       }
       for (final id in orderedIds) {
         if (eventSubs.containsKey(id)) continue;
-        eventSubs[id] = getEventStream(id).listen(
-          (event) {
-            if (event != null) {
-              eventsById[id] = event;
-            } else {
-              eventsById.remove(id);
-            }
-            publish();
-          },
-          onError: controller.addError,
-        );
+        eventSubs[id] = getEventStream(id).listen((event) {
+          if (event != null) {
+            eventsById[id] = event;
+          } else {
+            eventsById.remove(id);
+          }
+          publish();
+        }, onError: controller.addError);
       }
 
       final events = [
@@ -297,23 +322,17 @@ class EventRepository {
       controller.add(events);
     }
 
-    final scheduleSub = getScheduleStream(userId).listen(
-      (list) {
-        latestSchedule = list
-            .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
-            .toList();
-        publish();
-      },
-      onError: controller.addError,
-    );
+    final scheduleSub = getScheduleStream(userId).listen((list) {
+      latestSchedule = list
+          .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+          .toList();
+      publish();
+    }, onError: controller.addError);
 
-    final hostedSub = getHostedAndCoHostedEventsStream(userId).listen(
-      (hosted) {
-        latestHostedIds = hosted.map((e) => e.id).toSet();
-        publish();
-      },
-      onError: controller.addError,
-    );
+    final hostedSub = getHostedAndCoHostedEventsStream(userId).listen((hosted) {
+      latestHostedIds = hosted.map((e) => e.id).toSet();
+      publish();
+    }, onError: controller.addError);
 
     controller.onCancel = () {
       scheduleSub.cancel();
@@ -343,7 +362,9 @@ class EventRepository {
     final eventSubs = <String, StreamSubscription<Event?>>{};
 
     void publish() {
-      if (latestSchedule == null || latestHostedIds == null || controller.isClosed) {
+      if (latestSchedule == null ||
+          latestHostedIds == null ||
+          controller.isClosed) {
         return;
       }
 
@@ -362,17 +383,14 @@ class EventRepository {
       }
       for (final id in orderedIds) {
         if (eventSubs.containsKey(id)) continue;
-        eventSubs[id] = getEventStream(id).listen(
-          (event) {
-            if (event != null) {
-              eventsById[id] = event;
-            } else {
-              eventsById.remove(id);
-            }
-            publish();
-          },
-          onError: controller.addError,
-        );
+        eventSubs[id] = getEventStream(id).listen((event) {
+          if (event != null) {
+            eventsById[id] = event;
+          } else {
+            eventsById.remove(id);
+          }
+          publish();
+        }, onError: controller.addError);
       }
 
       final events = [
@@ -382,23 +400,17 @@ class EventRepository {
       controller.add(events);
     }
 
-    final scheduleSub = getScheduleStream(userId).listen(
-      (list) {
-        latestSchedule = list
-            .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
-            .toList();
-        publish();
-      },
-      onError: controller.addError,
-    );
+    final scheduleSub = getScheduleStream(userId).listen((list) {
+      latestSchedule = list
+          .map((data) => ScheduledEvent.fromMap(data, data['id'] as String))
+          .toList();
+      publish();
+    }, onError: controller.addError);
 
-    final hostedSub = getHostedAndCoHostedEventsStream(userId).listen(
-      (hosted) {
-        latestHostedIds = hosted.map((e) => e.id).toSet();
-        publish();
-      },
-      onError: controller.addError,
-    );
+    final hostedSub = getHostedAndCoHostedEventsStream(userId).listen((hosted) {
+      latestHostedIds = hosted.map((e) => e.id).toSet();
+      publish();
+    }, onError: controller.addError);
 
     controller.onCancel = () {
       scheduleSub.cancel();
@@ -442,20 +454,20 @@ class EventRepository {
           continue;
         }
 
-        eventSubs[id] = getEventStream(id).listen(
-          (event) {
-            if (event != null) {
-              final currentRawEvent = latestSchedule?.firstWhere((e) => e['id'] == id, orElse: () => rawEvent);
-              if (currentRawEvent != null) {
-                validatedEvents[id] = currentRawEvent;
-              }
-            } else {
-              validatedEvents.remove(id);
+        eventSubs[id] = getEventStream(id).listen((event) {
+          if (event != null) {
+            final currentRawEvent = latestSchedule?.firstWhere(
+              (e) => e['id'] == id,
+              orElse: () => rawEvent,
+            );
+            if (currentRawEvent != null) {
+              validatedEvents[id] = currentRawEvent;
             }
-            publish();
-          },
-          onError: controller.addError,
-        );
+          } else {
+            validatedEvents.remove(id);
+          }
+          publish();
+        }, onError: controller.addError);
       }
 
       final result = [
@@ -471,13 +483,12 @@ class EventRepository {
         .collection('schedule')
         .orderBy('startTime', descending: false)
         .snapshots()
-        .listen(
-      (snapshot) {
-        latestSchedule = snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
-        publish();
-      },
-      onError: controller.addError,
-    );
+        .listen((snapshot) {
+          latestSchedule = snapshot.docs
+              .map((doc) => {...doc.data(), 'id': doc.id})
+              .toList();
+          publish();
+        }, onError: controller.addError);
 
     controller.onCancel = () {
       scheduleSub.cancel();
@@ -524,20 +535,20 @@ class EventRepository {
           continue;
         }
 
-        eventSubs[id] = getEventStream(id).listen(
-          (event) {
-            if (event != null) {
-              final currentRawEvent = latestSchedule?.firstWhere((e) => e['id'] == id, orElse: () => rawEvent);
-              if (currentRawEvent != null) {
-                validatedEvents[id] = currentRawEvent;
-              }
-            } else {
-              validatedEvents.remove(id);
+        eventSubs[id] = getEventStream(id).listen((event) {
+          if (event != null) {
+            final currentRawEvent = latestSchedule?.firstWhere(
+              (e) => e['id'] == id,
+              orElse: () => rawEvent,
+            );
+            if (currentRawEvent != null) {
+              validatedEvents[id] = currentRawEvent;
             }
-            publish();
-          },
-          onError: controller.addError,
-        );
+          } else {
+            validatedEvents.remove(id);
+          }
+          publish();
+        }, onError: controller.addError);
       }
 
       final result = [
@@ -556,13 +567,12 @@ class EventRepository {
         .orderBy('startTime', descending: false)
         .limit(10)
         .snapshots()
-        .listen(
-      (snapshot) {
-        latestSchedule = snapshot.docs.map((doc) => {...doc.data(), 'id': doc.id}).toList();
-        publish();
-      },
-      onError: controller.addError,
-    );
+        .listen((snapshot) {
+          latestSchedule = snapshot.docs
+              .map((doc) => {...doc.data(), 'id': doc.id})
+              .toList();
+          publish();
+        }, onError: controller.addError);
 
     controller.onCancel = () {
       scheduleSub.cancel();
@@ -588,14 +598,22 @@ class EventRepository {
     });
   }
 
-  Future<void> updateRSVPReminders(String eventId, List<String> reminders) async {
+  Future<void> updateRSVPReminders(
+    String eventId,
+    List<String> reminders,
+  ) async {
     if (eventId.trim().isEmpty) return;
     await _firestore.collection('events').doc(eventId).update({
       'rsvpReminders': reminders,
     });
   }
 
-  Future<void> updateRSVP(String eventId, String userId, String status, {int plusOnesCount = 0}) async {
+  Future<void> updateRSVP(
+    String eventId,
+    String userId,
+    String status, {
+    int plusOnesCount = 0,
+  }) async {
     if (eventId.trim().isEmpty || userId.trim().isEmpty) return;
     await _firestore
         .collection('events')
@@ -603,10 +621,10 @@ class EventRepository {
         .collection('guests')
         .doc(userId)
         .set({
-      'status': status,
-      'plusOnesCount': plusOnesCount,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+          'status': status,
+          'plusOnesCount': plusOnesCount,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> removeRSVP(String eventId, String userId) async {
@@ -620,7 +638,8 @@ class EventRepository {
   }
 
   Stream<String?> getUserRSVPStream(String eventId, String userId) {
-    if (eventId.trim().isEmpty || userId.trim().isEmpty) return Stream.value(null);
+    if (eventId.trim().isEmpty || userId.trim().isEmpty)
+      return Stream.value(null);
     return _firestore
         .collection('events')
         .doc(eventId)
@@ -637,7 +656,11 @@ class EventRepository {
         .doc(eventId)
         .collection('guests')
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {...doc.data(), 'uid': doc.id}).toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => {...doc.data(), 'uid': doc.id})
+              .toList(),
+        );
   }
 }
 

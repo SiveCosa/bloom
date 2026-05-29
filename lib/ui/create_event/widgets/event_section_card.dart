@@ -54,7 +54,12 @@ class EventSectionCard extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: EdgeInsets.fromLTRB(16, (headerIcon != null || title != null) ? 0 : 16, 16, 16),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              (headerIcon != null || title != null) ? 0 : 16,
+              16,
+              16,
+            ),
             child: body,
           ),
         ],

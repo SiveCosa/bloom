@@ -38,7 +38,8 @@ class DiscoverScreen extends ConsumerStatefulWidget {
   ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProviderStateMixin {
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
+    with TickerProviderStateMixin {
   late final ScrollController _scrollController;
   late final AnimationController _spinController;
   final ValueNotifier<double> _dragOffset = ValueNotifier(0.0);
@@ -125,22 +126,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
       if (_scrollController.offset > 0) {
         _scrollController
             .animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-        )
+              0.0,
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+            )
             .then((_) {
-          _triggerRefresh();
-        });
+              _triggerRefresh();
+            });
       } else {
         _triggerRefresh();
       }
     }
   }
 
-  double _getIndicatorTop(double topPadding, double maskHeight, double dragOffset, bool isRefreshing) {
+  double _getIndicatorTop(
+    double topPadding,
+    double maskHeight,
+    double dragOffset,
+    bool isRefreshing,
+  ) {
     const double indicatorHeight = 42.0;
-    final double hiddenPosition = topPadding + maskHeight - indicatorHeight - 10.0;
+    final double hiddenPosition =
+        topPadding + maskHeight - indicatorHeight - 10.0;
 
     if (isRefreshing) {
       return topPadding + maskHeight + 16.0;
@@ -164,14 +171,21 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
 
         final double pullProgress = (dragOffset / 90.0).clamp(0.0, 1.0);
 
-        final double indicatorTop = _getIndicatorTop(topPadding, maskHeight, dragOffset, isRefreshing);
+        final double indicatorTop = _getIndicatorTop(
+          topPadding,
+          maskHeight,
+          dragOffset,
+          isRefreshing,
+        );
         final double opacity = isRefreshing ? 1.0 : pullProgress;
         final double scale = isRefreshing ? 1.0 : (0.6 + 0.4 * pullProgress);
 
         const Color iconColor = Colors.white;
 
         return AnimatedPositioned(
-          duration: isRefreshing ? const Duration(milliseconds: 200) : Duration.zero,
+          duration: isRefreshing
+              ? const Duration(milliseconds: 200)
+              : Duration.zero,
           curve: Curves.easeOutCubic,
           top: indicatorTop,
           left: 0,
@@ -263,149 +277,170 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
             onNotification: _handleScrollNotification,
             child: CustomScrollView(
               controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: SizedBox(height: topPadding + 120),
-              ),
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(child: SizedBox(height: topPadding + 120)),
 
-              // Spotlight carousels (Only show when "All" is selected)
-              if (activeFilter == 'All') ...[
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      ...[
-                        ('Weekend Forecast', 'weekend-forecast', discoverWeekendForecastEventsProvider),
-                        ('Meet New People', 'Community', discoverCommunityEventsProvider),
-                        ('After Hours', 'Music', discoverMusicEventsProvider),
-                        ('Silver Screen', 'Film', discoverFilmEventsProvider),
-                        ('Modern Renaissance', 'Arts', discoverArtsEventsProvider),
-                        ('Peak Performance', 'Fitness', discoverFitnessEventsProvider),
-                        ('Feast & Flavor', 'Food', discoverFoodEventsProvider),
-                        ('Feed your curiosity', 'Education', discoverEducationEventsProvider),
-                      ].map((c) => _buildRealCarousel(
+                // Spotlight carousels (Only show when "All" is selected)
+                if (activeFilter == 'All') ...[
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        ...[
+                          (
+                            'Weekend Forecast',
+                            'weekend-forecast',
+                            discoverWeekendForecastEventsProvider,
+                          ),
+                          (
+                            'Meet New People',
+                            'Community',
+                            discoverCommunityEventsProvider,
+                          ),
+                          ('After Hours', 'Music', discoverMusicEventsProvider),
+                          ('Silver Screen', 'Film', discoverFilmEventsProvider),
+                          (
+                            'Modern Renaissance',
+                            'Arts',
+                            discoverArtsEventsProvider,
+                          ),
+                          (
+                            'Peak Performance',
+                            'Fitness',
+                            discoverFitnessEventsProvider,
+                          ),
+                          (
+                            'Feast & Flavor',
+                            'Food',
+                            discoverFoodEventsProvider,
+                          ),
+                          (
+                            'Feed your curiosity',
+                            'Education',
+                            discoverEducationEventsProvider,
+                          ),
+                        ].map(
+                          (c) => _buildRealCarousel(
                             ref: ref,
                             title: c.$1,
                             routeCategory: c.$2,
                             eventsProvider: c.$3,
-                          )),
-                    ],
-                  ),
-                ),
-
-
-              ] else ...[
-                // Category selected: Show single carousel at the top if it has events
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      _buildCategoryTopCarousel(ref, activeFilter),
-                    ],
-                  ),
-                ),
-              ],
-
-              // Vertical feed (loading / error / list / empty)
-              if (cacheAsync.isLoading && isDiscoverTab)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: BloomLoadingIndicator(size: 40)),
-                )
-              else if (cacheAsync.hasError && isDiscoverTab)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.cloud_off_outlined,
-                            color: Colors.white38,
-                            size: 48,
                           ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Could not load events',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _discoverErrorMessage(cacheAsync.error),
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          BloomButton(
-                            text: 'Try again',
-                            onPressed: () => ref
-                                .read(discoverFeedCacheProvider.notifier)
-                                .refresh(),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                )
-              else if (verticalFeedEvents.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/icons/nav/discover_line.svg',
-                            width: 48,
-                            height: 48,
-                            colorFilter: const ColorFilter.mode(
-                              Colors.white24,
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'No events found',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Try browsing another category or pull to refresh.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          const DiscoverCreateEventCTA(),
-                        ],
-                      ),
+                ] else ...[
+                  // Category selected: Show single carousel at the top if it has events
+                  SliverToBoxAdapter(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        _buildCategoryTopCarousel(ref, activeFilter),
+                      ],
                     ),
                   ),
-                )
-              else ...[
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
+                ],
+
+                // Vertical feed (loading / error / list / empty)
+                if (cacheAsync.isLoading && isDiscoverTab)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: BloomLoadingIndicator(size: 40)),
+                  )
+                else if (cacheAsync.hasError && isDiscoverTab)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.cloud_off_outlined,
+                              color: Colors.white38,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Could not load events',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _discoverErrorMessage(cacheAsync.error),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            BloomButton(
+                              text: 'Try again',
+                              onPressed: () => ref
+                                  .read(discoverFeedCacheProvider.notifier)
+                                  .refresh(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else if (verticalFeedEvents.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icons/nav/discover_line.svg',
+                              width: 48,
+                              height: 48,
+                              colorFilter: const ColorFilter.mode(
+                                Colors.white24,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No events found',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Try browsing another category or pull to refresh.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            const DiscoverCreateEventCTA(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                else ...[
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
                       final event = verticalFeedEvents[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
@@ -414,17 +449,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                           onTap: () => pushEventDetail(context, event.id),
                         ),
                       );
-                    },
-                    childCount: verticalFeedEvents.length,
+                    }, childCount: verticalFeedEvents.length),
                   ),
-                ),
-                const SliverToBoxAdapter(
-                  child: DiscoverCreateEventCTA(),
-                ),
+                  const SliverToBoxAdapter(child: DiscoverCreateEventCTA()),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
 
           // Custom Reload Indicator (Emerges from below the app header)
           _buildReloadIndicator(topPadding, 120.0),
@@ -452,7 +483,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     child: SizedBox(
                       height: 40,
                       child: Row(
@@ -504,7 +538,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   Builder(
                     builder: (context) {
                       final filterState = ref.watch(discoverFilterProvider);
-                      final List<String> displayCategories = List.from(discoverCategories);
+                      final List<String> displayCategories = List.from(
+                        discoverCategories,
+                      );
                       if (filterState.hasFilters) {
                         displayCategories.insert(0, 'Filter');
                       }
@@ -516,7 +552,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 20.0),
                           itemCount: displayCategories.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 8.0),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8.0),
                           itemBuilder: (context, index) {
                             final category = displayCategories[index];
                             final isSelected = activeFilter == category;
@@ -524,13 +561,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                             final lowerCat = category.toLowerCase();
                             final iconPath = const {
                               'all': 'assets/icons/discover/all_icon.svg',
-                              'community': 'assets/icons/discover/community_icon.svg',
+                              'community':
+                                  'assets/icons/discover/community_icon.svg',
                               'music': 'assets/icons/discover/music_icon.svg',
                               'film': 'assets/icons/discover/movie_icon.svg',
                               'arts': 'assets/icons/discover/art_icon.svg',
-                              'fitness': 'assets/icons/discover/fitness_icon.svg',
+                              'fitness':
+                                  'assets/icons/discover/fitness_icon.svg',
                               'food': 'assets/icons/discover/food_icon.svg',
-                              'education': 'assets/icons/discover/education_icon.svg',
+                              'education':
+                                  'assets/icons/discover/education_icon.svg',
                             }[lowerCat];
 
                             String displayText = category;
@@ -540,26 +580,36 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
 
                             return GestureDetector(
                               onTap: () {
-                                if (category == 'Filter' && activeFilter == 'Filter') {
+                                if (category == 'Filter' &&
+                                    activeFilter == 'Filter') {
                                   // Open sheet again if already active and clicked
                                   showModalBottomSheet(
                                     context: context,
                                     isScrollControlled: true,
                                     useSafeArea: true,
                                     backgroundColor: Colors.transparent,
-                                    builder: (context) => const AdvancedFilterSheet(),
+                                    builder: (context) =>
+                                        const AdvancedFilterSheet(),
                                   );
                                 } else {
-                                  ref.read(discoverCategoryFilterProvider.notifier).setCategory(category);
+                                  ref
+                                      .read(
+                                        discoverCategoryFilterProvider.notifier,
+                                      )
+                                      .setCategory(category);
                                 }
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeInOut,
-                                padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14.0,
+                                ),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: isSelected ? 0.30 : 0.08),
+                                  color: Colors.white.withValues(
+                                    alpha: isSelected ? 0.30 : 0.08,
+                                  ),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.07),
@@ -572,8 +622,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                                     if (iconPath != null) ...[
                                       SvgPicture.asset(
                                         iconPath,
-                                        width: lowerCat == 'community' ? 15 : 20,
-                                        height: lowerCat == 'community' ? 15 : 20,
+                                        width: lowerCat == 'community'
+                                            ? 15
+                                            : 20,
+                                        height: lowerCat == 'community'
+                                            ? 15
+                                            : 20,
                                         colorFilter: const ColorFilter.mode(
                                           Colors.white,
                                           BlendMode.srcIn,
@@ -582,14 +636,20 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                                       const SizedBox(width: 6),
                                     ],
                                     if (category == 'Filter') ...[
-                                      const Icon(Icons.tune, color: Colors.white, size: 16),
+                                      const Icon(
+                                        Icons.tune,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 6),
                                     ],
                                     Text(
                                       displayText,
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                        fontWeight: isSelected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -600,7 +660,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                           },
                         ),
                       );
-                    }
+                    },
                   ),
                 ],
               ),
@@ -646,10 +706,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
     if (activeFilter.toLowerCase() == 'film') title = 'Silver Screen';
     if (activeFilter.toLowerCase() == 'fitness') title = 'Peak Performance';
     if (activeFilter.toLowerCase() == 'food') title = 'Feast & Flavor';
-    if (activeFilter.toLowerCase() == 'education') title = 'Feed your curiosity';
+    if (activeFilter.toLowerCase() == 'education')
+      title = 'Feed your curiosity';
 
-    final carouselEvents =
-        ref.watch(discoverCategoryCarouselProvider(activeFilter));
+    final carouselEvents = ref.watch(
+      discoverCategoryCarouselProvider(activeFilter),
+    );
     final displayEvents = eventsForCarousel(carouselEvents);
 
     if (displayEvents.isEmpty) {
@@ -708,7 +770,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                       if (routeCategory == 'weekend-forecast') {
                         context.push('/discover/category/$routeCategory');
                       } else {
-                        ref.read(discoverCategoryFilterProvider.notifier).setCategory(routeCategory);
+                        ref
+                            .read(discoverCategoryFilterProvider.notifier)
+                            .setCategory(routeCategory);
                       }
                     },
                   ),
@@ -735,7 +799,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   title: event.title,
                   posterUrl: event.visuals.posterUrl,
                   startTime: event.timing.startDate ?? DateTime.now(),
-                  endTime: event.timing.effectiveEndDate ?? (event.timing.startDate ?? DateTime.now()).add(const Duration(hours: 3)),
+                  endTime:
+                      event.timing.effectiveEndDate ??
+                      (event.timing.startDate ?? DateTime.now()).add(
+                        const Duration(hours: 3),
+                      ),
                   hostName: card?.hostUsername ?? '',
                   hostId: event.metadata.hostId,
                   hostImageUrl: card?.hostAvatarUrl,
@@ -743,9 +811,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> with TickerProv
                   locationName: event.location?.displayName ?? 'Bloom Event',
                   coHostIds: event.coHostIds,
                 );
-                return EventCardLarge(
-                  event: scheduledEvent,
-                );
+                return EventCardLarge(event: scheduledEvent);
               },
             ),
           ),
@@ -783,10 +849,7 @@ class DiscoverCreateEventCTA extends StatelessWidget {
         const Text(
           "Make it happen then!",
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white54, fontSize: 14),
         ),
         const SizedBox(height: 20),
         BloomButton(
@@ -807,4 +870,3 @@ class DiscoverCreateEventCTA extends StatelessWidget {
     );
   }
 }
-

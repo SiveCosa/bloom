@@ -5,10 +5,7 @@ import '../../../domain/event/create_event_state.dart';
 class PosterModule extends ConsumerWidget {
   final VoidCallback onEditPoster;
 
-  const PosterModule({
-    super.key,
-    required this.onEditPoster,
-  });
+  const PosterModule({super.key, required this.onEditPoster});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,7 +30,9 @@ class PosterModule extends ConsumerWidget {
               borderRadius: BorderRadius.circular(15),
               color: Colors.white.withValues(alpha: 0.15),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              image: (state.customPosterBytes == null && (posterUrl != null || state.defaultPosterUrl != null))
+              image:
+                  (state.customPosterBytes == null &&
+                      (posterUrl != null || state.defaultPosterUrl != null))
                   ? DecorationImage(
                       image: NetworkImage(posterUrl ?? state.defaultPosterUrl!),
                       fit: BoxFit.cover,
@@ -58,7 +57,10 @@ class PosterModule extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  if (posterUrl == null && state.defaultPosterUrl == null && state.customPosterBytes == null && !state.isGeneratingPoster)
+                  if (posterUrl == null &&
+                      state.defaultPosterUrl == null &&
+                      state.customPosterBytes == null &&
+                      !state.isGeneratingPoster)
                     const Center(
                       child: Icon(Icons.image, color: Colors.white24, size: 48),
                     ),
@@ -79,7 +81,9 @@ class PosterModule extends ConsumerWidget {
                     bottom: 8,
                     right: 8,
                     child: GestureDetector(
-                      onTap: () => ref.read(createEventProvider.notifier).toggleAspectRatio(),
+                      onTap: () => ref
+                          .read(createEventProvider.notifier)
+                          .toggleAspectRatio(),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -106,7 +110,10 @@ class PosterModule extends ConsumerWidget {
                       child: GestureDetector(
                         onTap: onEditPoster,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black45,
                             borderRadius: BorderRadius.circular(20),
@@ -115,7 +122,11 @@ class PosterModule extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.edit_outlined, color: Colors.white, size: 16),
+                              const Icon(
+                                Icons.edit_outlined,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'Edit poster',
@@ -135,7 +146,7 @@ class PosterModule extends ConsumerWidget {
             ),
           ),
         ),
-],
-);
-}
+      ],
+    );
+  }
 }

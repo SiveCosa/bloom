@@ -13,10 +13,7 @@ import '../shared/widgets/bloom_button.dart';
 class CategoryEventsScreen extends ConsumerWidget {
   final String category;
 
-  const CategoryEventsScreen({
-    super.key,
-    required this.category,
-  });
+  const CategoryEventsScreen({super.key, required this.category});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,23 +33,23 @@ class CategoryEventsScreen extends ConsumerWidget {
       displayTitle = 'Peak Performance';
     } else if (cleanCat == 'food') {
       displayTitle = 'Feast & Flavor';
-    } else if (cleanCat == 'weekend-forecast' || cleanCat == 'weekend forecast') {
+    } else if (cleanCat == 'weekend-forecast' ||
+        cleanCat == 'weekend forecast') {
       displayTitle = 'Weekend Forecast';
     }
 
     final carouselEvents = eventsForCarousel(events);
     final carouselIds = carouselEvents.map((e) => e.id).toSet();
-    final remainingEvents = events.where((e) => !carouselIds.contains(e.id)).toList();
+    final remainingEvents = events
+        .where((e) => !carouselIds.contains(e.id))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0E12),
       body: Stack(
         children: [
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
-          
+          const GradientTopBar(height: 100, showDarkOverlay: false),
+
           CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -132,7 +129,10 @@ class CategoryEventsScreen extends ConsumerWidget {
                       children: [
                         const SizedBox(height: 12),
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
                           child: Text(
                             'Spotlight',
                             style: TextStyle(
@@ -148,29 +148,37 @@ class CategoryEventsScreen extends ConsumerWidget {
                           child: ListView.separated(
                             physics: const BouncingScrollPhysics(),
                             scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             itemCount: carouselEvents.length,
-                            separatorBuilder: (context, index) => const SizedBox(width: 8.0),
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(width: 8.0),
                             itemBuilder: (context, index) {
                               final event = carouselEvents[index];
-                              final card =
-                                  ref.watch(discoverFeedCardMapForRouteProvider(category))[event.id];
+                              final card = ref.watch(
+                                discoverFeedCardMapForRouteProvider(category),
+                              )[event.id];
                               final scheduledEvent = ScheduledEvent(
                                 id: event.id,
                                 title: event.title,
                                 posterUrl: event.visuals.posterUrl,
-                                startTime: event.timing.startDate ?? DateTime.now(),
-                                endTime: event.timing.effectiveEndDate ?? (event.timing.startDate ?? DateTime.now()).add(const Duration(hours: 3)),
+                                startTime:
+                                    event.timing.startDate ?? DateTime.now(),
+                                endTime:
+                                    event.timing.effectiveEndDate ??
+                                    (event.timing.startDate ?? DateTime.now())
+                                        .add(const Duration(hours: 3)),
                                 hostName: card?.hostUsername ?? '',
                                 hostId: event.metadata.hostId,
                                 hostImageUrl: card?.hostAvatarUrl,
                                 auroraColors: event.visuals.auroraColors,
-                                locationName: event.location?.displayName ?? 'Bloom Event',
+                                locationName:
+                                    event.location?.displayName ??
+                                    'Bloom Event',
                                 coHostIds: event.coHostIds,
                               );
-                              return EventCardLarge(
-                                event: scheduledEvent,
-                              );
+                              return EventCardLarge(event: scheduledEvent);
                             },
                           ),
                         ),
@@ -182,7 +190,11 @@ class CategoryEventsScreen extends ConsumerWidget {
                 if (remainingEvents.isNotEmpty)
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.only(left: 16.0, top: 12.0, bottom: 12.0),
+                      padding: EdgeInsets.only(
+                        left: 16.0,
+                        top: 12.0,
+                        bottom: 12.0,
+                      ),
                       child: Text(
                         'Explore More',
                         style: TextStyle(
@@ -196,24 +208,19 @@ class CategoryEventsScreen extends ConsumerWidget {
 
                 // Remaining events vertical list
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final event = remainingEvents[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: EventMediumCard(
-                          event: event,
-                          onTap: () => pushEventDetail(context, event.id),
-                        ),
-                      );
-                    },
-                    childCount: remainingEvents.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final event = remainingEvents[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: EventMediumCard(
+                        event: event,
+                        onTap: () => pushEventDetail(context, event.id),
+                      ),
+                    );
+                  }, childCount: remainingEvents.length),
                 ),
 
-                const SliverToBoxAdapter(
-                  child: DiscoverCreateEventCTA(),
-                ),
+                const SliverToBoxAdapter(child: DiscoverCreateEventCTA()),
               ],
             ],
           ),
@@ -251,10 +258,7 @@ class DiscoverCreateEventCTA extends StatelessWidget {
         const Text(
           "Make it happen then!",
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white54, fontSize: 14),
         ),
         const SizedBox(height: 20),
         BloomButton(
@@ -275,4 +279,3 @@ class DiscoverCreateEventCTA extends StatelessWidget {
     );
   }
 }
-

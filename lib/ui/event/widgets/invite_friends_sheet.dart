@@ -11,16 +11,23 @@ import '../../shared/widgets/custom_text_fields.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-final inviteFriendsProfilesProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final friendsConnections = await ref.watch(friendsMadeProvider.future);
-  if (friendsConnections.isEmpty) return [];
+final inviteFriendsProfilesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+      final friendsConnections = await ref.watch(friendsMadeProvider.future);
+      if (friendsConnections.isEmpty) return [];
 
-  final firestore = FirebaseFirestore.instance;
-  final futures = friendsConnections.map((conn) => firestore.collection('users').doc(conn['uid'] as String).get());
-  final snaps = await Future.wait(futures);
+      final firestore = FirebaseFirestore.instance;
+      final futures = friendsConnections.map(
+        (conn) =>
+            firestore.collection('users').doc(conn['uid'] as String).get(),
+      );
+      final snaps = await Future.wait(futures);
 
-  return snaps.where((snap) => snap.exists && snap.data() != null).map((snap) => snap.data()!).toList();
-});
+      return snaps
+          .where((snap) => snap.exists && snap.data() != null)
+          .map((snap) => snap.data()!)
+          .toList();
+    });
 
 class InviteFriendsSheet extends ConsumerStatefulWidget {
   final Event event;
@@ -84,7 +91,7 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
         );
 
         await sendCustomMessageSafe(message);
-        
+
         // Write to Firestore so that the notification system picks it up
         if (currentUserId != null) {
           final inviteRef = FirebaseFirestore.instance
@@ -92,7 +99,7 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
               .doc(uid)
               .collection('invites')
               .doc(widget.event.id);
-          
+
           batch.set(inviteRef, {
             'invited_by': currentUserId,
             'timestamp': FieldValue.serverTimestamp(),
@@ -158,7 +165,11 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
               child: RoundedTextField(
                 controller: _searchController,
                 hintText: 'Search friends',
-                prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: Colors.white54,
+                  size: 20,
+                ),
                 onChanged: (value) {
                   setState(() {
                     _searchQuery = value.toLowerCase();
@@ -173,9 +184,12 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
               child: friendsAsync.when(
                 data: (friends) {
                   final filteredFriends = friends.where((friend) {
-                    final name = (friend['name'] as String? ?? '').toLowerCase();
-                    final username = (friend['username'] as String? ?? '').toLowerCase();
-                    return name.contains(_searchQuery) || username.contains(_searchQuery);
+                    final name = (friend['name'] as String? ?? '')
+                        .toLowerCase();
+                    final username = (friend['username'] as String? ?? '')
+                        .toLowerCase();
+                    return name.contains(_searchQuery) ||
+                        username.contains(_searchQuery);
                   }).toList();
 
                   if (filteredFriends.isEmpty) {
@@ -303,8 +317,9 @@ class _InviteFriendsSheetState extends ConsumerState<InviteFriendsSheet> {
           child: Padding(
             padding: const EdgeInsets.all(5.0),
             child: Row(
-              crossAxisAlignment:
-                  hasText ? CrossAxisAlignment.end : CrossAxisAlignment.center,
+              crossAxisAlignment: hasText
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: TextField(
@@ -407,15 +422,10 @@ class _FriendListItem extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: avatarUrl,
                         fit: BoxFit.cover,
-                        errorWidget: (context, error, stackTrace) => const Icon(
-                          Icons.person,
-                          color: Colors.white54,
-                        ),
+                        errorWidget: (context, error, stackTrace) =>
+                            const Icon(Icons.person, color: Colors.white54),
                       )
-                    : const Icon(
-                        Icons.person,
-                        color: Colors.white54,
-                      ),
+                    : const Icon(Icons.person, color: Colors.white54),
               ),
             ),
             const SizedBox(width: 16),
@@ -436,10 +446,7 @@ class _FriendListItem extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     username.replaceAll('@', ''),
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

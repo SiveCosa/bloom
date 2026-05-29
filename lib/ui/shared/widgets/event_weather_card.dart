@@ -40,18 +40,22 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
 
   @override
   Widget build(BuildContext context) {
-    if (widget.location == null || 
-        widget.startDate == null || 
-        widget.location?.latitude == null || 
+    if (widget.location == null ||
+        widget.startDate == null ||
+        widget.location?.latitude == null ||
         widget.location?.longitude == null) {
       return const SizedBox.shrink();
     }
 
-    final weatherAsync = ref.watch(weatherForecastProvider(WeatherParams(
-      latitude: widget.location!.latitude,
-      longitude: widget.location!.longitude,
-      startDate: widget.startDate!,
-    )));
+    final weatherAsync = ref.watch(
+      weatherForecastProvider(
+        WeatherParams(
+          latitude: widget.location!.latitude,
+          longitude: widget.location!.longitude,
+          startDate: widget.startDate!,
+        ),
+      ),
+    );
 
     return weatherAsync.when(
       data: (forecast) {
@@ -323,10 +327,6 @@ class _EventWeatherCardState extends ConsumerState<EventWeatherCard>
         iconColor = const Color(0xFFFFB965);
     }
 
-    return Icon(
-      iconData,
-      color: iconColor,
-      size: 40,
-    );
+    return Icon(iconData, color: iconColor, size: 40);
   }
 }

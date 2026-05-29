@@ -50,9 +50,12 @@ class AuthAppBar extends ConsumerWidget implements PreferredSizeWidget {
         break;
       case AuthAppBarAction.cancel:
         text = 'Cancel';
-        onTap = onCancel ??
+        onTap =
+            onCancel ??
             () async {
-              await ref.read(authControllerProvider.notifier).rollbackRegistration();
+              await ref
+                  .read(authControllerProvider.notifier)
+                  .rollbackRegistration();
               if (context.mounted) {
                 context.go('/auth/signup');
               }

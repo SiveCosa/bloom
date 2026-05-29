@@ -20,11 +20,7 @@ class RsvpOptionPreview extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: Colors.white.withValues(alpha: 0.54),
-              size: 24,
-            ),
+            Icon(icon, color: Colors.white.withValues(alpha: 0.54), size: 24),
             const SizedBox(height: 4),
             Text(
               label,

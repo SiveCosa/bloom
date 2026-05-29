@@ -11,7 +11,10 @@ DateTime? _parseEventTimestamp(dynamic value) {
 
 List<String> _parseStringList(dynamic raw) {
   if (raw is! List) return const [];
-  return raw.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+  return raw
+      .map((e) => e?.toString() ?? '')
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 int _parseInt(dynamic raw, {int fallback = 0}) {
@@ -20,39 +23,28 @@ int _parseInt(dynamic raw, {int fallback = 0}) {
   return fallback;
 }
 
-enum EventStatus {
-  active,
-  cancelled,
-  completed,
-  draft,
-}
+enum EventStatus { active, cancelled, completed, draft }
 
-enum RegistrationType {
-  open,
-  getOnList,
-  ticketed,
-}
+enum RegistrationType { open, getOnList, ticketed }
 
 class EventSettings {
   final bool allowMaybe;
   final bool waitlistEnabled;
 
-  const EventSettings({
-    this.allowMaybe = true,
-    this.waitlistEnabled = false,
-  });
+  const EventSettings({this.allowMaybe = true, this.waitlistEnabled = false});
 
   Map<String, dynamic> toMap() {
-    return {
-      'allowMaybe': allowMaybe,
-      'waitlistEnabled': waitlistEnabled,
-    };
+    return {'allowMaybe': allowMaybe, 'waitlistEnabled': waitlistEnabled};
   }
 
   factory EventSettings.fromMap(Map<String, dynamic> map) {
     return EventSettings(
-      allowMaybe: map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
-      waitlistEnabled: map['waitlistEnabled'] as bool? ?? map['waitlist_enabled'] as bool? ?? false,
+      allowMaybe:
+          map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
+      waitlistEnabled:
+          map['waitlistEnabled'] as bool? ??
+          map['waitlist_enabled'] as bool? ??
+          false,
     );
   }
 }
@@ -162,21 +154,32 @@ class Event {
       timing: EventTiming.fromMap(map['timing'] ?? {}),
       location: _parseLocation(map['location']),
       audience: EventAudience.fromMap(map['audience'] ?? {}),
-      liveCounts: EventLiveCounts.fromMap(map['live_counts'] ?? map['liveCounts'] ?? {}),
-      previewGuests: _parseStringList(map['preview_guests'] ?? map['previewGuests']),
+      liveCounts: EventLiveCounts.fromMap(
+        map['live_counts'] ?? map['liveCounts'] ?? {},
+      ),
+      previewGuests: _parseStringList(
+        map['preview_guests'] ?? map['previewGuests'],
+      ),
       extras: _parseExtras(map['extras']),
-      rsvpReminders: _parseStringList(map['rsvpReminders'] ?? map['rsvp_reminders']),
+      rsvpReminders: _parseStringList(
+        map['rsvpReminders'] ?? map['rsvp_reminders'],
+      ),
       metadata: EventMetadata.fromMap(map['metadata'] ?? {}),
       coHostIds: _parseStringList(map['co_host_ids'] ?? map['coHostIds']),
-      registrationType: _parseRegistrationType(map['registrationType'] ?? map['registration_type']),
-      settings: EventSettings.fromMap(map['settings'] ?? map['audience'] ?? {}), // Fallback to audience map for backwards compatibility
+      registrationType: _parseRegistrationType(
+        map['registrationType'] ?? map['registration_type'],
+      ),
+      settings: EventSettings.fromMap(
+        map['settings'] ?? map['audience'] ?? {},
+      ), // Fallback to audience map for backwards compatibility
     );
   }
 
   static RegistrationType _parseRegistrationType(dynamic raw) {
     if (raw == null) return RegistrationType.open;
     final str = raw.toString();
-    if (str == 'getOnList' || str == 'get_on_list') return RegistrationType.getOnList;
+    if (str == 'getOnList' || str == 'get_on_list')
+      return RegistrationType.getOnList;
     if (str == 'ticketed') return RegistrationType.ticketed;
     return RegistrationType.open;
   }
@@ -224,9 +227,12 @@ class Event {
   int get statusColorValue {
     final status = computedStatus;
     switch (status) {
-      case EventStatus.cancelled: return 0xFFFF4D4D; // Red
-      case EventStatus.completed: return 0xFF8E8E93; // Gray
-      case EventStatus.draft: return 0xFFFFD60A; // Yellow
+      case EventStatus.cancelled:
+        return 0xFFFF4D4D; // Red
+      case EventStatus.completed:
+        return 0xFF8E8E93; // Gray
+      case EventStatus.draft:
+        return 0xFFFFD60A; // Yellow
       case EventStatus.active:
         if (timing.isOngoing) return 0xFF32D74B; // Green
         return 0xFFAD83FE; // Brand Purple
@@ -246,18 +252,10 @@ class EventLiveCounts {
   final int maybe;
   final int interested;
 
-  const EventLiveCounts({
-    this.going = 0,
-    this.maybe = 0,
-    this.interested = 0,
-  });
+  const EventLiveCounts({this.going = 0, this.maybe = 0, this.interested = 0});
 
   Map<String, dynamic> toMap() {
-    return {
-      'going': going,
-      'maybe': maybe,
-      'interested': interested,
-    };
+    return {'going': going, 'maybe': maybe, 'interested': interested};
   }
 
   factory EventLiveCounts.fromMap(Map<String, dynamic> map) {
@@ -286,7 +284,9 @@ class EventVisuals {
     List<String>? auroraColors,
   }) {
     return EventVisuals(
-      posterUrl: posterUrl == _undefined ? this.posterUrl : (posterUrl as String?),
+      posterUrl: posterUrl == _undefined
+          ? this.posterUrl
+          : (posterUrl as String?),
       aspectRatio: aspectRatio ?? this.aspectRatio,
       auroraColors: auroraColors ?? this.auroraColors,
     );
@@ -303,10 +303,13 @@ class EventVisuals {
   factory EventVisuals.fromMap(Map<String, dynamic> map) {
     return EventVisuals(
       posterUrl: map['posterUrl'] as String? ?? map['poster_url'] as String?,
-      aspectRatio: (map['aspectRatio'] as num?)?.toDouble() ??
+      aspectRatio:
+          (map['aspectRatio'] as num?)?.toDouble() ??
           (map['aspect_ratio'] as num?)?.toDouble() ??
           1.0,
-      auroraColors: _parseStringList(map['auroraColors'] ?? map['aurora_colors']),
+      auroraColors: _parseStringList(
+        map['auroraColors'] ?? map['aurora_colors'],
+      ),
     );
   }
 }
@@ -331,7 +334,9 @@ class EventTiming {
     bool? endTimeTbd,
   }) {
     return EventTiming(
-      startDate: startDate == _undefined ? this.startDate : (startDate as DateTime?),
+      startDate: startDate == _undefined
+          ? this.startDate
+          : (startDate as DateTime?),
       startTimeTbd: startTimeTbd ?? this.startTimeTbd,
       endDate: endDate == _undefined ? this.endDate : (endDate as DateTime?),
       endTimeTbd: endTimeTbd ?? this.endTimeTbd,
@@ -342,11 +347,20 @@ class EventTiming {
     if (endDate != null) return endDate;
     if (startDate == null) return null;
     // Default to end of day if no end date provided
-    return DateTime(startDate!.year, startDate!.month, startDate!.day, 23, 59, 59);
+    return DateTime(
+      startDate!.year,
+      startDate!.month,
+      startDate!.day,
+      23,
+      59,
+      59,
+    );
   }
 
-  bool get isUpcoming => startDate != null && DateTime.now().isBefore(startDate!);
-  bool get isPast => effectiveEndDate != null && DateTime.now().isAfter(effectiveEndDate!);
+  bool get isUpcoming =>
+      startDate != null && DateTime.now().isBefore(startDate!);
+  bool get isPast =>
+      effectiveEndDate != null && DateTime.now().isAfter(effectiveEndDate!);
   bool get isOngoing => !isUpcoming && !isPast && startDate != null;
 
   Map<String, dynamic> toMap() {
@@ -360,10 +374,18 @@ class EventTiming {
 
   factory EventTiming.fromMap(Map<String, dynamic> map) {
     return EventTiming(
-      startDate: _parseEventTimestamp(map['startDate']) ?? _parseEventTimestamp(map['start_time']),
-      startTimeTbd: map['startTimeTbd'] as bool? ?? map['start_time_tbd'] as bool? ?? true,
-      endDate: _parseEventTimestamp(map['endDate']) ?? _parseEventTimestamp(map['end_time']),
-      endTimeTbd: map['endTimeTbd'] as bool? ?? map['end_time_tbd'] as bool? ?? true,
+      startDate:
+          _parseEventTimestamp(map['startDate']) ??
+          _parseEventTimestamp(map['start_time']),
+      startTimeTbd:
+          map['startTimeTbd'] as bool? ??
+          map['start_time_tbd'] as bool? ??
+          true,
+      endDate:
+          _parseEventTimestamp(map['endDate']) ??
+          _parseEventTimestamp(map['end_time']),
+      endTimeTbd:
+          map['endTimeTbd'] as bool? ?? map['end_time_tbd'] as bool? ?? true,
     );
   }
 }
@@ -403,7 +425,9 @@ class EventAudience {
       maxPlusOnes: maxPlusOnes ?? this.maxPlusOnes,
       requireApproval: requireApproval ?? this.requireApproval,
       allowMaybe: allowMaybe ?? this.allowMaybe,
-      rsvpDeadline: rsvpDeadline == _undefined ? this.rsvpDeadline : (rsvpDeadline as DateTime?),
+      rsvpDeadline: rsvpDeadline == _undefined
+          ? this.rsvpDeadline
+          : (rsvpDeadline as DateTime?),
     );
   }
 
@@ -415,19 +439,31 @@ class EventAudience {
       'maxPlusOnes': maxPlusOnes,
       'requireApproval': requireApproval,
       'allowMaybe': allowMaybe,
-      if (rsvpDeadline != null) 'rsvpDeadline': Timestamp.fromDate(rsvpDeadline!),
+      if (rsvpDeadline != null)
+        'rsvpDeadline': Timestamp.fromDate(rsvpDeadline!),
     };
   }
 
   factory EventAudience.fromMap(Map<String, dynamic> map) {
     return EventAudience(
       visibility: _parseVisibility(map['visibility']),
-      capacity: map['capacity'] is int ? map['capacity'] as int : (map['capacity'] as num?)?.toInt(),
-      waitlistEnabled: map['waitlistEnabled'] as bool? ?? map['waitlist_enabled'] as bool? ?? false,
+      capacity: map['capacity'] is int
+          ? map['capacity'] as int
+          : (map['capacity'] as num?)?.toInt(),
+      waitlistEnabled:
+          map['waitlistEnabled'] as bool? ??
+          map['waitlist_enabled'] as bool? ??
+          false,
       maxPlusOnes: _parseInt(map['maxPlusOnes'] ?? map['max_plus_ones']),
-      requireApproval: map['requireApproval'] as bool? ?? map['require_approval'] as bool? ?? false,
-      allowMaybe: map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
-      rsvpDeadline: _parseEventTimestamp(map['rsvpDeadline']) ?? _parseEventTimestamp(map['rsvp_deadline']),
+      requireApproval:
+          map['requireApproval'] as bool? ??
+          map['require_approval'] as bool? ??
+          false,
+      allowMaybe:
+          map['allowMaybe'] as bool? ?? map['allow_maybe'] as bool? ?? true,
+      rsvpDeadline:
+          _parseEventTimestamp(map['rsvpDeadline']) ??
+          _parseEventTimestamp(map['rsvp_deadline']),
     );
   }
 }
@@ -471,10 +507,12 @@ class EventMetadata {
   factory EventMetadata.fromMap(Map<String, dynamic> map) {
     return EventMetadata(
       hostId: map['hostId'] as String? ?? map['host_id'] as String? ?? '',
-      createdAt: _parseEventTimestamp(map['createdAt']) ??
+      createdAt:
+          _parseEventTimestamp(map['createdAt']) ??
           _parseEventTimestamp(map['created_at']) ??
           DateTime.now(),
-      updatedAt: _parseEventTimestamp(map['updatedAt']) ??
+      updatedAt:
+          _parseEventTimestamp(map['updatedAt']) ??
           _parseEventTimestamp(map['updated_at']) ??
           DateTime.now(),
       status: EventStatus.values.firstWhere(

@@ -13,8 +13,8 @@ class HomeScheduleFilterNotifier extends Notifier<HomeScheduleFilter> {
 
 final homeScheduleFilterProvider =
     NotifierProvider<HomeScheduleFilterNotifier, HomeScheduleFilter>(
-  HomeScheduleFilterNotifier.new,
-);
+      HomeScheduleFilterNotifier.new,
+    );
 
 final homeWeekScheduleProvider = Provider<List<ScheduledEvent>>((ref) {
   final user = ref.watch(firebaseAuthProvider).currentUser;
