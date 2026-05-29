@@ -638,6 +638,29 @@ class AuthController extends AsyncNotifier<void> {
       state = const AsyncData(null);
     }
   }
+
+  /// Deletes the current authenticated user's account by calling the backend
+  /// Cloud Function and signing out.
+  Future<void> deleteAccount() async {
+    state = const AsyncLoading();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final functions = FirebaseFunctions.instanceFor(
+          region: 'africa-south1',
+        );
+        final callable = functions.httpsCallable('deleteUserAccount');
+        await callable.call();
+        await signOut();
+      } else {
+        throw Exception("No user authenticated.");
+      }
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
 }
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {

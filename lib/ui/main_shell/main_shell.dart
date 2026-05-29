@@ -40,7 +40,9 @@ class _MainShellState extends ConsumerState<MainShell> {
           try {
             await user.delete();
           } catch (_) {}
+          if (!mounted) return;
           await ref.read(authControllerProvider.notifier).signOut();
+          if (!mounted) return;
           ref.invalidate(authControllerProvider);
         }
       }

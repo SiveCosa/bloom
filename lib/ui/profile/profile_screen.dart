@@ -14,6 +14,7 @@ import '../../domain/auth/auth_providers.dart';
 import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
+import '../../ui/shared/widgets/bloom_modal_shell.dart';
 import '../shared/widgets/bloom_icon_button.dart';
 import '../../domain/event/event_providers.dart';
 import '../../domain/friendship/friendship_providers.dart';
@@ -29,6 +30,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploading = false;
+  bool _isLoading = false;
   bool _isBioExpanded = false;
 
   Future<void> _uploadAndSaveProfilePhoto(String localPath) async {
@@ -37,7 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     final file = File(localPath);
     final bytes = await file.readAsBytes();
-    
+
     // Ensure all uploads are WebP 80%
     final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
 
@@ -46,9 +48,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         .child('users')
         .child(user.uid)
         .child('profile_pic.webp');
-        
+
     await storageRef.putData(
-      compressedBytes, 
+      compressedBytes,
       SettableMetadata(contentType: 'image/webp'),
     );
     final url = await storageRef.getDownloadURL();
@@ -166,6 +168,64 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2128),
+        title: const Text(
+          'Delete Account',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to delete your account? This action is permanent, cannot be undone, and will delete all your hosted events, RSVPs, and profile data.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      await ref.read(authControllerProvider.notifier).deleteAccount();
+      if (mounted) {
+        context.go('/auth/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Invalidate recommendedFriendsProvider when switching away from the profile tab
@@ -183,10 +243,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: Stack(
         children: [
           // Layer 0: Background Gradient
-          const GradientTopBar(
-            height: 100,
-            showDarkOverlay: false,
-          ),
+          const GradientTopBar(height: 100, showDarkOverlay: false),
 
           // Layer 1: Foreground Content
           profileAsync.when(
@@ -206,9 +263,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               final imageUrl = doc?['profile_image_url']?.toString();
 
               final counts = doc?['counts'] as Map<String, dynamic>?;
-              final friendsCount = (friendsAsync.value?.length ?? counts?['friends'] ?? 0).toString();
-              final hostedCount = ref.watch(profileHostedCountProvider).toString();
-              final joinedCount = ref.watch(profileJoinedCountProvider).toString();
+              final friendsCount =
+                  (friendsAsync.value?.length ?? counts?['friends'] ?? 0)
+                      .toString();
+              final hostedCount = ref
+                  .watch(profileHostedCountProvider)
+                  .toString();
+              final joinedCount = ref
+                  .watch(profileJoinedCountProvider)
+                  .toString();
 
               final socialLinks = doc?['social_links'] as Map<String, dynamic>?;
               final instagram = socialLinks?['instagram']?.toString() ?? '';
@@ -273,7 +336,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Stack(
                               children: [
                                 GestureDetector(
-                                  onTap: imageUrl != null ? () => _showImagePreview(imageUrl) : null,
+                                  onTap: imageUrl != null
+                                      ? () => _showImagePreview(imageUrl)
+                                      : null,
                                   child: Hero(
                                     tag: 'avatar_preview',
                                     child: buildAvatarImage(
@@ -342,7 +407,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     'Friends made',
                                     friendsCount,
                                     () {
-                                      ref.invalidate(recommendedFriendsProvider);
+                                      ref.invalidate(
+                                        recommendedFriendsProvider,
+                                      );
                                       context.push('/profile/friends');
                                     },
                                   ),
@@ -353,7 +420,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     'Hosted events',
                                     hostedCount,
                                     () {
-                                      ref.invalidate(recommendedFriendsProvider);
+                                      ref.invalidate(
+                                        recommendedFriendsProvider,
+                                      );
                                       context.push('/profile/hosted');
                                     },
                                   ),
@@ -364,7 +433,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     'Joined events',
                                     joinedCount,
                                     () {
-                                      ref.invalidate(recommendedFriendsProvider);
+                                      ref.invalidate(
+                                        recommendedFriendsProvider,
+                                      );
                                       context.push('/profile/joined');
                                     },
                                   ),
@@ -433,7 +504,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                         // Edit Profile Button
                                         'Edit profile',
                                         () {
-                                          ref.invalidate(recommendedFriendsProvider);
+                                          ref.invalidate(
+                                            recommendedFriendsProvider,
+                                          );
                                           context.push('/profile/edit');
                                         },
                                         fontWeight: FontWeight.w600,
@@ -465,7 +538,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             },
           ),
 
-          if (_uploading)
+          if (_uploading || _isLoading)
             const Positioned.fill(
               child: ColoredBox(
                 color: Colors.black26,
@@ -652,7 +725,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Colors.white.withValues(alpha: 0.05),
             ],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         child: Text(
           label,
@@ -802,12 +878,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             }).toList();
 
             if (filteredUsers.isEmpty) return const SizedBox.shrink();
-            
+
             return SizedBox(
               height: 200,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: filteredUsers.length > 10 ? 10 : filteredUsers.length,
+                itemCount: filteredUsers.length > 10
+                    ? 10
+                    : filteredUsers.length,
                 clipBehavior: Clip.none,
                 itemBuilder: (context, index) {
                   final targetUser = filteredUsers[index];
@@ -816,7 +894,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     key: ValueKey<String>(uid),
                     user: targetUser,
                     onDismiss: () {
-                      ref.read(dismissedRecommendationsProvider.notifier).dismiss(uid);
+                      ref
+                          .read(dismissedRecommendationsProvider.notifier)
+                          .dismiss(uid);
                     },
                   );
                 },
@@ -839,30 +919,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF191B1D).withValues(alpha: 0.95),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(30),
-              ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
+        return BloomModalShell(
+          title: 'Options',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
                 _buildModalOption(
                   icon: Icons.logout,
                   label: 'Log Out',
@@ -877,6 +940,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: 'Delete Account',
                   onTap: () {
                     Navigator.pop(context);
+                    _deleteAccount();
                   },
                   isDestructive: true,
                 ),
