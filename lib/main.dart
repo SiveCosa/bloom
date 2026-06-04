@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -44,6 +45,14 @@ class CustomEnShortMessages implements timeago.LookupMessages {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+    FlutterError.onError = (FlutterErrorDetails details) {
+      // Suppress framework errors in release mode to prevent log leaks
+    };
+  }
+
   timeago.setLocaleMessages('en_short', CustomEnShortMessages());
 
   // Lock to portrait

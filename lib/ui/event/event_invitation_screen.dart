@@ -651,8 +651,11 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
                                                                     '#',
                                                                     '',
                                                                   );
-                                                              if (hexString.length == 6) {
-                                                                hexString = 'FF$hexString';
+                                                              if (hexString
+                                                                      .length ==
+                                                                  6) {
+                                                                hexString =
+                                                                    'FF$hexString';
                                                               }
                                                               return Color(
                                                                 int.parse(
@@ -1194,8 +1197,7 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
                   return List.generate(sortedExtras.length, (index) {
                     final extra = sortedExtras[index];
-                    final bool isLink =
-                        extra.url != null && extra.url!.isNotEmpty;
+                    final bool isLink = extra.url?.isNotEmpty ?? false;
                     final Color textColor = isLink
                         ? _getBestExtraColor(auroraColors)
                         : Colors.white;
@@ -1616,12 +1618,13 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
 
     final pendingGuests = guests.where((g) {
       final status = g['status'] as String? ?? 'invited';
-      return status != 'going' &&
-          status != 'declined' &&
-          status != 'not_going';
+      return status != 'going' && status != 'declined' && status != 'not_going';
     }).toList();
 
-    final selectedUids = pendingGuests.map((g) => g['uid'] as String?).whereType<String>().toList();
+    final selectedUids = pendingGuests
+        .map((g) => g['uid'] as String?)
+        .whereType<String>()
+        .toList();
 
     if (selectedUids.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1633,13 +1636,17 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     final currentUser = ref.read(firebaseAuthProvider).currentUser;
     if (currentUser == null) return;
 
-    final currentUserProfile = await ref.read(userProfileFutureProvider(currentUser.uid).future);
+    final currentUserProfile = await ref.read(
+      userProfileFutureProvider(currentUser.uid).future,
+    );
     final firestore = ref.read(firestoreProvider);
     final batch = firestore.batch();
 
     String message = "Nudge nudge. Don't forget to RSVP to ${event.title}";
     if (event.audience.rsvpDeadline != null) {
-      final deadlineStr = DateFormat('MMM d, h:mm a').format(event.audience.rsvpDeadline!);
+      final deadlineStr = DateFormat(
+        'MMM d, h:mm a',
+      ).format(event.audience.rsvpDeadline!);
       message += " by $deadlineStr";
     } else {
       message += "!";
@@ -1656,7 +1663,8 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
         type: NotificationType.eventNudge,
         createdAt: DateTime.now(),
         actorId: currentUser.uid,
-        actorUsername: currentUserProfile?['name'] ?? currentUser.displayName ?? 'A host',
+        actorUsername:
+            currentUserProfile?['name'] ?? currentUser.displayName ?? 'A host',
         actorAvatarUrl: currentUserProfile?['profile_image_url'],
         targetId: event.id,
         targetName: event.title,
@@ -1711,9 +1719,9 @@ class _EventInvitationScreenState extends ConsumerState<EventInvitationScreen> {
     } catch (e) {
       debugPrint('Error sending nudges: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sending nudges: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error sending nudges: $e')));
       }
     }
   }

@@ -7,7 +7,7 @@ const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { geohashQueryBounds, distanceBetween } = require("geofire-common");
 const nodemailer = require("nodemailer");
-
+const crypto = require("crypto");
 const GOOGLE_MAPS_API_KEY = defineSecret("GOOGLE_MAPS_API_KEY");
 const WEATHER_API_KEY = defineSecret("WEATHER_API_KEY");
 const COMETCHAT_APP_ID = defineSecret("COMETCHAT_APP_ID");
@@ -470,8 +470,8 @@ exports.requestEmailOtp = onCall(
       }
     }
 
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate a 6-digit OTP securely
+    const otp = crypto.randomInt(100000, 1000000).toString();
 
     // Store OTP in Firestore with a 5-minute expiration
     const expiration = new Date();
