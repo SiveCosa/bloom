@@ -693,7 +693,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           events: carouselEvents,
           showChevron: routeCategory != 'weekend-forecast',
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 1),
       ],
     );
   }
@@ -728,7 +728,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           events: displayEvents,
           showChevron: false,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 1),
       ],
     );
   }
