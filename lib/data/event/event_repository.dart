@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/event/event.dart';
@@ -94,9 +95,12 @@ class EventRepository {
   }
 
   Future<String> uploadPoster(String eventId, Uint8List bytes) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('User not signed in');
     final ref = _storage
         .ref()
         .child('posters')
+        .child(user.uid)
         .child(eventId)
         .child('poster.webp');
     final uploadTask = await ref.putData(
@@ -148,11 +152,7 @@ class EventRepository {
     if (event.visuals.posterUrl != null &&
         event.visuals.posterUrl!.isNotEmpty) {
       try {
-        final ref = _storage
-            .ref()
-            .child('posters')
-            .child(event.id)
-            .child('poster.webp');
+        final ref = _storage.refFromURL(event.visuals.posterUrl!);
         await ref.delete();
       } catch (e) {
         // If file doesn't exist or deletion fails, log and continue

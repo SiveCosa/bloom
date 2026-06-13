@@ -117,10 +117,25 @@ service cloud.firestore {
     // Events collection
     match /events/{eventId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      
+      allow create: if request.auth != null 
+                    && request.resource.data.metadata.hostId == request.auth.uid;
+      
+      allow update, delete: if request.auth != null 
+                    && (
+                      resource.data.metadata.hostId == request.auth.uid
+                      || (resource.data.keys().hasAll(['co_host_ids']) && request.auth.uid in resource.data.co_host_ids)
+                    );
 
       match /guests/{guestId} {
-        allow read, write: if request.auth != null;
+        allow read: if request.auth != null;
+        allow write: if request.auth != null 
+                     && (
+                       request.auth.uid == guestId
+                       || get(/databases/$(database)/documents/events/$(eventId)).data.metadata.hostId == request.auth.uid
+                       || (get(/databases/$(database)/documents/events/$(eventId)).data.keys().hasAll(['co_host_ids']) 
+                           && request.auth.uid in get(/databases/$(database)/documents/events/$(eventId)).data.co_host_ids)
+                     );
       }
     }
 
