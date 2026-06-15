@@ -728,7 +728,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
           events: displayEvents,
           showChevron: false,
         ),
-        const SizedBox(height: 1),
+        const SizedBox(
+          height: 12,
+        ), // Add spacing below the carousel when a category is selected
       ],
     );
   }
