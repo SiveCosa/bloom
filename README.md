@@ -4,7 +4,7 @@ A cross-platform mobile application built with Flutter for Android and iOS.
 
 This repository contains the source code for the Bloom mobile application. The app leverages Firebase for its backend services, including Authentication, Firestore, and Cloud Storage.
 
-## 🚀 Getting Started
+## Getting Started
 
 To build and run this application locally on your machine for evaluation, please follow the steps below.
 
@@ -31,7 +31,7 @@ Fetch all the required Flutter packages:
 flutter pub get
 ```
 
-### 3. Firebase Configuration ⚠️ (Important)
+### 3. Firebase Configuration (Important)
 
 For security reasons, the Firebase configuration files that contain the project's API keys have been excluded from this public repository. 
 
@@ -69,12 +69,12 @@ flutter devices
 flutter run -d <device_id>
 ```
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 This application follows a modern Flutter architecture emphasizing clean separation of concerns:
 - **UI/View Layer**: Declarative UI built with Flutter widgets.
 - **State Management**: Handling application state efficiently to ensure smooth interactions.
 - **Service Layer**: Handles external API calls and Firebase backend communication.
 
-## 📄 License
+## License
 This project is proprietary and confidential. Unauthorized copying of this file, via any medium, is strictly prohibited.
