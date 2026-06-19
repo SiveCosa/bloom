@@ -38,7 +38,7 @@ For security reasons, the Firebase configuration files that contain the project'
 To run this application, **you must add the configuration files back into the project.** You have two options:
 
 **Option A: Request the files directly (Recommended for Employers/Reviewers)**
-Please contact me directly to securely receive the following environment files:
+Please contact me directly at **gjaydyn7@gmail.com** to securely receive the following environment files:
 - `android/app/google-services.json`
 - `ios/Runner/GoogleService-Info.plist` (if running on iOS)
 - `lib/firebase_options.dart`
