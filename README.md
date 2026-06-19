@@ -2,7 +2,15 @@
 
 A cross-platform mobile application built with Flutter for Android and iOS. 
 
-This repository contains the source code for the Bloom mobile application. The app leverages Firebase for its backend services, including Authentication, Firestore, and Cloud Storage.
+## About Bloom
+
+Bloom is a comprehensive social discovery and event management platform designed to help users connect with their local communities. Key features of the platform include:
+- **Event Discovery**: Browse a personalized "For You" feed and explore events in your area using location-based services.
+- **Event Management & RSVPs**: Seamlessly create events, manage guest lists, join waitlists, and handle event invitations.
+- **Social Connectivity**: Build a network by adding friends, discovering peers with similar interests or educational backgrounds, and engaging in real-time messaging.
+- **Real-Time Updates**: Stay informed with real-time notifications for event updates, friend requests, and new messages.
+
+This repository contains the source code for the mobile application. The app leverages Firebase for its robust backend infrastructure, including Authentication, Firestore, and Cloud Storage.
 
 ## Getting Started
 
