@@ -59,6 +59,8 @@ final userFriendsProvider =
 final recommendedFriendsProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
+  final user = await ref.watch(authStateChangesProvider.future);
+  if (user == null) return [];
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
     final result = await functions

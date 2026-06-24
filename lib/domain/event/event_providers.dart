@@ -347,6 +347,8 @@ Future<GeoPoint?> _ensureUserGeoPoint(Ref ref) async {
 final forYouRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
+  final user = await ref.watch(authStateChangesProvider.future);
+  if (user == null) return [];
   try {
     final functions = FirebaseFunctions.instanceFor(region: 'africa-south1');
     final result = await functions.httpsCallable('getForYouFeed').call();
@@ -409,6 +411,8 @@ List<Map<String, dynamic>> _mergeInAreaWithForYou(
 final eventsInAreaRawFeedProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
 ) async {
+  final user = await ref.watch(authStateChangesProvider.future);
+  if (user == null) return [];
   try {
     List<Map<String, dynamic>> inArea = [];
     final location = await _ensureUserGeoPoint(ref);
@@ -452,6 +456,8 @@ final eventsInAreaEventsProvider = Provider<List<Event>>((ref) {
 
 final friendsAndMutualsRawFeedProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      final user = await ref.watch(authStateChangesProvider.future);
+      if (user == null) return [];
       try {
         List<Map<String, dynamic>> feed = [];
         final location = await _ensureUserGeoPoint(ref);
