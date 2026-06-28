@@ -165,8 +165,9 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
         colors.add(paletteGenerator.dominantColor!.color);
       }
 
-      // Recheck before applying color/poster updates in case an event was loaded for editing during palette generation
-      if (state.editingEventId != null) {
+      // Recheck before applying color/poster updates in case an event was loaded for editing during palette generation,
+      // or if the user has already started picking/picked a custom poster.
+      if (state.editingEventId != null || state.customPosterBytes != null || state.isGeneratingPoster) {
         return;
       }
 
