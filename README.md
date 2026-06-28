@@ -1,5 +1,9 @@
 # Bloom
 
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)
+![Firebase](https://img.shields.io/badge/firebase-%23039BE5.svg?style=for-the-badge&logo=firebase)
+
 ## About Bloom
 
 Bloom is a comprehensive social discovery and event management platform designed to help users connect with their local communities. Key features of the platform include:
@@ -235,12 +239,21 @@ flutter devices
 flutter run -d <device_id>
 ```
 
-## Project Architecture
+## Technical Highlights
+
+- **Fluid, Gesture-Driven UI**: Built with complex animations and micro-interactions, such as the fluid, draggable RSVP sheet on event invitations that snaps to different content views.
+- **Reactive State Management**: Heavy utilization of Riverpod for a highly decoupled, reactive architecture that updates feeds and UI states instantly across the app.
+- **Advanced Navigation**: Uses GoRouter for deep linking and managing complex navigation stacks seamlessly.
+- **Real-time Backend Syncing**: Leveraging Firebase Firestore streams for instant updates across event feeds, guest lists, and chat features.
+
+## Tech Stack & Architecture
 
 This application follows a modern Flutter architecture emphasizing clean separation of concerns:
-- **UI/View Layer**: Declarative UI built with Flutter widgets.
-- **State Management**: Handling application state efficiently to ensure smooth interactions.
-- **Service Layer**: Handles external API calls and Firebase backend communication.
+- **Frontend**: Flutter & Dart for cross-platform deployment.
+- **State Management**: Riverpod for reactive caching, data-binding, and state handling.
+- **Routing**: GoRouter for declarative routing.
+- **Backend**: Firebase suite (Authentication, Firestore, Cloud Storage).
+- **Architecture Pattern**: Adopts a layered architecture separating UI/View, State/Providers, and Domain/Service layers for optimal testability and maintainability.
 
 ## License
 This project is proprietary and confidential. Unauthorized copying of this file, via any medium, is strictly prohibited.
