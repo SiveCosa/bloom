@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/event/event.dart';
 import '../../domain/calendar/scheduled_event.dart';
 import '../firebase_provider.dart';
+import '../../core/media/poster_image_helper.dart';
+import 'dart:io';
 
 class EventRepository {
   final FirebaseFirestore _firestore;
@@ -108,6 +110,39 @@ class EventRepository {
       SettableMetadata(contentType: 'image/webp'),
     );
     return await uploadTask.ref.getDownloadURL();
+  }
+
+  Future<Map<String, String>> uploadPosterVariants(
+      String eventId, PosterProcessResult result) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('User not signed in');
+
+    Future<String> uploadVariant(String size, String path) async {
+      final file = File(path);
+      final bytes = await file.readAsBytes();
+      final ref = _storage
+          .ref()
+          .child('posters')
+          .child(user.uid)
+          .child(eventId)
+          .child('poster_$size.webp');
+      
+      final uploadTask = await ref.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/webp'),
+      );
+      return await uploadTask.ref.getDownloadURL();
+    }
+
+    final largeUrl = await uploadVariant('large', result.largePath);
+    final mediumUrl = await uploadVariant('medium', result.mediumPath);
+    final smallUrl = await uploadVariant('small', result.smallPath);
+
+    return {
+      'large': largeUrl,
+      'medium': mediumUrl,
+      'small': smallUrl,
+    };
   }
 
   Future<String> createEvent(Event event) async {
@@ -424,7 +459,7 @@ class EventRepository {
     return controller.stream;
   }
 
-  Stream<List<Map<String, dynamic>>> getScheduleStream(String profileUserId) {
+  Stream<List<Map<String, dynamic>>> getScheduleStream(String profileUserId, {DateTime? start, DateTime? end}) {
     if (profileUserId.trim().isEmpty) return Stream.value([]);
 
     final controller = StreamController<List<Map<String, dynamic>>>();
@@ -477,11 +512,20 @@ class EventRepository {
       controller.add(result);
     }
 
-    final scheduleSub = _firestore
+    var query = _firestore
         .collection('users')
         .doc(profileUserId)
         .collection('schedule')
-        .orderBy('startTime', descending: false)
+        .orderBy('startTime', descending: false);
+
+    if (start != null) {
+      query = query.where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start));
+    }
+    if (end != null) {
+      query = query.where('startTime', isLessThanOrEqualTo: Timestamp.fromDate(end));
+    }
+
+    final scheduleSub = query
         .snapshots()
         .listen((snapshot) {
           latestSchedule = snapshot.docs

@@ -11,7 +11,8 @@ import 'widgets/date_time_row.dart';
 import 'widgets/date_time_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:palette_generator/palette_generator.dart';
-import '../../core/media/image_compression_helper.dart';
+import '../../core/media/poster_image_helper.dart';
+import 'dart:io';
 import 'widgets/event_section_card.dart';
 import 'widgets/bloom_toggle.dart';
 import 'widgets/event_description_input.dart';
@@ -35,23 +36,19 @@ class CreateEventScreen extends ConsumerWidget {
 
   Future<void> _pickAndUploadPoster(BuildContext context, WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final notifier = ref.read(createEventProvider.notifier);
 
-    if (pickedFile != null) {
-      final notifier = ref.read(createEventProvider.notifier);
+    try {
+      notifier.setGeneratingPoster(true);
+      notifier.setNsfwDetected(false);
 
-      try {
-        notifier.setGeneratingPoster(true);
+      final result = await pickAndProcessPoster(ImageSource.gallery);
 
-        final bytes = await pickedFile.readAsBytes();
-
-        // Aggressive performance compression to WebP (80% quality)
-        final compressedBytes = await ImageCompressionHelper.compressToWebP(
-          bytes,
-        );
-
-        final imageProvider = MemoryImage(compressedBytes);
+      if (result != null) {
+        final mediumFile = File(result.mediumPath);
+        final bytes = await mediumFile.readAsBytes();
+        final imageProvider = MemoryImage(bytes);
+        
         final paletteGenerator = await PaletteGenerator.fromImageProvider(
           imageProvider,
         );
@@ -73,7 +70,6 @@ class CreateEventScreen extends ConsumerWidget {
           colors.add(paletteGenerator.dominantColor!.color);
         }
 
-        // Fill to 5 colors if necessary
         if (colors.length < 5) {
           for (var swatch in paletteGenerator.paletteColors) {
             if (!colors.contains(swatch.color)) {
@@ -83,8 +79,12 @@ class CreateEventScreen extends ConsumerWidget {
           }
         }
 
-        notifier.updateCustomPoster(compressedBytes, colors);
-      } catch (e) {
+        notifier.updateCustomPoster(result, colors);
+      }
+    } on Exception catch (e) {
+      if (e.toString().contains('NSFW')) {
+        notifier.setNsfwDetected(true);
+      } else {
         debugPrint('Error picking or processing poster: $e');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -93,9 +93,9 @@ class CreateEventScreen extends ConsumerWidget {
             ),
           );
         }
-      } finally {
-        notifier.setGeneratingPoster(false);
       }
+    } finally {
+      notifier.setGeneratingPoster(false);
     }
   }
 
@@ -538,7 +538,7 @@ class CreateEventScreen extends ConsumerWidget {
                               );
                               return EventSectionCard(
                                 headerIcon: Icons.auto_awesome,
-                                title: 'Extras',
+                                title: 'Highlights',
                                 body: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [

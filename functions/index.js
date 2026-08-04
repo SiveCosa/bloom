@@ -462,11 +462,23 @@ exports.requestEmailOtp = onCall(
           "No account found. Please create one."
         );
       }
-      if (authFlow === "signup" && profileExists) {
-        throw new HttpsError(
-          "failed-precondition",
-          "Account already exists. Please log in."
-        );
+      if (authFlow === "signup") {
+        if (profileExists) {
+          throw new HttpsError(
+            "failed-precondition",
+            "Account already exists. Please log in."
+          );
+        } else {
+          // Check capacity limit before sending OTP
+          const MAX_USERS = 100;
+          const listUsersResult = await admin.auth().listUsers(MAX_USERS);
+          if (listUsersResult.users.length >= MAX_USERS) {
+            throw new HttpsError(
+              "resource-exhausted",
+              "Bloom is currently at capacity (100 users max). Signups are temporarily closed."
+            );
+          }
+        }
       }
     }
 
@@ -571,6 +583,16 @@ exports.verifyEmailOtp = onCall(
       userRecord = await admin.auth().getUserByEmail(normalized);
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
+        // Check capacity limit before creating the user
+        const MAX_USERS = 100;
+        const listUsersResult = await admin.auth().listUsers(MAX_USERS);
+        if (listUsersResult.users.length >= MAX_USERS) {
+          throw new HttpsError(
+            "resource-exhausted",
+            "Bloom is currently at capacity (100 users max). Signups are temporarily closed."
+          );
+        }
+
         // User doesn't exist, create them in Auth
         userRecord = await admin.auth().createUser({
           email: normalized,
@@ -923,17 +945,17 @@ exports.deleteUserAccount = onCall(
         console.error("Error calling CometChat DELETE API:", err);
       }
 
-      // 2. Delete Profile Picture from Cloud Storage
+      // 2. Delete Images from Cloud Storage
       try {
         const bucket = admin.storage().bucket();
-        const file = bucket.file(`users/${uid}/profile_pic.webp`);
-        const [exists] = await file.exists();
-        if (exists) {
-          await file.delete();
-          console.log(`Deleted profile picture for ${uid}`);
-        }
+        // Delete all files in the user's profile picture directory
+        await bucket.deleteFiles({ prefix: `users/${uid}/` });
+        console.log(`Deleted profile pictures for ${uid}`);
+        // Delete all event posters uploaded by the user
+        await bucket.deleteFiles({ prefix: `posters/${uid}/` });
+        console.log(`Deleted event posters for ${uid}`);
       } catch (err) {
-        console.error("Error deleting profile picture:", err);
+        console.error("Error deleting images from storage:", err);
       }
 
       // 3. Pre-Deletion Data Gathering
@@ -1028,7 +1050,61 @@ exports.googleMapsProxy = onCall(
       throw new HttpsError("invalid-argument", "Endpoint and params are required.");
     }
 
+    const uid = request.auth.uid;
+    const rateLimitRef = db.collection("api_rate_limits").doc(uid);
+    const rateLimitSnap = await rateLimitRef.get();
+    
+    let currentCount = 0;
+    const now = Date.now();
+    
+    if (rateLimitSnap.exists) {
+      const data = rateLimitSnap.data();
+      const lastReset = data.mapsProxyLastReset || 0;
+      // 24 hours in milliseconds = 86400000
+      if (now - lastReset < 86400000) {
+        currentCount = data.mapsProxyCount || 0;
+      }
+    }
+    
+    if (currentCount >= 50) {
+      throw new HttpsError("resource-exhausted", "Daily limit for Google Maps searches reached.");
+    }
+
+    const incrementRateLimit = async () => {
+      await rateLimitRef.set({
+        mapsProxyCount: currentCount + 1,
+        mapsProxyLastReset: currentCount === 0 ? now : (rateLimitSnap.exists ? rateLimitSnap.data().mapsProxyLastReset : now)
+      }, { merge: true });
+    };
+
     const apiKey = GOOGLE_MAPS_API_KEY.value();
+
+    // Determine cache key
+    let cacheKey = null;
+    if (endpoint === "staticmap" && params.center) {
+      // Create safe document ID
+      cacheKey = `staticmap_${Buffer.from(params.center).toString('base64').replace(/[/+=]/g, '_')}`;
+    } else if (endpoint === "details" && params.place_id) {
+      cacheKey = `details_${params.place_id}`;
+    } else if (endpoint === "geocode" && params.latlng) {
+      cacheKey = `geocode_${params.latlng.replace(/,/g, '_')}`;
+    }
+
+    let cacheRef = null;
+    if (cacheKey) {
+      cacheRef = db.collection("maps_cache").doc(cacheKey);
+      const cacheSnap = await cacheRef.get();
+      if (cacheSnap.exists) {
+        const cacheData = cacheSnap.data();
+        // 30 days in ms = 2592000000
+        if (now - cacheData.createdAt < 2592000000) {
+          await incrementRateLimit();
+          return cacheData.data;
+        }
+      }
+    }
+
+    let responseData = null;
 
     if (endpoint === "staticmap") {
       const scale = params.scale || 2;
@@ -1051,37 +1127,47 @@ exports.googleMapsProxy = onCall(
         }
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
-        return { status: 'OK', image: base64 };
+        responseData = { status: 'OK', image: base64 };
       } catch (error) {
         console.error("Google Maps Static Map Proxy Error:", error);
         throw new HttpsError("internal", `Failed to fetch static map: ${error.message}`);
       }
+    } else {
+      let url = "";
+
+      switch (endpoint) {
+        case "autocomplete":
+          url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(params.input)}&key=${apiKey}`;
+          break;
+        case "details":
+          url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${params.place_id}&fields=name,formatted_address,geometry&key=${apiKey}`;
+          break;
+        case "geocode":
+          url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${params.latlng}&key=${apiKey}`;
+          break;
+        default:
+          throw new HttpsError("invalid-argument", "Invalid endpoint.");
+      }
+
+      try {
+        const response = await fetch(url);
+        responseData = await response.json();
+      } catch (error) {
+        console.error("Google Maps API Proxy Error:", error);
+        throw new HttpsError("internal", "Failed to fetch data from Google Maps API.");
+      }
     }
 
-    let url = "";
-
-    switch (endpoint) {
-      case "autocomplete":
-        url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(params.input)}&key=${apiKey}`;
-        break;
-      case "details":
-        url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${params.place_id}&fields=name,formatted_address,geometry&key=${apiKey}`;
-        break;
-      case "geocode":
-        url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${params.latlng}&key=${apiKey}`;
-        break;
-      default:
-        throw new HttpsError("invalid-argument", "Invalid endpoint.");
+    // Save to cache if applicable
+    if (cacheRef && responseData && (responseData.status === 'OK' || responseData.status === 'ZERO_RESULTS')) {
+      await cacheRef.set({
+        data: responseData,
+        createdAt: now
+      });
     }
 
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Google Maps API Proxy Error:", error);
-      throw new HttpsError("internal", "Failed to fetch data from Google Maps API.");
-    }
+    await incrementRateLimit();
+    return responseData;
   }
 );
 

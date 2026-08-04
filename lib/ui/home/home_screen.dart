@@ -12,6 +12,7 @@ import 'package:bloom/domain/home/home_schedule_providers.dart';
 import 'package:bloom/domain/navigation/navigation_providers.dart';
 import 'package:bloom/domain/chat/chat_providers.dart';
 import 'package:bloom/domain/calendar/scheduled_event.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:bloom/domain/notification/notification_providers.dart';
 import 'package:bloom/ui/event/widgets/event_card_large.dart';
 import '../shared/widgets/gradient_top_bar.dart';
@@ -572,6 +573,20 @@ class HomeFeedCarouselSection extends ConsumerWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
+    final dummyEvents = List.generate(
+      3,
+      (index) => ScheduledEvent(
+        id: 'dummy_$index',
+        title: 'Loading Event...',
+        startTime: DateTime.now(),
+        endTime: DateTime.now().add(const Duration(hours: 2)),
+        hostName: 'Loading Host',
+        hostId: 'dummy_host',
+        auroraColors: ['#333333', '#666666'],
+        locationName: 'Loading Location',
+      ),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -579,10 +594,21 @@ class HomeFeedCarouselSection extends ConsumerWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: EventCardLarge.carouselHeight,
-          child: const Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white70,
+          child: Skeletonizer(
+            enabled: true,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: dummyEvents.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                return EventCardLarge(
+                  event: dummyEvents[index],
+                  onOptionTap: () {},
+                  onInterestedTap: () {},
+                );
+              },
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/event/create_event_state.dart';
+import 'dart:io';
 
 class PosterModule extends ConsumerWidget {
   final VoidCallback onEditPoster;
@@ -31,7 +32,7 @@ class PosterModule extends ConsumerWidget {
               color: Colors.white.withValues(alpha: 0.15),
               border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
               image:
-                  (state.customPosterBytes == null &&
+                  (state.customPosterResult == null &&
                       (posterUrl != null || state.defaultPosterUrl != null))
                   ? DecorationImage(
                       image: NetworkImage(posterUrl ?? state.defaultPosterUrl!),
@@ -40,18 +41,41 @@ class PosterModule extends ConsumerWidget {
                   : null,
             ),
             child: GestureDetector(
-              onTap: (posterUrl == null && state.customPosterBytes == null)
+              onTap: (posterUrl == null && state.customPosterResult == null)
                   ? onEditPoster
                   : null,
               child: Stack(
                 children: [
-                  if (state.customPosterBytes != null)
+                  if (state.isNsfwDetected)
+                    Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: Colors.redAccent,
+                      ),
+                      child: const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            'NSFW content detected!\nPlease upload another image or try again.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (state.customPosterResult != null)
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
-                        child: Image.memory(
-                          state.customPosterBytes!,
-                          key: ValueKey(state.customPosterBytes),
+                        child: Image.file(
+                          File(state.customPosterResult!.mediumPath),
+                          key: ValueKey(state.customPosterResult!.mediumPath),
                           fit: BoxFit.cover,
                           cacheWidth: 800,
                         ),
@@ -59,8 +83,9 @@ class PosterModule extends ConsumerWidget {
                     ),
                   if (posterUrl == null &&
                       state.defaultPosterUrl == null &&
-                      state.customPosterBytes == null &&
-                      !state.isGeneratingPoster)
+                      state.customPosterResult == null &&
+                      !state.isGeneratingPoster &&
+                      !state.isNsfwDetected)
                     const Center(
                       child: Icon(Icons.image, color: Colors.white24, size: 48),
                     ),
@@ -129,7 +154,7 @@ class PosterModule extends ConsumerWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Edit poster',
+                                state.isNsfwDetected ? 'Try again' : 'Edit poster',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 12,
@@ -138,6 +163,15 @@ class PosterModule extends ConsumerWidget {
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                    ),
+                  if (state.isNsfwDetected)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: onEditPoster,
+                        child: Container(
+                          color: Colors.transparent,
                         ),
                       ),
                     ),

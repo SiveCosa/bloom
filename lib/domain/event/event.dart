@@ -270,17 +270,26 @@ class EventLiveCounts {
 
 class EventVisuals {
   final String? posterUrl;
+  final String? posterLargeUrl;
+  final String? posterMediumUrl;
+  final String? posterSmallUrl;
   final double aspectRatio;
   final List<String> auroraColors; // Hex strings
 
   const EventVisuals({
     this.posterUrl,
+    this.posterLargeUrl,
+    this.posterMediumUrl,
+    this.posterSmallUrl,
     required this.aspectRatio,
     required this.auroraColors,
   });
 
   EventVisuals copyWith({
     Object? posterUrl = _undefined,
+    Object? posterLargeUrl = _undefined,
+    Object? posterMediumUrl = _undefined,
+    Object? posterSmallUrl = _undefined,
     double? aspectRatio,
     List<String>? auroraColors,
   }) {
@@ -288,6 +297,15 @@ class EventVisuals {
       posterUrl: posterUrl == _undefined
           ? this.posterUrl
           : (posterUrl as String?),
+      posterLargeUrl: posterLargeUrl == _undefined
+          ? this.posterLargeUrl
+          : (posterLargeUrl as String?),
+      posterMediumUrl: posterMediumUrl == _undefined
+          ? this.posterMediumUrl
+          : (posterMediumUrl as String?),
+      posterSmallUrl: posterSmallUrl == _undefined
+          ? this.posterSmallUrl
+          : (posterSmallUrl as String?),
       aspectRatio: aspectRatio ?? this.aspectRatio,
       auroraColors: auroraColors ?? this.auroraColors,
     );
@@ -296,6 +314,9 @@ class EventVisuals {
   Map<String, dynamic> toMap() {
     return {
       if (posterUrl != null) 'posterUrl': posterUrl,
+      if (posterLargeUrl != null) 'posterLargeUrl': posterLargeUrl,
+      if (posterMediumUrl != null) 'posterMediumUrl': posterMediumUrl,
+      if (posterSmallUrl != null) 'posterSmallUrl': posterSmallUrl,
       'aspectRatio': aspectRatio,
       'auroraColors': auroraColors,
     };
@@ -304,6 +325,9 @@ class EventVisuals {
   factory EventVisuals.fromMap(Map<String, dynamic> map) {
     return EventVisuals(
       posterUrl: map['posterUrl'] as String? ?? map['poster_url'] as String?,
+      posterLargeUrl: map['posterLargeUrl'] as String? ?? map['poster_large_url'] as String?,
+      posterMediumUrl: map['posterMediumUrl'] as String? ?? map['poster_medium_url'] as String?,
+      posterSmallUrl: map['posterSmallUrl'] as String? ?? map['poster_small_url'] as String?,
       aspectRatio:
           (map['aspectRatio'] as num?)?.toDouble() ??
           (map['aspect_ratio'] as num?)?.toDouble() ??

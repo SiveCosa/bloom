@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -16,6 +17,7 @@ import '../../domain/navigation/navigation_providers.dart';
 import '../../core/routing/event_navigation.dart';
 import '../widgets/scheduled_event_card.dart';
 import '../shared/widgets/past_events_divider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -48,6 +50,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     setState(() {
       _displayedMonth = DateTime(now.year, now.month, 1);
     });
+    ref.read(visibleMonthProvider.notifier).updateMonth(now);
 
     if (_pageController.hasClients) {
       _pageController.jumpToPage(10000);
@@ -124,6 +127,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             setState(() {
                               _displayedMonth = newMonth;
                             });
+                            ref
+                                .read(visibleMonthProvider.notifier)
+                                .updateMonth(newMonth);
                             // Automatically set the 1st of the new month as the active/selected day
                             ref
                                 .read(selectedDateProvider.notifier)
@@ -428,14 +434,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final isToday = _isSameDay(day, DateTime.now());
     final isOtherMonth = day.month != monthDate.month;
 
-    final scheduleAsync = ref.watch(filteredScheduleProvider);
-    final events = scheduleAsync.when(
-      data: (data) => data
-          .where((e) => e.startTime != null && _isSameDay(e.startTime!, day))
-          .toList(),
-      loading: () => <ScheduledEvent>[],
-      error: (err, stack) => <ScheduledEvent>[],
-    );
+    final eventsByDay = ref.watch(eventsByDayProvider);
+    final events = eventsByDay[DateTime(day.year, day.month, day.day)] ?? <ScheduledEvent>[];
 
     final showQuestionMark = events.any((e) {
       final status = e.rsvpStatus;
@@ -549,13 +549,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: Opacity(
             opacity: events[0].isPast ? 0.5 : 1.0,
             child: events[0].posterUrl != null
-                ? Image.network(
-                    events[0].posterUrl!,
+                ? CachedNetworkImage(
+                    imageUrl: events[0].posterUrl!,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     height: double.infinity,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildFallbackFill(),
+                    errorWidget: (context, url, error) => _buildFallbackFill(),
                   )
                 : _buildFallbackFill(),
           ),
@@ -623,12 +622,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Widget _buildMiniPoster(ScheduledEvent event) {
     if (event.posterUrl != null) {
-      return Image.network(
-        event.posterUrl!,
+      return CachedNetworkImage(
+        imageUrl: event.posterUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackFill(),
+        errorWidget: (context, url, error) => _buildFallbackFill(),
       );
     }
     return _buildFallbackFill();
@@ -757,9 +756,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                         ),
                       );
                     },
-                    loading: () => const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
+                    loading: () => SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final dummyEvent = ScheduledEvent(
+                            id: 'dummy_$index',
+                            title: 'Loading Event Title',
+                            startTime: DateTime.now(),
+                            endTime: DateTime.now().add(const Duration(hours: 2)),
+                            hostName: 'Loading Host',
+                            hostId: 'dummy_host',
+                            auroraColors: ['#333333', '#666666'],
+                            locationName: 'Loading Location',
+                          );
+                          return Skeletonizer(
+                            enabled: true,
+                            child: ScheduledEventCard(
+                              event: dummyEvent,
+                              isHost: false,
+                              onTap: () {},
+                            ),
+                          );
+                        }, childCount: 3),
+                      ),
                     ),
                     error: (e, _) => SliverFillRemaining(
                       hasScrollBody: false,

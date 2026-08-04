@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/auth/auth_providers.dart';
 import 'dart:ui' as ui;
-import 'dart:io';
 import '../../shared/widgets/bloom_button.dart';
 import '../../../core/media/image_loader_helper.dart';
 import '../../../core/media/avatar_image_helper.dart';
@@ -29,8 +28,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _isLoading = false;
   bool _isInit = false;
+  bool _nsfwDetected = false;
   String _selectedGender = '';
-  String? _localImagePath;
+  AvatarProcessResult? _avatarProcessResult;
   String? _currentImageUrl;
 
   @override
@@ -93,12 +93,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     await showAvatarSourceSheet(
       context,
       onChosen: (source) async {
-        final path = await pickAndCropSquareAvatar(source);
-        if (!mounted) return;
-        if (path != null) {
-          setState(() {
-            _localImagePath = path;
-          });
+        setState(() => _nsfwDetected = false);
+        try {
+          final result = await pickAndProcessAvatar(source);
+          if (!mounted) return;
+          if (result != null) {
+            setState(() {
+              _avatarProcessResult = result;
+            });
+          }
+        } on Exception catch (e) {
+          if (e.toString().contains('NSFW')) {
+            if (mounted) setState(() => _nsfwDetected = true);
+          }
         }
       },
     );
@@ -197,14 +204,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         updates['gender'] = _selectedGender;
       }
 
-      File? imageFile;
-      if (_localImagePath != null) {
-        imageFile = File(_localImagePath!);
-      }
-
       await ref
           .read(authControllerProvider.notifier)
-          .updateUserProfile(updates, imageFile: imageFile);
+          .updateUserProfile(updates, imageResult: _avatarProcessResult);
 
       if (mounted) context.pop();
     } catch (e) {
@@ -411,12 +413,45 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Center(
       child: Stack(
         children: [
-          buildAvatarImage(
-            source: _localImagePath ?? _currentImageUrl,
-            radius: 60,
-          ),
-          if (!isLocked)
+          if (_nsfwDetected)
+            Container(
+              width: 120,
+              height: 120,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.redAccent,
+              ),
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'NSFW content detected!\nPlease upload another image or try again.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            buildAvatarImage(
+              source: _avatarProcessResult?.mediumPath ?? _currentImageUrl,
+              radius: 60,
+            ),
+          if (!isLocked && !_nsfwDetected)
             Positioned(right: 0, bottom: 0, child: _buildEditIconButton()),
+          if (_nsfwDetected)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  color: Colors.transparent,
+                ),
+              ),
+            ),
         ],
       ),
     );

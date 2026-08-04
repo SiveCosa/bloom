@@ -1,7 +1,21 @@
+val flutterSdkPath = run {
+    val properties = java.util.Properties()
+    file("local.properties").inputStream().use { properties.load(it) }
+    properties.getProperty("flutter.sdk")
+}
+val engineVersion = file("$flutterSdkPath/bin/internal/engine.version").readText().trim()
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "io.flutter" && requested.name.startsWith("flutter_embedding")) {
+                useVersion("1.0.0-$engineVersion")
+            }
+        }
     }
 }
 

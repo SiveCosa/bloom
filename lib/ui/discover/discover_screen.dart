@@ -19,6 +19,7 @@ import '../shared/widgets/bloom_button.dart';
 import '../shared/widgets/bloom_loading_indicator.dart';
 import './discover_search_screen.dart';
 import './advanced_filter_sheet.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 String _discoverErrorMessage(Object? error) {
   final text = error?.toString() ?? '';
@@ -345,9 +346,43 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
                 // Vertical feed (loading / error / list / empty)
                 if (cacheAsync.isLoading && isDiscoverTab)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(child: BloomLoadingIndicator(size: 40)),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final dummyEvent = Event(
+                        id: 'dummy_$index',
+                        title: 'Loading Event Title',
+                        description: 'Loading description...',
+                        tags: const [],
+                        visuals: const EventVisuals(
+                          aspectRatio: 1.0,
+                          auroraColors: ['#333333', '#666666'],
+                        ),
+                        timing: EventTiming(
+                          startDate: DateTime.now(),
+                        ),
+                        audience: EventAudience.fromMap(const {}),
+                        extras: const [],
+                        rsvpReminders: const [],
+                        liveCounts: const EventLiveCounts(),
+                        previewGuests: const [],
+                        metadata: EventMetadata(
+                          hostId: 'dummy',
+                          createdAt: DateTime.now(),
+                          updatedAt: DateTime.now(),
+                          status: EventStatus.active,
+                        ),
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Skeletonizer(
+                          enabled: true,
+                          child: EventMediumCard(
+                            event: dummyEvent,
+                            onTap: () {},
+                          ),
+                        ),
+                      );
+                    }, childCount: 4),
                   )
                 else if (cacheAsync.hasError && isDiscoverTab)
                   SliverFillRemaining(

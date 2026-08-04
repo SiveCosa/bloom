@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 import '../../domain/event/create_event_state.dart';
 import '../../domain/event/event_visibility.dart';
 import '../../domain/event/event_extra.dart';
@@ -160,10 +161,10 @@ class _EventPreviewScreenState extends ConsumerState<EventPreviewScreen> {
                           width: MediaQuery.of(context).size.width,
                           child: AspectRatio(
                             aspectRatio: state.visuals.aspectRatio,
-                            child: state.customPosterBytes != null
-                                ? Image.memory(
-                                    state.customPosterBytes!,
-                                    key: ValueKey(state.customPosterBytes),
+                            child: state.customPosterResult != null
+                                ? Image.file(
+                                    File(state.customPosterResult!.mediumPath),
+                                    key: ValueKey(state.customPosterResult!.mediumPath),
                                     fit: BoxFit.cover,
                                   )
                                 : (state.visuals.posterUrl != null ||

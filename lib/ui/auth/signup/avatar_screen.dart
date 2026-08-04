@@ -17,19 +17,28 @@ class AvatarScreen extends ConsumerStatefulWidget {
 }
 
 class _AvatarScreenState extends ConsumerState<AvatarScreen> {
-  String? _localImagePath;
+  AvatarProcessResult? _avatarResult;
   bool _busy = false;
+  bool _nsfwDetected = false;
+  bool _isCreatingProfile = false;
 
-  bool get _hasAvatar => _localImagePath != null && _localImagePath!.isNotEmpty;
+  bool get _hasAvatar => _avatarResult != null;
 
   Future<void> _runPickerFlow(ImageSource source) async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _nsfwDetected = false;
+    });
     try {
-      final path = await pickAndCropSquareAvatar(source);
+      final result = await pickAndProcessAvatar(source);
       if (!mounted) return;
-      if (path != null) {
-        setState(() => _localImagePath = path);
-        ref.read(signUpFormProvider.notifier).updateAvatar(path);
+      if (result != null) {
+        setState(() => _avatarResult = result);
+        ref.read(signUpFormProvider.notifier).updateAvatar(result);
+      }
+    } on Exception catch (e) {
+      if (e.toString().contains('NSFW')) {
+        if (mounted) setState(() => _nsfwDetected = true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -40,6 +49,29 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
     await showAvatarSourceSheet(context, onChosen: _runPickerFlow);
   }
 
+  Future<void> _createProfile() async {
+    setState(() => _isCreatingProfile = true);
+    try {
+      if (!_hasAvatar) {
+        ref.read(signUpFormProvider.notifier).updateAvatar(null);
+      }
+      final formData = ref.read(signUpFormProvider);
+      await ref.read(authControllerProvider.notifier).createUserProfile(formData);
+
+      if (mounted) {
+        context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Profile creation failed: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreatingProfile = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,8 +79,8 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
       appBar: AuthAppBar(
         leftAction: AuthAppBarAction.back,
         rightAction: AuthAppBarAction.skip,
-        onBack: () => context.go('/auth/signup/campus'),
-        onSkip: () => context.go('/auth/signup/interests'),
+        onBack: () => context.go('/auth/signup/details'),
+        onSkip: _isCreatingProfile ? null : _createProfile,
       ),
       body: Stack(
         children: [
@@ -80,49 +112,73 @@ class _AvatarScreenState extends ConsumerState<AvatarScreen> {
                   const Spacer(),
                   Center(
                     child: GestureDetector(
-                      onTap: _busy ? null : _onAvatarTap,
+                      onTap: (_busy || _isCreatingProfile) ? null : _onAvatarTap,
                       child: Column(
                         children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              buildAvatarImage(
-                                source: _localImagePath,
-                                radius: 80,
-                              ),
-                              if (_busy)
-                                const Positioned.fill(
-                                  child: IgnorePointer(
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (_nsfwDetected)
+                                  Container(
+                                    width: 160,
+                                    height: 160,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.redAccent,
+                                    ),
+                                    child: const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Text(
+                                          'NSFW content detected!\nPlease upload another image or try again.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  buildAvatarImage(
+                                    source: _avatarResult?.mediumPath,
+                                    radius: 80,
+                                  ),
+                                if (_busy)
+                                  const Positioned.fill(
+                                    child: IgnorePointer(
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _hasAvatar
-                                ? 'Tap to change photo'
-                                : 'Tap to add photo (optional)',
-                            style: const TextStyle(color: Colors.white70),
-                          ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _nsfwDetected
+                                  ? 'Tap to try again'
+                                  : _hasAvatar
+                                      ? 'Tap to change photo'
+                                      : 'Tap to add photo (optional)',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
                         ],
                       ),
                     ),
                   ),
                   const Spacer(),
                   BloomButton(
-                    text: 'Continue',
-                    onPressed: () {
-                      if (!_hasAvatar) {
-                        ref.read(signUpFormProvider.notifier).updateAvatar('');
-                      }
-                      context.go('/auth/signup/interests');
-                    },
+                    text: 'Create Account',
+                    isLoading: _isCreatingProfile,
+                    onPressed: (_nsfwDetected || _isCreatingProfile)
+                        ? null
+                        : _createProfile,
                   ),
                   const SizedBox(height: 24),
                 ],

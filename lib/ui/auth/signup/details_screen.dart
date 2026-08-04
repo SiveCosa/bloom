@@ -66,6 +66,9 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  String _selectedCampus = '';
+  bool _hasCampusError = false;
+
   @override
   void initState() {
     super.initState();
@@ -91,7 +94,8 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
       _nameController.text.isNotEmpty &&
       _birthdayYear != 'YYYY' &&
       _birthdayMonth != 'MMM' &&
-      _birthdayDay != 'DD';
+      _birthdayDay != 'DD' &&
+      _selectedCampus.isNotEmpty;
 
   String? _yearValue() => _birthdayYear == 'YYYY' ? null : _birthdayYear;
   String? _monthValue() => _birthdayMonth == 'MMM' ? null : _birthdayMonth;
@@ -105,7 +109,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   }) {
     return Expanded(
       child: Container(
-        height: _kStandardHeight, // MATCHES TEXT FIELD HEIGHT
+        height: _kStandardHeight,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.15),
@@ -153,14 +157,13 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
         onTap: () => setState(() => _genderValue = selected ? null : value),
         child: Row(
           children: [
-            Radio<String>(
-              value: value,
-              // ignore: deprecated_member_use
-              groupValue: _genderValue,
-              toggleable: true,
-              // ignore: deprecated_member_use
-              onChanged: (v) => setState(() => _genderValue = v),
-              activeColor: activeColor,
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                color: selected ? activeColor : Colors.white54,
+                size: 20,
+              ),
             ),
             Text(
               label,
@@ -178,6 +181,7 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final email = ref.watch(signUpFormProvider).email;
+    final signupDataAsync = ref.watch(institutionSignupDataProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -188,229 +192,355 @@ class _DetailsScreenState extends ConsumerState<DetailsScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 20),
-                          Center(
-                            child: Image.asset(
-                              'assets/bloom_logo.png',
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-                          const Text(
-                            'Who are you?',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          RichText(
-                            text: TextSpan(
-                              text: 'Enter your account details,\n',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: email,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-
-                          const Text(
-                            'Username',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          RoundedTextField(
-                            controller: _usernameController,
-                            hintText: 'Username',
-                            inputFormatters: [
-                              LowerCaseTextFormatter(),
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'[a-z0-9._]'),
-                              ),
-                            ],
-                            errorMessage: _errorMessage,
-                            onChanged: (_) {
-                              if (_errorMessage != null) {
-                                setState(() => _errorMessage = null);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          const Text(
-                            'Name:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          RoundedTextField(
-                            controller: _nameController,
-                            hintText: 'Your name',
-                            onChanged: (_) => setState(() {}),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          const Text(
-                            'Birthday',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              _buildDateDropdown(
-                                placeholder: 'DD',
-                                items: _days,
-                                value: _dayValue(),
-                                onChanged: (v) =>
-                                    setState(() => _birthdayDay = v ?? 'DD'),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  '/',
-                                  style: TextStyle(color: Colors.white38),
-                                ),
-                              ),
-                              _buildDateDropdown(
-                                placeholder: 'MMM',
-                                items: _months,
-                                value: _monthValue(),
-                                onChanged: (v) =>
-                                    setState(() => _birthdayMonth = v ?? 'MMM'),
-                              ),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  '/',
-                                  style: TextStyle(color: Colors.white38),
-                                ),
-                              ),
-                              _buildDateDropdown(
-                                placeholder: 'YYYY',
-                                items: _years,
-                                value: _yearValue(),
-                                onChanged: (v) =>
-                                    setState(() => _birthdayYear = v ?? 'YYYY'),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          const Text(
-                            'Gender (Optional)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              _genderRadioTile(
-                                label: 'Male',
-                                value: 'Male',
-                                activeColor: Colors.blue,
-                              ),
-                              _genderRadioTile(
-                                label: 'Female',
-                                value: 'Female',
-                                activeColor: Colors.pink,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'If your gender is not provided you will be unable to access gender specific events unless invited.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white38,
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-                        ],
+              child: signupDataAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFC151FD)),
+                ),
+                error: (e, _) => Center(
+                  child: Text(
+                    'Could not load campuses.\n$e',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ),
+                data: (signupData) {
+                  final campuses = signupData.campuses;
+                  if (campuses.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No campuses are configured for your institution yet.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70),
                       ),
-                    ),
-                  ),
+                    );
+                  }
 
-                  BloomButton(
-                    text: 'Continue',
-                    isLoading: _isSubmitting,
-                    onPressed: _isFormValid && !_isSubmitting
-                        ? () async {
-                            setState(() {
-                              _isSubmitting = true;
-                              _errorMessage = null;
-                            });
-                            try {
-                              await ref
-                                  .read(authControllerProvider.notifier)
-                                  .validateUsername(_usernameController.text);
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 20),
+                              Center(
+                                child: Image.asset(
+                                  'assets/bloom_logo.png',
+                                  width: 60,
+                                  height: 60,
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              const Text(
+                                'About You',
+                                style: TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              RichText(
+                                text: TextSpan(
+                                  text: 'Enter your account details,\n',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: email,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 40),
 
-                              if (!context.mounted) return;
-                              ref
-                                  .read(signUpFormProvider.notifier)
-                                  .updateDetails(
-                                    username: _usernameController.text,
-                                    name: _nameController.text,
-                                    birthday:
-                                        '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
-                                    gender: _genderValue ?? 'Prefer not to say',
+                              const Text(
+                                'Username',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              RoundedTextField(
+                                controller: _usernameController,
+                                hintText: 'Username',
+                                inputFormatters: [
+                                  LowerCaseTextFormatter(),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-z0-9._]'),
+                                  ),
+                                ],
+                                errorMessage: _errorMessage,
+                                onChanged: (_) {
+                                  if (_errorMessage != null) {
+                                    setState(() => _errorMessage = null);
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              const Text(
+                                'Name:',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              RoundedTextField(
+                                controller: _nameController,
+                                hintText: 'Your name',
+                                onChanged: (_) => setState(() {}),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              const Text(
+                                'Birthday',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  _buildDateDropdown(
+                                    placeholder: 'DD',
+                                    items: _days,
+                                    value: _dayValue(),
+                                    onChanged: (v) =>
+                                        setState(() => _birthdayDay = v ?? 'DD'),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text(
+                                      '/',
+                                      style: TextStyle(color: Colors.white38),
+                                    ),
+                                  ),
+                                  _buildDateDropdown(
+                                    placeholder: 'MMM',
+                                    items: _months,
+                                    value: _monthValue(),
+                                    onChanged: (v) =>
+                                        setState(() => _birthdayMonth = v ?? 'MMM'),
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text(
+                                      '/',
+                                      style: TextStyle(color: Colors.white38),
+                                    ),
+                                  ),
+                                  _buildDateDropdown(
+                                    placeholder: 'YYYY',
+                                    items: _years,
+                                    value: _yearValue(),
+                                    onChanged: (v) =>
+                                        setState(() => _birthdayYear = v ?? 'YYYY'),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              const Text(
+                                'Gender (Optional)',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  _genderRadioTile(
+                                    label: 'Male',
+                                    value: 'Male',
+                                    activeColor: Colors.blue,
+                                  ),
+                                  _genderRadioTile(
+                                    label: 'Female',
+                                    value: 'Female',
+                                    activeColor: Colors.pink,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'If your gender is not provided you will be unable to access gender specific events unless invited.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white38,
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                'Campus Name',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Autocomplete<String>(
+                                optionsBuilder: (TextEditingValue tev) {
+                                  if (tev.text.isEmpty) return campuses;
+                                  final q = tev.text.toLowerCase();
+                                  return campuses.where(
+                                    (o) => o.toLowerCase().contains(q),
                                   );
-                              setState(() => _isSubmitting = false);
-                              context.go('/auth/signup/campus');
-                            } on FirebaseFunctionsException catch (e) {
-                              if (!context.mounted) return;
-                              setState(() {
-                                _isSubmitting = false;
-                                if (e.code == 'already-exists') {
-                                  _errorMessage =
-                                      "This username is already taken";
-                                } else {
-                                  _errorMessage =
-                                      e.message ?? "Error validating username.";
+                                },
+                                onSelected: (String selection) {
+                                  setState(() {
+                                    _selectedCampus = selection;
+                                    _hasCampusError = false;
+                                  });
+                                },
+                                optionsViewBuilder: (context, onSelected, options) {
+                                  return Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 8.0),
+                                        child: Container(
+                                          width: MediaQuery.of(context).size.width - 40,
+                                          constraints: const BoxConstraints(maxHeight: 250),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF1A1D24),
+                                            borderRadius: BorderRadius.circular(15),
+                                            border: Border.all(color: _kBorderColor, width: 1),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.5),
+                                                blurRadius: 15,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ListView.separated(
+                                            padding: EdgeInsets.zero,
+                                            shrinkWrap: true,
+                                            itemCount: options.length,
+                                            separatorBuilder: (_, _) => Divider(
+                                              color: Colors.white.withValues(alpha: 0.05),
+                                              height: 1,
+                                            ),
+                                            itemBuilder: (context, index) {
+                                              final option = options.elementAt(index);
+                                              return ListTile(
+                                                title: Text(
+                                                  option,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                onTap: () => onSelected(option),
+                                                hoverColor: Colors.white10,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                fieldViewBuilder: (
+                                  context,
+                                  controller,
+                                  focusNode,
+                                  onFieldSubmitted,
+                                ) {
+                                  return RoundedTextField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    hintText: 'Enter College or University name',
+                                    errorMessage: _hasCampusError
+                                        ? 'Enter a valid Campus name'
+                                        : null,
+                                    onChanged: (val) {
+                                      if (val != _selectedCampus) {
+                                        setState(() => _selectedCampus = '');
+                                      }
+                                      setState(() {});
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 30),
+                            ],
+                          ),
+                        ),
+                      ),
+                      BloomButton(
+                        text: 'Continue',
+                        isLoading: _isSubmitting,
+                        onPressed: _isFormValid && !_isSubmitting
+                            ? () async {
+                                if (!campuses.contains(_selectedCampus)) {
+                                  setState(() => _hasCampusError = true);
+                                  return;
                                 }
-                              });
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              setState(() {
-                                _isSubmitting = false;
-                                _errorMessage = e.toString();
-                              });
-                            }
-                          }
-                        : null,
-                  ),
-                ],
+
+                                setState(() {
+                                  _isSubmitting = true;
+                                  _errorMessage = null;
+                                });
+                                try {
+                                  await ref
+                                      .read(authControllerProvider.notifier)
+                                      .validateUsername(_usernameController.text);
+
+                                  if (!context.mounted) return;
+                                  ref
+                                      .read(signUpFormProvider.notifier)
+                                      .updateDetails(
+                                        username: _usernameController.text,
+                                        name: _nameController.text,
+                                        birthday:
+                                            '$_birthdayDay / $_birthdayMonth / $_birthdayYear',
+                                        gender: _genderValue ?? 'Prefer not to say',
+                                      );
+                                  ref
+                                      .read(signUpFormProvider.notifier)
+                                      .updateCampus(_selectedCampus);
+
+                                  setState(() => _isSubmitting = false);
+                                  context.go('/auth/signup/avatar');
+                                } on FirebaseFunctionsException catch (e) {
+                                  if (!context.mounted) return;
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    if (e.code == 'already-exists') {
+                                      _errorMessage = "This username is already taken";
+                                    } else {
+                                      _errorMessage = e.message ?? "Error validating username.";
+                                    }
+                                  });
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  setState(() {
+                                    _isSubmitting = false;
+                                    _errorMessage = e.toString();
+                                  });
+                                }
+                              }
+                            : null,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),

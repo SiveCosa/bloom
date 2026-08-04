@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/media/image_compression_helper.dart';
+import '../../core/media/avatar_image_helper.dart';
 import '../chat/cometchat_auth_service.dart';
 
 /// User-facing copy for OTP verify failures from Cloud Functions.
@@ -506,29 +506,20 @@ class AuthController extends AsyncNotifier<void> {
         debugPrint("Date parsing failed: $e");
       }
 
-      // --- 3. PROFILE IMAGE (upload local file to Storage → URL) ---
-      var profileImageUrl = formData.avatarPath.trim();
+      var profileImageUrl = '';
+      String? largeUrl;
+      String? smallUrl;
+      final avatarResult = formData.avatarProcessResult;
 
-      // Explicitly wipe out the UI placeholder so it isn't saved to the DB
-      if (profileImageUrl == 'mock_path') {
-        profileImageUrl = '';
-      }
-
-      // Process the upload if a real local path exists
-      if (!kIsWeb && profileImageUrl.isNotEmpty) {
-        final lower = profileImageUrl.toLowerCase();
-        final isRemote =
-            lower.startsWith('http://') || lower.startsWith('https://');
-
-        if (!isRemote) {
-          final file = File(profileImageUrl);
-          if (await file.exists()) {
-            profileImageUrl =
-                await _uploadProfileImage(currentUser.uid, file) ?? '';
-          } else {
-            // Fallback: If the file path is invalid, wipe it to prevent DB corruption
-            profileImageUrl = '';
-          }
+      if (avatarResult != null) {
+        final largeUpload = await _uploadProfileImageVariant(currentUser.uid, File(avatarResult.largePath), 'large');
+        final mediumUpload = await _uploadProfileImageVariant(currentUser.uid, File(avatarResult.mediumPath), 'medium');
+        final smallUpload = await _uploadProfileImageVariant(currentUser.uid, File(avatarResult.smallPath), 'small');
+        
+        if (mediumUpload != null) {
+          profileImageUrl = mediumUpload;
+          largeUrl = largeUpload;
+          smallUrl = smallUpload;
         }
       }
 
@@ -544,6 +535,9 @@ class AuthController extends AsyncNotifier<void> {
         'institution': kDefaultInstitutionDocId,
         'campus': formData.campus,
         'profile_image_url': profileImageUrl,
+        'profile_image_large_url': largeUrl,
+        'profile_image_medium_url': profileImageUrl,
+        'profile_image_small_url': smallUrl,
         'interests': formData.interests,
         'is_verified': true,
         'created_at': FieldValue.serverTimestamp(),
@@ -566,21 +560,17 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
-  Future<String?> _uploadProfileImage(String uid, File file) async {
-    // Read the file bytes
+  Future<String?> _uploadProfileImageVariant(String uid, File file, String size) async {
     final bytes = await file.readAsBytes();
-
-    // Centralized WebP 80% compression
-    final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
 
     final storageRef = FirebaseStorage.instance
         .ref()
         .child('users')
         .child(uid)
-        .child('profile_pic.webp');
+        .child('profile_pic_$size.webp');
 
     await storageRef.putData(
-      compressedBytes,
+      bytes,
       SettableMetadata(contentType: 'image/webp'),
     );
 
@@ -589,7 +579,8 @@ class AuthController extends AsyncNotifier<void> {
 
   Future<void> updateUserProfile(
     Map<String, dynamic> updates, {
-    File? imageFile,
+    AvatarProcessResult? imageResult,
+    File? imageFile, // Fallback
   }) async {
     state = const AsyncLoading();
     try {
@@ -602,10 +593,22 @@ class AuthController extends AsyncNotifier<void> {
 
       final data = {...updates, 'updated_at': FieldValue.serverTimestamp()};
 
-      if (imageFile != null) {
-        final imageUrl = await _uploadProfileImage(currentUser.uid, imageFile);
+      if (imageResult != null) {
+        final largeUrl = await _uploadProfileImageVariant(currentUser.uid, File(imageResult.largePath), 'large');
+        final mediumUrl = await _uploadProfileImageVariant(currentUser.uid, File(imageResult.mediumPath), 'medium');
+        final smallUrl = await _uploadProfileImageVariant(currentUser.uid, File(imageResult.smallPath), 'small');
+        
+        if (mediumUrl != null) {
+          data['profile_image_url'] = mediumUrl; // Default
+          data['profile_image_large_url'] = largeUrl;
+          data['profile_image_medium_url'] = mediumUrl;
+          data['profile_image_small_url'] = smallUrl;
+        }
+      } else if (imageFile != null) {
+        final imageUrl = await _uploadProfileImageVariant(currentUser.uid, imageFile, 'medium');
         if (imageUrl != null) {
           data['profile_image_url'] = imageUrl;
+          data['profile_image_medium_url'] = imageUrl;
         }
       }
 
@@ -749,7 +752,7 @@ class SignUpFormState {
   final String birthday;
   final String gender;
   final String campus;
-  final String avatarPath;
+  final AvatarProcessResult? avatarProcessResult;
   final List<String> interests;
 
   SignUpFormState({
@@ -759,7 +762,7 @@ class SignUpFormState {
     this.birthday = '',
     this.gender = 'prefer not to say', // Enforces UI default
     this.campus = '',
-    this.avatarPath = '',
+    this.avatarProcessResult,
     this.interests = const [],
   });
 
@@ -770,7 +773,8 @@ class SignUpFormState {
     String? birthday,
     String? gender,
     String? campus,
-    String? avatarPath,
+    AvatarProcessResult? avatarProcessResult,
+    bool clearAvatar = false,
     List<String>? interests,
   }) {
     return SignUpFormState(
@@ -780,7 +784,7 @@ class SignUpFormState {
       birthday: birthday ?? this.birthday,
       gender: gender ?? this.gender,
       campus: campus ?? this.campus,
-      avatarPath: avatarPath ?? this.avatarPath,
+      avatarProcessResult: clearAvatar ? null : (avatarProcessResult ?? this.avatarProcessResult),
       interests: interests ?? this.interests,
     );
   }
@@ -809,7 +813,8 @@ class SignUpFormNotifier extends Notifier<SignUpFormState> {
   }
 
   void updateCampus(String campus) => state = state.copyWith(campus: campus);
-  void updateAvatar(String path) => state = state.copyWith(avatarPath: path);
+  void updateAvatar(AvatarProcessResult? result) =>
+      state = state.copyWith(avatarProcessResult: result, clearAvatar: result == null);
 
   void toggleInterest(String interest) {
     if (state.interests.contains(interest)) {

@@ -12,7 +12,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/media/avatar_image_helper.dart';
 import '../../domain/auth/auth_providers.dart';
-import '../../core/media/image_compression_helper.dart';
 import '../../core/media/image_loader_helper.dart';
 import '../../ui/shared/widgets/gradient_top_bar.dart';
 import '../../ui/shared/widgets/bloom_modal_shell.dart';
@@ -21,6 +20,7 @@ import '../../domain/event/event_providers.dart';
 import '../../domain/friendship/friendship_providers.dart';
 import '../../domain/navigation/navigation_providers.dart';
 import './widgets/recommended_friend_card.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -33,31 +33,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _uploading = false;
   bool _isLoading = false;
   bool _isBioExpanded = false;
+  bool _nsfwDetected = false;
 
-  Future<void> _uploadAndSaveProfilePhoto(String localPath) async {
+  Future<void> _uploadAndSaveProfilePhoto(AvatarProcessResult result) async {
     final user = ref.read(firebaseAuthProvider).currentUser;
     if (user == null) return;
 
-    // Load the selected local image file into memory for processing
-    final file = File(localPath);
-    final bytes = await file.readAsBytes();
+    Future<String> uploadVariant(String localPath, String size) async {
+      final file = File(localPath);
+      final bytes = await file.readAsBytes();
+      
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('users')
+          .child(user.uid)
+          .child('profile_pic_$size.webp');
 
-    // Ensure all uploads are WebP 80% to save storage space and bandwidth
-    final compressedBytes = await ImageCompressionHelper.compressToWebP(bytes);
+      await storageRef.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/webp'),
+      );
+      return await storageRef.getDownloadURL();
+    }
 
-    final storageRef = FirebaseStorage.instance
-        .ref()
-        .child('users')
-        .child(user.uid)
-        .child('profile_pic.webp');
+    final largeUrl = await uploadVariant(result.largePath, 'large');
+    final mediumUrl = await uploadVariant(result.mediumPath, 'medium');
+    final smallUrl = await uploadVariant(result.smallPath, 'small');
 
-    await storageRef.putData(
-      compressedBytes,
-      SettableMetadata(contentType: 'image/webp'),
-    );
-    final url = await storageRef.getDownloadURL();
     await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-      'profile_image_url': url,
+      'profile_image_url': mediumUrl, // Keep for backward compatibility or default
+      'profile_image_large_url': largeUrl,
+      'profile_image_medium_url': mediumUrl,
+      'profile_image_small_url': smallUrl,
     });
   }
 
@@ -65,12 +72,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await showAvatarSourceSheet(
       context,
       onChosen: (source) async {
-        setState(() => _uploading = true);
+        setState(() {
+          _uploading = true;
+          _nsfwDetected = false;
+        });
         try {
-          final path = await pickAndCropSquareAvatar(source);
+          final result = await pickAndProcessAvatar(source);
           if (!mounted) return;
-          if (path != null) {
-            await _uploadAndSaveProfilePhoto(path);
+          if (result != null) {
+            await _uploadAndSaveProfilePhoto(result);
+          }
+        } on Exception catch (e) {
+          if (e.toString().contains('NSFW')) {
+            if (mounted) setState(() => _nsfwDetected = true);
           }
         } finally {
           if (mounted) setState(() => _uploading = false);
@@ -247,9 +261,76 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const GradientTopBar(height: 100, showDarkOverlay: false),
 
           profileAsync.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: Color(0xFF0086D8)),
-            ),
+            loading: () {
+              return Skeletonizer(
+                enabled: true,
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15.0,
+                            vertical: 8.0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'loading_user',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Container(width: 44, height: 44, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                                  const SizedBox(width: 10),
+                                  Container(width: 44, height: 44, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                          child: Column(
+                            children: [
+                              Container(width: 116, height: 116, decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
+                              const SizedBox(height: 15),
+                              const Text('Loading Name', style: TextStyle(fontSize: 18, color: Colors.white)),
+                              const SizedBox(height: 25),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  Column(children: const [Text('0', style: TextStyle(fontSize: 16, color: Colors.white)), SizedBox(height: 2), Text('Friends', style: TextStyle(fontSize: 12, color: Colors.white))]),
+                                  Column(children: const [Text('0', style: TextStyle(fontSize: 16, color: Colors.white)), SizedBox(height: 2), Text('Hosted', style: TextStyle(fontSize: 12, color: Colors.white))]),
+                                  Column(children: const [Text('0', style: TextStyle(fontSize: 16, color: Colors.white)), SizedBox(height: 2), Text('Joined', style: TextStyle(fontSize: 12, color: Colors.white))]),
+                                ],
+                              ),
+                              const SizedBox(height: 40),
+                              const Text('Loading bio description...', style: TextStyle(color: Colors.white)),
+                              const SizedBox(height: 25),
+                              Row(
+                                children: [
+                                  Expanded(child: Container(height: 40, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.white))),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Container(height: 40, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.white))),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
             error: (e, _) => Center(
               child: Text(
                 'Error: $e',
@@ -334,18 +415,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           children: [
                             Stack(
                               children: [
-                                GestureDetector(
-                                  onTap: imageUrl != null
-                                      ? () => _showImagePreview(imageUrl)
-                                      : null,
-                                  child: Hero(
-                                    tag: 'avatar_preview',
-                                    child: buildAvatarImage(
-                                      source: imageUrl,
-                                      radius: 58,
+                                if (_nsfwDetected)
+                                  GestureDetector(
+                                    onTap: _onChangePhoto,
+                                    child: Container(
+                                      width: 116,
+                                      height: 116,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.redAccent,
+                                      ),
+                                      child: const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(8.0),
+                                          child: Text(
+                                            'NSFW content detected!\nPlease upload another image or try again.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  GestureDetector(
+                                    onTap: imageUrl != null
+                                        ? () => _showImagePreview(imageUrl)
+                                        : null,
+                                    child: Hero(
+                                      tag: 'avatar_preview',
+                                      child: buildAvatarImage(
+                                        source: imageUrl,
+                                        radius: 58,
+                                      ),
                                     ),
                                   ),
-                                ),
                                 if (_uploading)
                                   Positioned.fill(
                                     child: Container(
@@ -361,25 +469,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       ),
                                     ),
                                   ),
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: GestureDetector(
-                                    onTap: _uploading ? null : _onChangePhoto,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF0086D8),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white,
-                                        size: 18,
+                                if (!_nsfwDetected)
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: GestureDetector(
+                                      onTap: _uploading ? null : _onChangePhoto,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF0086D8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
 
@@ -862,7 +971,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               return !dismissed.contains(uid);
             }).toList();
 
-            if (filteredUsers.isEmpty) return const SizedBox.shrink();
+            if (filteredUsers.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1D21),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                  ),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.people_outline, color: Colors.white54, size: 40),
+                    SizedBox(height: 12),
+                    Text(
+                      'You\'re all caught up!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Check back later for more friend recommendations.',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
 
             return SizedBox(
               height: 200,

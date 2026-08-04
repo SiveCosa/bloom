@@ -17,10 +17,7 @@ import '../../ui/auth/login/confirm_screen.dart' as login_confirm;
 import '../../ui/auth/signup/email_screen.dart' as signup;
 import '../../ui/auth/signup/otp_screen.dart' as signup_otp;
 import '../../ui/auth/signup/details_screen.dart';
-import '../../ui/auth/signup/campus_screen.dart';
 import '../../ui/auth/signup/avatar_screen.dart';
-import '../../ui/auth/signup/interests_screen.dart';
-import '../../ui/auth/signup/permissions_screen.dart';
 import '../../ui/main_shell/main_shell.dart';
 import '../../ui/profile/sub_screens/friends_made_screen.dart';
 import '../../ui/profile/sub_screens/events_hosted_screen.dart';
@@ -103,10 +100,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           '/auth/signup/otp',
           '/auth/login/otp',
           '/auth/signup/details',
-          '/auth/signup/campus',
           '/auth/signup/avatar',
-          '/auth/signup/interests',
-          '/auth/signup/permissions',
           '/auth/login/confirm',
         };
 
@@ -150,21 +144,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const DetailsScreen(),
           ),
           GoRoute(
-            path: 'campus',
-            builder: (context, state) => const CampusScreen(),
-          ),
-          GoRoute(
             path: 'avatar',
             builder: (context, state) => const AvatarScreen(),
           ),
-          GoRoute(
-            path: 'interests',
-            builder: (context, state) => const InterestsScreen(),
-          ),
-          GoRoute(
-            path: 'permissions',
-            builder: (context, state) => const PermissionsScreen(),
-          ),
+
         ],
       ),
 

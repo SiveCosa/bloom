@@ -1,10 +1,10 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../../data/event/event_repository.dart';
 import '../auth/auth_providers.dart';
+import '../../core/media/poster_image_helper.dart';
 import 'event.dart';
 import 'event_visibility.dart';
 import 'event_extra.dart';
@@ -21,9 +21,10 @@ class CreateEventState {
   final List<EventExtra> extras;
   final List<String> rsvpReminders;
 
-  final Uint8List? customPosterBytes;
+  final PosterProcessResult? customPosterResult;
   final bool isGeneratingPoster;
   final bool isEditingSpots;
+  final bool isNsfwDetected;
   final List<Color> auroraColors; // For UI rendering
   final String? defaultPosterUrl;
   final String? editingEventId;
@@ -50,9 +51,10 @@ class CreateEventState {
     this.audience = const EventAudience(visibility: EventVisibility.public),
     this.extras = const [],
     this.rsvpReminders = const [],
-    this.customPosterBytes,
+    this.customPosterResult,
     this.isGeneratingPoster = false,
     this.isEditingSpots = false,
+    this.isNsfwDetected = false,
     this.auroraColors = defaultAuroraColors,
     this.defaultPosterUrl = fallbackPosterUrl,
     this.editingEventId,
@@ -69,9 +71,10 @@ class CreateEventState {
     EventAudience? audience,
     List<EventExtra>? extras,
     List<String>? rsvpReminders,
-    Object? customPosterBytes = _undefined,
+    Object? customPosterResult = _undefined,
     bool? isGeneratingPoster,
     bool? isEditingSpots,
+    bool? isNsfwDetected,
     List<Color>? auroraColors,
     Object? defaultPosterUrl = _undefined,
     Object? editingEventId = _undefined,
@@ -89,11 +92,12 @@ class CreateEventState {
       audience: audience ?? this.audience,
       extras: extras ?? this.extras,
       rsvpReminders: rsvpReminders ?? this.rsvpReminders,
-      customPosterBytes: customPosterBytes == _undefined
-          ? this.customPosterBytes
-          : (customPosterBytes as Uint8List?),
+      customPosterResult: customPosterResult == _undefined
+          ? this.customPosterResult
+          : (customPosterResult as PosterProcessResult?),
       isGeneratingPoster: isGeneratingPoster ?? this.isGeneratingPoster,
       isEditingSpots: isEditingSpots ?? this.isEditingSpots,
+      isNsfwDetected: isNsfwDetected ?? this.isNsfwDetected,
       auroraColors: auroraColors ?? this.auroraColors,
       defaultPosterUrl: defaultPosterUrl == _undefined
           ? this.defaultPosterUrl
@@ -167,7 +171,7 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
 
       // Recheck before applying color/poster updates in case an event was loaded for editing during palette generation,
       // or if the user has already started picking/picked a custom poster.
-      if (state.editingEventId != null || state.customPosterBytes != null || state.isGeneratingPoster) {
+      if (state.editingEventId != null || state.customPosterResult != null || state.isGeneratingPoster) {
         return;
       }
 
@@ -204,12 +208,13 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
             .map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}')
             .toList(),
       ),
-      customPosterBytes: null,
+      customPosterResult: null,
+      isNsfwDetected: false,
       auroraColors: boostedColors.take(5).toList(),
     );
   }
 
-  void updateCustomPoster(Uint8List bytes, List<Color> colors) {
+  void updateCustomPoster(PosterProcessResult result, List<Color> colors) {
     final boostedColors = colors.map((c) => _boostColor(c)).toList();
     while (boostedColors.length < 5) {
       boostedColors.add(
@@ -225,7 +230,8 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
             .map((c) => '#${c.toARGB32().toRadixString(16).padLeft(8, '0')}')
             .toList(),
       ),
-      customPosterBytes: bytes,
+      customPosterResult: result,
+      isNsfwDetected: false,
       auroraColors: boostedColors.take(5).toList(),
     );
   }
@@ -343,6 +349,10 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
     state = state.copyWith(isGeneratingPoster: generating);
   }
 
+  void setNsfwDetected(bool nsfw) {
+    state = state.copyWith(isNsfwDetected: nsfw);
+  }
+
   void addExtra(EventExtra extra) {
     state = state.copyWith(extras: [...state.extras, extra]);
   }
@@ -454,12 +464,22 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
       String? finalPosterUrl =
           state.visuals.posterUrl ?? state.defaultPosterUrl;
 
+      String? finalLargeUrl;
+      String? finalMediumUrl;
+      String? finalSmallUrl;
+
       // 2. Upload custom poster if present
-      if (state.customPosterBytes != null) {
-        finalPosterUrl = await repo.uploadPoster(
+      if (state.customPosterResult != null) {
+        final variants = await repo.uploadPosterVariants(
           eventId,
-          state.customPosterBytes!,
+          state.customPosterResult!,
         );
+        if (variants.isNotEmpty) {
+          finalPosterUrl = variants['medium']; // fallback
+          finalLargeUrl = variants['large'];
+          finalMediumUrl = variants['medium'];
+          finalSmallUrl = variants['small'];
+        }
       }
 
       // 3. Compile final event data
@@ -493,7 +513,12 @@ class CreateEventNotifier extends Notifier<CreateEventState> {
             : state.title.trim(),
         description: state.description,
         tags: state.tags,
-        visuals: state.visuals.copyWith(posterUrl: finalPosterUrl),
+        visuals: state.visuals.copyWith(
+          posterUrl: finalPosterUrl,
+          posterLargeUrl: finalLargeUrl ?? finalPosterUrl,
+          posterMediumUrl: finalMediumUrl ?? finalPosterUrl,
+          posterSmallUrl: finalSmallUrl ?? finalPosterUrl,
+        ),
         timing: state.timing,
         location: state.location,
         audience: state.audience,

@@ -1,72 +1,63 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'bloom_image_processor.dart';
 
-/// Picks from camera/gallery with initial compression, then opens a locked 1:1 cropper.
-/// Returns a local file path, or `null` if the user cancels or an error occurs.
-Future<String?> pickAndCropSquareAvatar(ImageSource source) async {
+/// Result containing the local paths for the large, medium, and small variants.
+class AvatarProcessResult {
+  final String largePath;
+  final String mediumPath;
+  final String smallPath;
+
+  AvatarProcessResult({
+    required this.largePath,
+    required this.mediumPath,
+    required this.smallPath,
+  });
+}
+
+/// Picks from camera/gallery, then uses smart face-centric cropping and WebP compression.
+/// Returns a [AvatarProcessResult], or `null` if the user cancels or an error occurs.
+/// Throws an exception if NSFW content is detected.
+Future<AvatarProcessResult?> pickAndProcessAvatar(ImageSource source) async {
   if (kIsWeb) return null;
-  try {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 100,
-    );
-    if (picked == null) return null;
+  
+  final picker = ImagePicker();
+  final picked = await picker.pickImage(
+    source: source,
+    maxWidth: 2000,
+    maxHeight: 2000,
+    imageQuality: 100,
+  );
+  if (picked == null) return null;
 
-    final cropper = ImageCropper();
-    final cropped = await cropper.cropImage(
-      sourcePath: picked.path,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      compressFormat: ImageCompressFormat.png,
-      compressQuality: 100,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop photo',
-          toolbarColor: const Color(0xFF0B0E12),
-          toolbarWidgetColor: Colors.white,
-          activeControlsWidgetColor: const Color(0xFF0086D8),
-          backgroundColor: const Color(0xFF0B0E12),
-          statusBarLight: false,
-          navBarLight: false,
-          lockAspectRatio: true,
-          initAspectRatio: CropAspectRatioPreset.square,
-          aspectRatioPresets: const [CropAspectRatioPreset.square],
-          cropStyle: CropStyle.rectangle,
-        ),
-        IOSUiSettings(
-          title: 'Crop photo',
-          aspectRatioLockEnabled: true,
-          aspectRatioPickerButtonHidden: true,
-          resetAspectRatioEnabled: false,
-          aspectRatioPresets: const [CropAspectRatioPreset.square],
-        ),
-      ],
-    );
-    if (cropped == null) return null;
+  final bytes = await picked.readAsBytes();
 
-    final webpPath = '${cropped.path}.webp';
-    final compressedImage = await FlutterImageCompress.compressAndGetFile(
-      cropped.path,
-      webpPath,
-      format: CompressFormat.webp,
-      quality: 80,
-      minHeight: 1080,
-      minWidth: 1080,
-    );
+  // Process the image using BloomImageProcessor
+  final variants = await BloomImageProcessor.processImage(
+    bytes,
+    strategy: CropStrategy.profile,
+  );
 
-    if (compressedImage == null) return null;
-    return compressedImage.path;
-  } catch (e, st) {
-    debugPrint('pickAndCropSquareAvatar failed: $e\n$st');
-    return null;
-  }
+  // Save the variants to temporary files
+  final dir = await getTemporaryDirectory();
+  final timestamp = DateTime.now().millisecondsSinceEpoch;
+  
+  final largeFile = File('${dir.path}/avatar_${timestamp}_large.webp');
+  final mediumFile = File('${dir.path}/avatar_${timestamp}_medium.webp');
+  final smallFile = File('${dir.path}/avatar_${timestamp}_small.webp');
+
+  await largeFile.writeAsBytes(variants.large);
+  await mediumFile.writeAsBytes(variants.medium);
+  await smallFile.writeAsBytes(variants.small);
+
+  return AvatarProcessResult(
+    largePath: largeFile.path,
+    mediumPath: mediumFile.path,
+    smallPath: smallFile.path,
+  );
 }
 
 Future<void> showAvatarSourceSheet(
