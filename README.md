@@ -14,6 +14,54 @@ Bloom is a comprehensive social discovery and event management platform designed
 
 This repository contains the source code for the mobile application. The app leverages Firebase for its robust backend infrastructure, including Authentication, Firestore, and Cloud Storage.
 
+
+## Project Context
+
+Bloom was developed as a **group university software engineering project**. This fork is maintained as part of my personal developer portfolio and preserves the original team project while highlighting the areas I personally contributed to.
+
+I did **not** build every feature in Bloom. The application was developed collaboratively by the project team.
+
+## My Contributions
+
+My documented contributions to Bloom include:
+
+### Secure “For You” Discovery Engine
+I implemented the Firebase Cloud Function used to generate Bloom’s personalized **For You** event feed.
+
+The function:
+- runs in the `africa-south1` region
+- requires authenticated users
+- reads user interests and gender
+- queries active events
+- applies gender restrictions
+- enforces public, private, friends-only, and friends-of-friends visibility rules
+- validates direct invitations
+- calculates interest-match and popularity scores
+- returns a lightweight event payload for the Flutter feed UI
+
+This contribution was merged through **PR #29 — “Implement secure For You discovery engine.”**
+
+### Calendar Filter & Search System
+I also implemented a calendar filtering and local search workflow, including:
+- multi-select calendar filter categories
+- a dedicated filter bottom sheet
+- local event search by title and host
+- a `/calendar/search` route
+- filtered schedule providers
+- support for requested and waitlisted RSVP states in calendar scheduling
+
+This work is documented in **PR #39 — “Implement calendar filter and search system.”**
+
+### Event Card Interaction Refinements
+I contributed additional frontend/backend refinements to the event-card experience, including:
+- extracting reusable Interested-button logic
+- wiring medium event cards into RSVP and optimistic-update behavior
+- removing hardcoded placeholder avatars
+- adding event-description support to feed mappings
+- extending Cloud Function payloads to include descriptions
+
+These contributions demonstrate work across **Flutter UI, Riverpod state management, Firebase Cloud Functions, Firestore-backed event data, and application navigation**.
+
 ## Home Page
 <img width="300" alt="bloom_home_screen_1" src="https://github.com/user-attachments/assets/81de57ca-39a3-4a6a-b447-f2f077567762" />
 <img width="300" alt="bloom_home_screen_2" src="https://github.com/user-attachments/assets/379658a6-d3cb-48ad-b5b1-2282e0b10bd7" />
@@ -190,7 +238,7 @@ Ensure you have the following installed on your local development environment:
 
 Clone this repository to your local machine:
 ```bash
-git clone https://github.com/YourUsername/bloom.git
+git clone https://github.com/SiveCosa/bloom.git
 cd bloom
 ```
 
@@ -207,16 +255,9 @@ For security reasons, the Firebase configuration files that contain the project'
 
 To run this application, **you must add the configuration files back into the project.** You have two options:
 
-**Option A: Request the files directly (Recommended for Employers/Reviewers)**
-Please contact me directly at **gjaydyn7@gmail.com** to securely receive the following environment files:
-- `android/app/google-services.json`
-- `ios/Runner/GoogleService-Info.plist` (if running on iOS)
-- `lib/firebase_options.dart`
+**Configure your own Firebase project**
 
-Once received, place them in their respective directories within the project.
-
-**Option B: Connect your own Firebase project**
-If you prefer, you can connect the app to your own Firebase instance:
+To run the application locally, connect the app to your own Firebase project:
 1. Create a new Firebase project in the [Firebase Console](https://console.firebase.google.com/).
 2. Install the FlutterFire CLI: `dart pub global activate flutterfire_cli`
 3. Run `flutterfire configure` in the root of the project and select your new Firebase project.
@@ -255,5 +296,6 @@ This application follows a modern Flutter architecture emphasizing clean separat
 - **Backend**: Firebase suite (Authentication, Firestore, Cloud Storage).
 - **Architecture Pattern**: Adopts a layered architecture separating UI/View, State/Providers, and Domain/Service layers for optimal testability and maintainability.
 
-## License
-This project is proprietary and confidential. Unauthorized copying of this file, via any medium, is strictly prohibited.
+## Repository Note
+
+This repository is a portfolio fork of a collaborative university project. Project credit belongs to the Bloom development team, and the sections above identify my individual contributions.
